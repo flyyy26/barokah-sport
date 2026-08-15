@@ -3,9 +3,43 @@
 @section('title', 'Barokah Sport')
 
 @section('content')
-
-        {{-- BANNER SLIDER --}}
-        @if ($banners->isNotEmpty())
+<div class="banner_slide">
+    <div class="swiper mySwiper">
+        <div class="swiper-wrapper">
+            <div class="swiper-slide">
+                <div class="slide_box" style="background-image:url(../images/slide_img.webp); background-position:center; background-size:cover;">
+                    <h2>Performa dan Gaya dalam <span>Satu</span> Pilihan.</h2>
+                    <p>Tampil sporty dengan jaket dan celana olahraga yang nyaman, stylish, dan siap menemani setiap aktivitas.</p>
+                    <div class="banner_button">
+                        <a href="#">
+                            <button>Belanja Sekarang</button>
+                        </a>
+                        <a href="#">
+                            <button>Hubungi Kami</button>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="swiper-slide">
+                <div class="slide_box" style="background-image:url(../images/slide_img_2.png); background-position:center; background-size:cover;">
+                    <h2>Nyaman <span>Maksimal</span>, Bergerak Bebas.</h2>
+                    <p>Dirancang dengan material ringan dan fleksibel, paduan sempurna untuk performa latihan terbaik dan gaya kasual harianmu.</p>
+                    <div class="banner_button">
+                        <a href="#">
+                            <button>Belanja Sekarang</button>
+                        </a>
+                        <a href="#">
+                            <button>Hubungi Kami</button>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="swiper-button-next"></div>
+        <div class="swiper-button-prev"></div>
+    </div>
+</div>
+        <!-- @if ($banners->isNotEmpty())
             <section class="relative overflow-hidden bg-slate-900">
                 <div class="relative mx-auto max-w-7xl">
                     @foreach ($banners as $index => $banner)
@@ -41,8 +75,6 @@
                             </div>
                         </div>
                     @endforeach
-
-                    {{-- Dots --}}
                     @if ($banners->count() > 1)
                         <div class="banner-dots absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 gap-2">
                             @foreach ($banners as $index => $banner)
@@ -53,7 +85,319 @@
                     @endif
                 </div>
             </section>
-        @endif
+        @endif -->
+
+<div class="keunggulan_layout">
+    <div class="keunggulan_box_layout">
+        <img src="{{ asset('images/gratis_ongkir.svg') }}" alt="">
+        <div class="keunggulan_box_content">
+            <h3>GRATIS ONGKIR</h3>
+            <p>Pembelian di atas 750.000</p>
+        </div>
+    </div>
+    <div class="keunggulan_box_layout">
+        <img src="{{ asset('images/retur_mudah.svg') }}" alt="">
+        <div class="keunggulan_box_content">
+            <h3>PENGEMBALIAN MUDAH</h3>
+            <p>Retur mudah dalam 7 hari.</p>
+        </div>
+    </div>
+    <div class="keunggulan_box_layout">
+        <img src="{{ asset('images/safety_pay.svg') }}" alt="">
+        <div class="keunggulan_box_content">
+            <h3>PEMBAYARAN AMAN</h3>
+            <p>Metode pembayaran terpercaya</p>
+        </div>
+    </div>
+    <div class="keunggulan_box_layout">
+        <img src="{{ asset('images/cs.svg') }}" alt="">
+        <div class="keunggulan_box_content">
+            <h3>BANTUAN CEPAT</h3>
+            <p>24/7 Support</p>
+        </div>
+    </div>
+</div>
+
+<div class="kategori_layout">
+    <div class="kategori_box_layout" style="background-image:url({{ asset('images/jaket_category_img.png') }});">
+        <h3>Jaket</h3>
+        <a href="#">BELI SEKARANG</a>
+    </div>
+    <div class="kategori_box_layout" style="background-image:url({{ asset('images/trening_category_img.png') }});">
+        <h3>Trening</h3>
+        <a href="#">BELI SEKARANG</a>
+    </div>
+    <div class="kategori_box_layout" style="background-image:url({{ asset('images/oneset_category_img.png') }});">
+        <h3>Oneset</h3>
+        <a href="#">BELI SEKARANG</a>
+    </div>
+    <div class="kategori_box_layout" style="background-image:url({{ asset('images/rompi_category_img.png') }});">
+        <h3>Rompi</h3>
+        <a href="#">BELI SEKARANG</a>
+    </div>
+    <div class="kategori_box_layout" style="background-image:url({{ asset('images/cargo_category_img.png') }});">
+        <h3>Cargo</h3>
+        <a href="#">BELI SEKARANG</a>
+    </div>
+</div>
+
+<div class="product_layout">
+    <div class="heading_product_layout">
+        <h3>KOLEKSI TERBARU</h3>
+        <a href="">LIHAT SEMUA</a>
+    </div>
+    <div class="product_layout_grid">
+        <div class="product_layout_box">
+            <div class="product_layout_img">
+                <a href="#">
+                    <img src="{{ asset('images/product_dummy.png') }}" alt="">
+                </a>
+            </div>
+            <div class="product_layout_content">
+                <h5>ONESET SPORT</h5>
+                <div class="product_layout_price">
+                    <p>Rp. 110.000</p>
+                </div>
+            </div>
+            <div class="product_layout_button">
+                <a href="#">
+                    <button class="buy_now_btn">BELI SEKARANG</button>
+                </a>
+                <button class="add_to_cart_btn">
+                    <iconify-icon icon="solar:cart-linear"></iconify-icon>
+                </button>
+                <button class="add_to_wishlist_btn">
+                    <iconify-icon icon="solar:heart-linear"></iconify-icon>
+                </button>
+            </div>
+        </div>
+        <div class="product_layout_box">
+            <div class="product_layout_img">
+                <a href="#">
+                    <img src="{{ asset('images/product_dummy.png') }}" alt="">
+                </a>
+            </div>
+            <div class="product_layout_content">
+                <h5>ONESET SPORT</h5>
+                <div class="product_layout_price">
+                    <p>Rp. 110.000</p>
+                </div>
+            </div>
+            <div class="product_layout_button">
+                <a href="#">
+                    <button class="buy_now_btn">BELI SEKARANG</button>
+                </a>
+                <button class="add_to_cart_btn">
+                    <iconify-icon icon="solar:cart-linear"></iconify-icon>
+                </button>
+                <button class="add_to_wishlist_btn">
+                    <iconify-icon icon="solar:heart-linear"></iconify-icon>
+                </button>
+            </div>
+        </div>
+        <div class="product_layout_box">
+            <div class="product_layout_img">
+                <a href="#">
+                    <img src="{{ asset('images/product_dummy.png') }}" alt="">
+                </a>
+            </div>
+            <div class="product_layout_content">
+                <h5>ONESET SPORT</h5>
+                <div class="product_layout_price">
+                    <p>Rp. 110.000</p>
+                </div>
+            </div>
+            <div class="product_layout_button">
+                <a href="#">
+                    <button class="buy_now_btn">BELI SEKARANG</button>
+                </a>
+                <button class="add_to_cart_btn">
+                    <iconify-icon icon="solar:cart-linear"></iconify-icon>
+                </button>
+                <button class="add_to_wishlist_btn">
+                    <iconify-icon icon="solar:heart-linear"></iconify-icon>
+                </button>
+            </div>
+        </div>
+        <div class="product_layout_box">
+            <div class="product_layout_img">
+                <a href="#">
+                    <img src="{{ asset('images/product_dummy.png') }}" alt="">
+                </a>
+            </div>
+            <div class="product_layout_content">
+                <h5>ONESET SPORT</h5>
+                <div class="product_layout_price">
+                    <p>Rp. 110.000</p>
+                </div>
+            </div>
+            <div class="product_layout_button">
+                <a href="#">
+                    <button class="buy_now_btn">BELI SEKARANG</button>
+                </a>
+                <button class="add_to_cart_btn">
+                    <iconify-icon icon="solar:cart-linear"></iconify-icon>
+                </button>
+                <button class="add_to_wishlist_btn">
+                    <iconify-icon icon="solar:heart-linear"></iconify-icon>
+                </button>
+            </div>
+        </div>
+        <div class="product_layout_box">
+            <div class="product_layout_img">
+                <a href="#">
+                    <img src="{{ asset('images/product_dummy.png') }}" alt="">
+                </a>
+            </div>
+            <div class="product_layout_content">
+                <h5>ONESET SPORT</h5>
+                <div class="product_layout_price">
+                    <p>Rp. 110.000</p>
+                </div>
+            </div>
+            <div class="product_layout_button">
+                <a href="#">
+                    <button class="buy_now_btn">BELI SEKARANG</button>
+                </a>
+                <button class="add_to_cart_btn">
+                    <iconify-icon icon="solar:cart-linear"></iconify-icon>
+                </button>
+                <button class="add_to_wishlist_btn">
+                    <iconify-icon icon="solar:heart-linear"></iconify-icon>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="product_layout">
+    <div class="heading_product_layout">
+        <h3>PRODUK UNGGULAN</h3>
+        <a href="">LIHAT SEMUA</a>
+    </div>
+    <div class="product_layout_grid">
+        <div class="product_layout_box">
+            <div class="product_layout_img">
+                <a href="#">
+                    <img src="{{ asset('images/product_dummy.png') }}" alt="">
+                </a>
+            </div>
+            <div class="product_layout_content">
+                <h5>ONESET SPORT</h5>
+                <div class="product_layout_price">
+                    <p>Rp. 110.000</p>
+                </div>
+            </div>
+            <div class="product_layout_button">
+                <a href="#">
+                    <button class="buy_now_btn">BELI SEKARANG</button>
+                </a>
+                <button class="add_to_cart_btn">
+                    <iconify-icon icon="solar:cart-linear"></iconify-icon>
+                </button>
+                <button class="add_to_wishlist_btn">
+                    <iconify-icon icon="solar:heart-linear"></iconify-icon>
+                </button>
+            </div>
+        </div>
+        <div class="product_layout_box">
+            <div class="product_layout_img">
+                <a href="#">
+                    <img src="{{ asset('images/product_dummy.png') }}" alt="">
+                </a>
+            </div>
+            <div class="product_layout_content">
+                <h5>ONESET SPORT</h5>
+                <div class="product_layout_price">
+                    <p>Rp. 110.000</p>
+                </div>
+            </div>
+            <div class="product_layout_button">
+                <a href="#">
+                    <button class="buy_now_btn">BELI SEKARANG</button>
+                </a>
+                <button class="add_to_cart_btn">
+                    <iconify-icon icon="solar:cart-linear"></iconify-icon>
+                </button>
+                <button class="add_to_wishlist_btn">
+                    <iconify-icon icon="solar:heart-linear"></iconify-icon>
+                </button>
+            </div>
+        </div>
+        <div class="product_layout_box">
+            <div class="product_layout_img">
+                <a href="#">
+                    <img src="{{ asset('images/product_dummy.png') }}" alt="">
+                </a>
+            </div>
+            <div class="product_layout_content">
+                <h5>ONESET SPORT</h5>
+                <div class="product_layout_price">
+                    <p>Rp. 110.000</p>
+                </div>
+            </div>
+            <div class="product_layout_button">
+                <a href="#">
+                    <button class="buy_now_btn">BELI SEKARANG</button>
+                </a>
+                <button class="add_to_cart_btn">
+                    <iconify-icon icon="solar:cart-linear"></iconify-icon>
+                </button>
+                <button class="add_to_wishlist_btn">
+                    <iconify-icon icon="solar:heart-linear"></iconify-icon>
+                </button>
+            </div>
+        </div>
+        <div class="product_layout_box">
+            <div class="product_layout_img">
+                <a href="#">
+                    <img src="{{ asset('images/product_dummy.png') }}" alt="">
+                </a>
+            </div>
+            <div class="product_layout_content">
+                <h5>ONESET SPORT</h5>
+                <div class="product_layout_price">
+                    <p>Rp. 110.000</p>
+                </div>
+            </div>
+            <div class="product_layout_button">
+                <a href="#">
+                    <button class="buy_now_btn">BELI SEKARANG</button>
+                </a>
+                <button class="add_to_cart_btn">
+                    <iconify-icon icon="solar:cart-linear"></iconify-icon>
+                </button>
+                <button class="add_to_wishlist_btn">
+                    <iconify-icon icon="solar:heart-linear"></iconify-icon>
+                </button>
+            </div>
+        </div>
+        <div class="product_layout_box">
+            <div class="product_layout_img">
+                <a href="#">
+                    <img src="{{ asset('images/product_dummy.png') }}" alt="">
+                </a>
+            </div>
+            <div class="product_layout_content">
+                <h5>ONESET SPORT</h5>
+                <div class="product_layout_price">
+                    <p>Rp. 110.000</p>
+                </div>
+            </div>
+            <div class="product_layout_button">
+                <a href="#">
+                    <button class="buy_now_btn">BELI SEKARANG</button>
+                </a>
+                <button class="add_to_cart_btn">
+                    <iconify-icon icon="solar:cart-linear"></iconify-icon>
+                </button>
+                <button class="add_to_wishlist_btn">
+                    <iconify-icon icon="solar:heart-linear"></iconify-icon>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
         {{-- KATEGORI --}}
         @if ($categories->isNotEmpty())
@@ -226,6 +570,4 @@
             }
         </script>
 
-    @endsection
-
-   
+@endsection
