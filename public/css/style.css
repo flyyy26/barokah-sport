@@ -1,0 +1,16 @@
+*{
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+}
+.top_section{
+    width:100%;
+    background-color:#076694;
+    padding:.8vw 5.4vw;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+.text_top_section p{
+    color:white;
+}
