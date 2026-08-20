@@ -1,208 +1,35 @@
 @extends('layouts.customer')
 
-@section('title', 'Barokah Sport')
+@section('title', $product->name . ' - Barokah Sport')
 
 @section('content')
 
-<style>
-    .line-clamp-2 {
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-    }
-    .variant-option {
-        transition: all 0.2s ease;
-        cursor: pointer;
-        border-color: #e2e8f0;
-        background-color: #ffffff;
-        color: #1e293b;
-    }
-    .variant-option:hover:not(.disabled):not(:disabled) {
-        border-color: #3b82f6;
-        background-color: #f8fafc;
-    }
-    .variant-option.active {
-        border-color: #3b82f6;
-        background-color: #eff6ff;
-        box-shadow: 0 0 0 2px #3b82f6;
-        color: #1e40af;
-    }
-    .variant-option.disabled,
-    .variant-option:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-        background-color: #f1f5f9;
-    }
-    .qty-btn {
-        transition: all 0.2s ease;
-    }
-    .qty-btn:hover {
-        background-color: #f1f5f9;
-    }
-    .qty-btn:active {
-        transform: scale(0.95);
-    }
-    input[type=number]::-webkit-inner-spin-button,
-    input[type=number]::-webkit-outer-spin-button {
-        -webkit-appearance: none;
-        margin: 0;
-    }
-    input[type=number] {
-        -moz-appearance: textfield;
-    }
-    .image-thumb {
-        transition: all 0.2s ease;
-        cursor: pointer;
-        border: 2px solid transparent;
-        border-radius: 12px;
-        overflow: hidden;
-        aspect-ratio: 1;
-        background-color: #f1f5f9;
-        position: relative;
-    }
-    .image-thumb:hover {
-        border-color: #3b82f6;
-    }
-    .image-thumb.active {
-        border-color: #3b82f6;
-        border-width: 2px;
-    }
-    .image-thumb.active::after {
-        content: '✓';
-        position: absolute;
-        bottom: 4px;
-        right: 4px;
-        background: #3b82f6;
-        color: white;
-        border-radius: 50%;
-        width: 20px;
-        height: 20px;
-        font-size: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-    }
-    .image-thumb img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-    .fade-in {
-        animation: fadeIn 0.3s ease-in;
-    }
-    @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-    }
-    .main-image-container {
-        position: relative;
-        overflow: hidden;
-        border-radius: 16px;
-        background-color: #f1f5f9;
-        height: 450px;
-    }
-    .main-image-container img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-    .thumbnail-grid {
-        display: grid;
-        grid-template-columns: repeat(6, 1fr);
-        gap: 8px;
-        margin-top: 12px;
-    }
-    @media (max-width: 640px) {
-        .thumbnail-grid {
-            grid-template-columns: repeat(5, 1fr);
-        }
-    }
-    .product-badge {
-        position: absolute;
-        top: 12px;
-        padding: 4px 12px;
-        border-radius: 9999px;
-        font-size: 11px;
-        font-weight: 700;
-        text-transform: uppercase;
-        color: white;
-        z-index: 10;
-    }
-    .product-badge.sale {
-        left: 12px;
-        background-color: #ef4444;
-    }
-    .product-badge.sold-out {
-        right: 12px;
-        background-color: #ef4444;
-    }
-    .variant-image-indicator {
-        position: absolute;
-        bottom: 8px;
-        left: 8px;
-        background: rgba(0,0,0,0.7);
-        color: white;
-        font-size: 9px;
-        padding: 2px 8px;
-        border-radius: 4px;
-        opacity: 0;
-        transition: opacity 0.2s;
-    }
-    .image-thumb:hover .variant-image-indicator {
-        opacity: 1;
-    }
-</style>
+<div class="product_show_layout">
 
-    <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-
-        {{-- Breadcrumb --}}
-        <nav class="mb-6 text-sm">
-            <ol class="flex items-center gap-2 text-slate-500 flex-wrap">
-                <li><a href="{{ route('customer.home') }}" class="hover:text-slate-700">Beranda</a></li>
+    {{-- Breadcrumb --}}
+    <nav class="breadcrumb">
+        <ul>
+            <li><a href="{{ route('customer.home') }}">Beranda</a></li>
+            <li>/</li>
+            <li><a href="{{ route('customer.products.index') }}">Produk</a></li>
+            <li>/</li>
+            @if ($product->category)
+                <li><a href="{{ route('customer.categories.show', $product->category) }}">{{ $product->category->name }}</a></li>
                 <li>/</li>
-                <li><a href="{{ route('customer.products.index') }}" class="hover:text-slate-700">Produk</a></li>
-                <li>/</li>
-                @if ($product->category)
-                    <li><a href="{{ route('customer.categories.show', $product->category) }}" class="hover:text-slate-700">{{ $product->category->name }}</a></li>
-                    <li>/</li>
-                @endif
-                <li class="text-slate-900 font-medium">{{ $product->name }}</li>
-            </ol>
-        </nav>
+            @endif
+            <li>{{ $product->name }}</li>
+        </ul>
+    </nav>
 
-        <div class="grid gap-8 lg:grid-cols-2">
+    <div class="product_main_layout">
 
-            {{-- ============================================ --}}
-            {{-- PRODUCT IMAGES --}}
-            {{-- ============================================ --}}
-            <div>
-                {{-- Main Image --}}
-                <div class="main-image-container">
-                    @php
-                        $mainImage = $product->images->first();
-                        $mainImageUrl = $mainImage ? Storage::url($mainImage->image) : null;
-                    @endphp
+        {{-- ============================================ --}}
+        {{-- LEFT COLUMN - GAMBAR & DESKRIPSI --}}
+        {{-- ============================================ --}}
+        <div class="product_first_container">
 
-                    @if ($mainImageUrl)
-                        <img src="{{ $mainImageUrl }}"
-                             alt="{{ $product->name }}"
-                             id="main-image"
-                             class="fade-in">
-                    @else
-                        <div class="flex h-full items-center justify-center text-6xl text-slate-300">📦</div>
-                    @endif
-
-                    @if ($product->variants->min('discount_price') && $product->variants->min('discount_price') < $product->variants->min('price'))
-                        <span class="product-badge sale">SALE!</span>
-                    @endif
-                    @if ($product->variants->sum('stock') <= 0)
-                        <span class="product-badge sold-out">HABIS</span>
-                    @endif
-                </div>
-
-                {{-- Thumbnail Images --}}
+            {{-- GAMBAR --}}
+            <div class="product_photo_grid">
                 <div class="thumbnail-grid" id="thumbnail-container">
                     @php
                         $allThumbnails = [];
@@ -259,793 +86,1298 @@
                             <img src="{{ $thumbnail['url'] }}"
                                 alt="{{ $product->name }}"
                                 loading="lazy">
-                            @if ($thumbnail['type'] === 'option')
-                                <span class="variant-image-indicator">{{ $thumbnail['label'] }}</span>
-                            @endif
                         </button>
                     @endforeach
                 </div>
-            </div>
 
-            {{-- ============================================ --}}
-            {{-- PRODUCT INFO --}}
-            {{-- ============================================ --}}
-            <div>
-
-                {{-- Category & Stock --}}
-                <div class="mb-2 flex items-center gap-2 flex-wrap">
-                    <span class="text-xs text-slate-400">{{ $product->category->name ?? 'Tanpa Kategori' }}</span>
-                    @php $totalStock = $product->variants->sum('stock'); @endphp
-                    @if ($totalStock > 0)
-                        <span class="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700">Tersedia</span>
-                    @else
-                        <span class="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-700">Habis</span>
-                    @endif
-                </div>
-
-                {{-- Product Name --}}
-                <h1 class="text-3xl font-bold text-slate-900">{{ $product->name }}</h1>
-
-                {{-- Price --}}
-                <div class="mt-4 flex items-end gap-3" id="price-display">
+                <div class="main-image-container" id="main-image-container">
                     @php
-                        $firstVariant = $product->variants->first();
-                        $minPrice = $product->variants->min('price');
-                        $maxPrice = $product->variants->max('price');
-                        $minDiscount = $product->variants->min('discount_price');
+                        $mainImage = $product->images->first();
+                        $mainImageUrl = $mainImage ? Storage::url($mainImage->image) : null;
                     @endphp
 
-                    @if ($minDiscount && $minDiscount < $minPrice)
-                        <span class="text-3xl font-bold text-red-500" id="display-price">
-                            Rp {{ number_format($minDiscount, 0, ',', '.') }}
-                        </span>
-                        @if ($minPrice != $maxPrice)
-                            <span class="text-sm text-slate-400 line-through">
-                                Rp {{ number_format($minPrice, 0, ',', '.') }} - Rp {{ number_format($maxPrice, 0, ',', '.') }}
-                            </span>
-                        @else
-                            <span class="text-sm text-slate-400 line-through">
-                                Rp {{ number_format($minPrice, 0, ',', '.') }}
-                            </span>
-                        @endif
+                    @if ($mainImageUrl)
+                        <img src="{{ $mainImageUrl }}"
+                            alt="{{ $product->name }}"
+                            id="main-image"
+                            class="fade-in">
+                        
+                        <div class="magnifier-glass" id="magnifier-glass"></div>
+                        
+                        <div class="zoom-indicator">
+                            <iconify-icon icon="mdi:magnify-plus-outline" width="16"></iconify-icon>
+                            Hover untuk zoom
+                        </div>
                     @else
-                        @if ($minPrice != $maxPrice)
-                            <span class="text-3xl font-bold text-slate-900" id="display-price">
-                                Rp {{ number_format($minPrice, 0, ',', '.') }} - Rp {{ number_format($maxPrice, 0, ',', '.') }}
-                            </span>
-                        @else
-                            <span class="text-3xl font-bold text-slate-900" id="display-price">
-                                Rp {{ number_format($minPrice, 0, ',', '.') }}
-                            </span>
-                        @endif
+                        <div class="placeholder">📦</div>
                     @endif
-
-                    <span class="text-xs text-slate-400" id="stock-display">Stok: {{ $totalStock }}</span>
                 </div>
+            </div>
 
-                {{-- Description --}}
-                <div class="mt-6 border-t border-slate-200 pt-6">
-                    <h3 class="font-semibold text-slate-900">Deskripsi Produk</h3>
-                    <div class="mt-2 text-sm text-slate-600 whitespace-pre-line leading-relaxed">
-                        {{ $product->description ?? 'Tidak ada deskripsi untuk produk ini.' }}
+            <div class="product-accordion">
+                <div class="accordion-item">
+                    <button class="accordion-header" onclick="toggleAccordion(this)">
+                        Deskripsi Produk
+                        <span class="accordion-icon open">
+                            <iconify-icon icon="tabler:chevron-down"></iconify-icon>
+                        </span>
+                    </button>
+                    <div class="accordion-body open">
+                        <div class="accordion-body-inner product-description">
+                            @if($product->description)
+                                {!! $product->description !!}
+                            @else
+                                <p style="color: #94a3b8;">Tidak ada deskripsi untuk produk ini.</p>
+                            @endif
+                        </div>
                     </div>
                 </div>
 
+                {{-- 2. DETAIL TEKNIS --}}
+                <div class="accordion-item">
+                    <button class="accordion-header" onclick="toggleAccordion(this)">
+                        Detail Teknis
+                        <span class="accordion-icon open">
+                            <iconify-icon icon="tabler:chevron-down"></iconify-icon>
+                        </span>
+                    </button>
+                    <div class="accordion-body open">
+                        <div class="accordion-body-inner">
+                            <div class="detail-item">
+                                <span class="label">Kategori</span>
+                                <span>{{ $product->category->name ?? '-' }}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="label">Berat</span>
+                                <span>{{ $firstVariant?->weight ?? '500' }} gram</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="label">Bahan</span>
+                                <span>{{ $product->material ?? 'Poliester, Diadora' }}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="label">Jenis Kelamin</span>
+                                <span>{{ $product->gender ? ucfirst($product->gender) : 'Unisex' }}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="label">Warna</span>
+                                <span>
+                                    @if(!empty($colors))
+                                        {{ implode(', ', $colors) }}
+                                    @else
+                                        -
+                                    @endif
+                                </span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="label">Ukuran</span>
+                                <span>
+                                    @if(!empty($sizes))
+                                        {{ implode(', ', $sizes) }}
+                                    @else
+                                        -
+                                    @endif
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- 3. FITUR --}}
+                <div class="accordion-item">
+                    <button class="accordion-header" onclick="toggleAccordion(this)">
+                        Fitur
+                        <span class="accordion-icon open">
+                            <iconify-icon icon="tabler:chevron-down"></iconify-icon>
+                        </span>
+                    </button>
+                    <div class="accordion-body open">
+                        <div class="accordion-body-inner">
+                            @php
+                                $features = $product->features;
+                            @endphp
+                            @if($features->isNotEmpty())
+                                <ul>
+                                    @foreach($features as $feature)
+                                        <li>
+                                            • {{ $feature->name }}
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            @else
+                                <p style="color: #94a3b8;">Belum ada fitur untuk produk ini.</p>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+
+                {{-- 4. ULASAN PEMBELI --}}
+                <div class="accordion-item">
+                    <button class="accordion-header" onclick="toggleAccordion(this)">
+                        Ulasan Pembeli
+                        <span class="accordion-icon open">
+                            <iconify-icon icon="tabler:chevron-down"></iconify-icon>
+                        </span>
+                    </button>
+                    <div class="accordion-body open">
+                        <div class="accordion-body-inner">
+                            <p style="color: #94a3b8;">Belum ada ulasan untuk produk ini.</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        {{-- ============================================ --}}
+        {{-- RIGHT COLUMN - INFO & PEMBELIAN --}}
+        {{-- ============================================ --}}
+        <div class="product_second_container">
+            <div class="product_info_layout">
+
+                {{-- Kategori --}}
+                <span class="product_category_badge">{{ $product->category->name ?? 'Tanpa Kategori' }}</span>
+
+                {{-- Nama Produk --}}
+                <h1 class="product_name">{{ $product->name }}</h1>
+
+                {{-- Harga --}}
+                @php
+                    $firstVariant = $product->variants->first();
+                    $minPrice = $product->variants->min('price');
+                    $maxPrice = $product->variants->max('price');
+                    $minDiscount = $product->variants->min('discount_price');
+                    $totalStock = $product->variants->sum('stock');
+                @endphp
+
+                <div class="product_price_display">
+                    @if ($minDiscount && $minDiscount < $minPrice)
+                        <span class="price-current discounted" id="display-price">
+                            Rp {{ number_format($minDiscount, 0, ',', '.') }}
+                        </span>
+                        <span class="price-original">
+                            Rp {{ number_format($minPrice, 0, ',', '.') }}
+                        </span>
+                    @else
+                        @if ($minPrice != $maxPrice)
+                            <span class="price-current" id="display-price">
+                                Rp {{ number_format($minPrice, 0, ',', '.') }} - Rp {{ number_format($maxPrice, 0, ',', '.') }}
+                            </span>
+                        @else
+                            <span class="price-current" id="display-price">
+                                Rp {{ number_format($minPrice, 0, ',', '.') }}
+                            </span>
+                        @endif
+                    @endif
+                </div>
+
+                <div class="product_stock_status {{ $totalStock > 0 ? 'in-stock' : 'out-of-stock' }}" id="stock-display">
+                    {{ $totalStock > 0 ? 'Stok: ' . $totalStock : 'Stok Habis' }}
+                </div>
+
                 {{-- ============================================ --}}
-                {{-- VARIANTS --}}
+                {{-- VARIAN --}}
                 {{-- ============================================ --}}
                 @if ($product->options->isNotEmpty())
-                <div class="mt-6 border-t border-slate-200 pt-6">
-                    <h3 class="font-semibold text-slate-900 mb-4">Pilih Varian</h3>
-
-                    @foreach ($product->options as $option)
-                        <div class="mb-4">
-                            <label class="block text-sm font-medium text-slate-700 mb-2">{{ $option->name }}</label>
-                            <div class="flex flex-wrap gap-2" data-option-id="{{ $option->id }}">
-                                @php $values = $option->values->sortBy('sort_order'); @endphp
-                                @foreach ($values as $value)
-                                    @php
-                                        $hasStock = false;
-                                        foreach ($product->variants as $variant) {
-                                            if ($variant->stock > 0) {
-                                                foreach ($variant->variantValues as $vv) {
-                                                    if ($vv->product_option_value_id == $value->id) {
-                                                        $hasStock = true;
-                                                        break 2;
+                    <div class="variant-section">
+                        @foreach ($product->options as $option)
+                            <div class="variant_choose_box">
+                                <div class="variant-label-wrapper">
+                                    <label class="variant-label">{{ $option->name }}</label>
+                                    
+                                    @if (strtolower($option->name) === 'ukuran' || strtolower($option->name) === 'size')
+                                        <button type="button" class="size-guide-btn" onclick="openSizeGuide()">
+                                            Panduan Ukuran
+                                        </button>
+                                    @endif
+                                </div>
+                                <div class="variant-options" data-option-id="{{ $option->id }}">
+                                    @php $values = $option->values->sortBy('sort_order'); @endphp
+                                    @foreach ($values as $value)
+                                        @php
+                                            $hasStock = false;
+                                            foreach ($product->variants as $variant) {
+                                                if ($variant->stock > 0) {
+                                                    foreach ($variant->variantValues as $vv) {
+                                                        if ($vv->product_option_value_id == $value->id) {
+                                                            $hasStock = true;
+                                                            break 2;
+                                                        }
                                                     }
                                                 }
                                             }
-                                        }
-                                    @endphp
-                                    <button type="button"
-                                            class="variant-option rounded-lg border-2 px-4 py-2 text-sm font-medium transition
-                                                {{ $loop->first && $hasStock ? 'active' : '' }}
-                                                {{ $hasStock ? 'border-slate-200 bg-white hover:border-blue-300' : 'border-slate-200 bg-slate-100 opacity-50 cursor-not-allowed' }}"
-                                            data-option-id="{{ $option->id }}"
-                                            data-value-id="{{ $value->id }}"
-                                            data-value-name="{{ $value->value }}"
-                                            {{ !$hasStock ? 'disabled' : '' }}>
-                                        {{ $value->value }}
-                                    </button>
-                                @endforeach
+                                        @endphp
+                                        <button type="button"
+                                                class="variant-option {{ $loop->first && $hasStock ? 'active' : '' }}"
+                                                data-option-id="{{ $option->id }}"
+                                                data-option-name="{{ $option->name }}"
+                                                data-value-id="{{ $value->id }}"
+                                                data-value-name="{{ $value->value }}"
+                                                data-image="{{ $value->image ? Storage::url($value->image) : '' }}"
+                                                {{ !$hasStock ? 'disabled' : '' }}>
+                                            {{ $value->value }}
+                                        </button>
+                                    @endforeach
+                                </div>
                             </div>
-                        </div>
-                    @endforeach
-                </div>
-            @endif
+                        @endforeach
+                    </div>
+                @endif
 
                 {{-- ============================================ --}}
-                {{-- ACTION BUTTONS --}}
+                {{-- TOMBOL AKSI --}}
                 {{-- ============================================ --}}
-                <div class="mt-8">
+                <div class="action-buttons">
                     <form action="{{ route('customer.cart.add') }}" method="POST" id="add-to-cart-form">
                         @csrf
                         <input type="hidden" name="product_id" value="{{ $product->id }}">
                         <input type="hidden" name="variant_id" id="selected-variant" value="{{ $firstVariant?->id }}">
                         <input type="hidden" name="variant_values" id="selected-variant-values" value="">
 
-                        <div class="flex flex-col gap-4">
-                            {{-- Quantity & Add to Cart --}}
-                            <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
-                                <div class="flex items-center border border-slate-200 rounded-xl overflow-hidden flex-shrink-0">
-                                    <button type="button" class="qty-btn px-4 py-3 text-slate-600 hover:bg-slate-100" data-action="decrease">−</button>
-                                    <input type="number" name="quantity" id="qty-input" value="1" min="1"
-                                        max="{{ $totalStock > 0 ? $totalStock : 1 }}"
-                                        class="w-16 text-center border-0 py-3 text-sm focus:ring-0">
-                                    <button type="button" class="qty-btn px-4 py-3 text-slate-600 hover:bg-slate-100" data-action="increase">+</button>
-                                </div>
-
-                                <button type="submit"
-                                        id="add-to-cart-btn"
-                                        class="flex-1 rounded-xl bg-slate-900 px-6 py-3 font-semibold text-white transition hover:bg-slate-800 disabled:bg-slate-400 disabled:cursor-not-allowed"
-                                        {{ $totalStock <= 0 ? 'disabled' : '' }}>
-                                    {{ $totalStock > 0 ? '🛒 Tambah ke Keranjang' : 'Stok Habis' }}
-                                </button>
-
-                                {{-- Wishlist Button --}}
-                                <button type="button"
-                                        id="wishlist-toggle-product"
-                                        class="rounded-xl border border-slate-200 px-4 py-3 font-semibold text-slate-700 transition hover:bg-slate-50 hover:border-red-300 flex-shrink-0"
-                                        data-product-id="{{ $product->id }}"
-                                        onclick="toggleWishlist({{ $product->id }})">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
-                                    </svg>
-                                </button>
+                        <div class="action-row">
+                            <div class="quantity-wrapper">
+                                <button type="button" class="qty-btn" data-action="decrease">−</button>
+                                <input type="number" name="quantity" id="qty-input" value="1" min="1"
+                                    max="{{ $totalStock > 0 ? $totalStock : 1 }}"
+                                    class="qty-input">
+                                <button type="button" class="qty-btn" data-action="increase">+</button>
                             </div>
 
-                            {{-- 🔥 BUY NOW BUTTON --}}
+                            <button type="submit"
+                                    id="add-to-cart-btn"
+                                    class="btn-add-to-cart"
+                                    {{ $totalStock <= 0 ? 'disabled' : '' }}>
+                                {{ $totalStock > 0 ? 'Tambah ke Keranjang' : 'Stok Habis' }}
+                            </button>
+
                             <button type="button"
-                                    id="buy-now-btn"
-                                    class="w-full rounded-xl bg-blue-600 px-6 py-3.5 font-semibold text-white transition hover:bg-blue-700 disabled:bg-slate-400 disabled:cursor-not-allowed"
-                                    {{ $totalStock <= 0 ? 'disabled' : '' }}
-                                    onclick="buyNow()">
-                                {{ $totalStock > 0 ? '⚡ Beli Sekarang' : 'Stok Habis' }}
+                                    id="wishlist-toggle-product"
+                                    class="btn-wishlist"
+                                    data-product-id="{{ $product->id }}"
+                                    onclick="toggleWishlist({{ $product->id }})">
+                                @if(in_array($product->id, array_keys(session()->get('wishlist', []))))
+                                    ❤️
+                                @else
+                                    🤍
+                                @endif
                             </button>
                         </div>
+
+                        <button type="button"
+                                id="buy-now-btn"
+                                class="btn-buy-now"
+                                {{ $totalStock <= 0 ? 'disabled' : '' }}
+                                onclick="buyNow()">
+                            {{ $totalStock > 0 ? 'Beli Sekarang' : 'Stok Habis' }}
+                        </button>
                     </form>
 
                     @if ($totalStock <= 0)
-                        <p class="mt-2 text-sm text-red-500">Maaf, produk ini sedang habis.</p>
+                        <p style="margin-top: 0.5vw; font-size: 0.7vw; color: #ef4444;">Maaf, produk ini sedang habis.</p>
                     @endif
                 </div>
 
-                {{-- Product Meta --}}
-                <div class="mt-6 border-t border-slate-200 pt-6 text-xs text-slate-400 grid grid-cols-2 gap-1">
-                    <p><span class="font-medium text-slate-600">SKU:</span> {{ $firstVariant?->sku ?? $product->sku ?? '-' }}</p>
-                    <p><span class="font-medium text-slate-600">Kategori:</span> {{ $product->category->name ?? '-' }}</p>
-                    <p><span class="font-medium text-slate-600">Berat:</span> {{ $firstVariant?->weight ?? '-' }} gram</p>
-                    <p><span class="font-medium text-slate-600">Status:</span> {{ $product->is_active ? 'Aktif' : 'Tidak Aktif' }}</p>
-                </div>
-
-                {{-- Share --}}
-                <div class="mt-4 flex items-center gap-3 text-xs text-slate-400">
+                {{-- SHARE --}}
+                <div class="share-section">
                     <span>Bagikan:</span>
-                    <button onclick="shareProduct()" class="text-slate-500 hover:text-blue-500">🔗</button>
+                    <button onclick="shareProduct()" class="share-btn">🔗</button>
                 </div>
+
             </div>
-
         </div>
-
-        {{-- ============================================ --}}
-        {{-- RELATED PRODUCTS --}}
-        {{-- ============================================ --}}
-        @if ($relatedProducts->isNotEmpty())
-            <section class="mt-16">
-                <h2 class="text-2xl font-bold text-slate-900">Produk Terkait</h2>
-                <div class="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                    @foreach ($relatedProducts as $related)
-                        <div class="group rounded-2xl border border-slate-200 bg-white p-3 transition hover:shadow-lg">
-                            <a href="{{ route('customer.products.show', $related) }}" class="block">
-                                <div class="aspect-square overflow-hidden rounded-xl bg-slate-100">
-                                    @if ($related->images->first())
-                                        <img src="{{ Storage::url($related->images->first()->image) }}"
-                                             alt="{{ $related->name }}"
-                                             loading="lazy"
-                                             class="h-full w-full object-cover transition group-hover:scale-105">
-                                    @else
-                                        <div class="flex h-full items-center justify-center text-4xl text-slate-300">📦</div>
-                                    @endif
-                                </div>
-                                <div class="mt-3">
-                                    <h3 class="text-sm font-semibold text-slate-900 line-clamp-1">{{ $related->name }}</h3>
-                                    <div class="mt-1 flex items-center justify-between">
-                                        @php
-                                            $relMinPrice = $related->variants->min('discount_price') ?? $related->variants->min('price');
-                                        @endphp
-                                        <span class="font-bold text-slate-900">Rp {{ number_format($relMinPrice, 0, ',', '.') }}</span>
-                                    </div>
-                                </div>
-                            </a>
-                        </div>
-                    @endforeach
-                </div>
-            </section>
-        @endif
 
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
+    <div id="size-guide-overlay" class="size-guide-overlay" onclick="closeSizeGuide()">
+        <div class="size-guide-modal" onclick="event.stopPropagation()">
+            <div class="size-guide-header">
+                <h3>Panduan Ukuran</h3>
+                <button type="button" class="size-guide-close" onclick="closeSizeGuide()">✕</button>
+            </div>
 
-            const productVariants = @json($variantData ?? []);
-            const productImages = @json($product->images);
+            <div class="size-guide-body">
+                <p class="size-guide-subtitle">Panduan ukuran dalam centimeter (cm).</p>
 
-            const selectedVariantInput = document.getElementById('selected-variant');
-            const variantValuesInput = document.getElementById('selected-variant-values');
-            const displayPrice = document.getElementById('display-price');
-            const stockDisplay = document.getElementById('stock-display');
-            const addToCartBtn = document.getElementById('add-to-cart-btn');
-            const qtyInput = document.getElementById('qty-input');
-            const mainImage = document.getElementById('main-image');
+                <div class="size-guide-table-wrapper">
+                    <table class="size-guide-table">
+                        <thead>
+                            <tr>
+                                <th>Ukuran</th>
+                                @php
+                                    $sizeGuides = $product->category ? $product->category->sizeGuides : collect();
+                                    $dimensionLabels = $product->category ? $product->category->dimension_labels : [];
+                                @endphp
+                                @foreach($dimensionLabels as $label)
+                                    <th>{{ $label }}</th>
+                                @endforeach
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if($sizeGuides->isNotEmpty())
+                                @foreach($sizeGuides as $guide)
+                                    <tr>
+                                        <td><strong>{{ $guide->size }}</strong></td>
+                                        @foreach($dimensionLabels as $label)
+                                            <td>{{ $guide->dimensions[$label] ?? '-' }}</td>
+                                        @endforeach
+                                    </tr>
+                                @endforeach
+                            @else
+                                {{-- Fallback hardcode --}}
+                                <tr><td><strong>S</strong></td><td>57</td><td>58</td><td>68</td></tr>
+                                <tr><td><strong>M</strong></td><td>61</td><td>59</td><td>70</td></tr>
+                                <tr><td><strong>L</strong></td><td>65</td><td>60</td><td>72</td></tr>
+                                <tr><td><strong>XL</strong></td><td>69</td><td>61</td><td>74</td></tr>
+                                <tr><td><strong>XXL</strong></td><td>73</td><td>62</td><td>76</td></tr>
+                            @endif
+                        </tbody>
+                    </table>
+                </div>
 
-            let selectedValues = {};
-            let currentVariantId = null;
+                <div class="size-guide-note">
+                    <p><strong>Tips memilih ukuran:</strong></p>
+                    <ul>
+                        <li>Ukur menggunakan meteran kain pada posisi yang tepat</li>
+                        <li>Pilih ukuran yang sesuai dengan ukuran tubuh Anda</li>
+                        <li>Jika di antara dua ukuran, pilih ukuran yang lebih besar</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
 
-            // ============================================
-            // 🔥 DETEKSI OPSI UKURAN
-            // ============================================
-            function detectSizeOption() {
-                document.querySelectorAll('[data-option-id]').forEach(function(group) {
-                    const optionLabel = group.closest('.mb-4')?.querySelector('label');
-                    if (optionLabel) {
-                        const labelText = optionLabel.textContent.toLowerCase();
-                        if (labelText === 'ukuran' || labelText === 'size') {
-                            group.dataset.isSize = 'true';
-                        }
-                    }
-                });
+    {{-- ============================================ --}}
+    {{-- RELATED PRODUCTS --}}
+    {{-- ============================================ --}}
+    @if ($relatedProducts->isNotEmpty())
+        <section class="related-products">
+            <h2>Produk Terkait</h2>
+            <div class="related-grid">
+                @foreach ($relatedProducts as $related)
+                    <a href="{{ route('customer.products.show', $related) }}" class="related-item">
+                        <div class="image-wrapper">
+                            @if ($related->images->first())
+                                <img src="{{ Storage::url($related->images->first()->image) }}"
+                                     alt="{{ $related->name }}"
+                                     loading="lazy">
+                            @else
+                                <span class="placeholder">📦</span>
+                            @endif
+                        </div>
+                        <div class="related-name">{{ $related->name }}</div>
+                        <div class="related-price">
+                            @php
+                                $relMinPrice = $related->variants->min('discount_price') ?? $related->variants->min('price');
+                            @endphp
+                            Rp {{ number_format($relMinPrice, 0, ',', '.') }}
+                        </div>
+                    </a>
+                @endforeach
+            </div>
+        </section>
+    @endif
+
+</div>
+
+{{-- ============================================ --}}
+{{-- JAVASCRIPT --}}
+{{-- ============================================ --}}
+<script>
+// ============================================
+// JAVASCRIPT LENGKAP - PRODUCT DETAIL
+// ============================================
+
+document.addEventListener('DOMContentLoaded', function() {
+
+    const productVariants = @json($variantData ?? []);
+    const productImages = @json($product->images);
+
+    const selectedVariantInput = document.getElementById('selected-variant');
+    const variantValuesInput = document.getElementById('selected-variant-values');
+    const displayPrice = document.getElementById('display-price');
+    const stockDisplay = document.getElementById('stock-display');
+    const addToCartBtn = document.getElementById('add-to-cart-btn');
+    const qtyInput = document.getElementById('qty-input');
+    const mainImage = document.getElementById('main-image');
+
+    let selectedValues = {};
+    let currentVariantId = null;
+
+    // ============================================
+    // FUNGSI BUKA POPUP
+    // ============================================
+    function openCartPopup() {
+        if (typeof loadCartPopup === 'function') {
+            loadCartPopup();
+            const popup = document.getElementById('cart-popup');
+            if (popup) {
+                popup.classList.add('active');
+                document.body.classList.add('popup-open');
             }
-            detectSizeOption();
+        }
+    }
 
-            // ============================================
-            // FIND VARIANT BY VALUES
-            // ============================================
-            function findVariantByValues(values) {
-                const selectedValueIds = Object.values(values).map(Number).sort();
-
-                return productVariants.find(function(variant) {
-                    const variantValueIds = variant.values.map(Number).sort();
-                    return JSON.stringify(variantValueIds) === JSON.stringify(selectedValueIds);
-                });
+    function openWishlistPopup() {
+        if (typeof loadWishlistPopup === 'function') {
+            loadWishlistPopup();
+            const popup = document.getElementById('wishlist-popup');
+            if (popup) {
+                popup.classList.add('active');
+                document.body.classList.add('popup-open');
             }
+        }
+    }
 
-            // ============================================
-            // FIND VARIANT BY ID
-            // ============================================
-            function findVariantById(id) {
-                return productVariants.find(function(v) { return v.id == id; });
-            }
+    window.openCartPopup = openCartPopup;
+    window.openWishlistPopup = openWishlistPopup;
 
-            // ============================================
-            // GET OPTION NAME BY VALUE ID
-            // ============================================
-            function getOptionNameByValueId(valueId) {
-                const btn = document.querySelector(`.variant-option[data-value-id="${valueId}"]`);
-                if (btn) {
-                    const group = btn.closest('[data-option-id]');
-                    const label = group?.closest('.mb-4')?.querySelector('label');
-                    return label ? label.textContent : '';
-                }
-                return '';
-            }
-
-            function checkWishlistStatus() {
-                const productId = {{ $product->id }};
-                const wishlistData = @json(session('wishlist', []));
-                
-                if (wishlistData[productId]) {
-                    const btn = document.getElementById('wishlist-toggle-product');
-                    if (btn) {
-                        btn.classList.add('text-red-500', 'border-red-300');
-                        btn.classList.remove('text-slate-700');
-                        const svg = btn.querySelector('svg');
-                        if (svg) {
-                            svg.setAttribute('fill', 'currentColor');
-                        }
-                    }
-                }
-            }
-
-            // ============================================
-            // CHANGE MAIN IMAGE
-            // ============================================
-            window.changeMainImage = function(imageUrl, element) {
-                if (!imageUrl) return;
-
-                if (mainImage) {
-                    mainImage.src = imageUrl;
-                    mainImage.classList.remove('fade-in');
-                    void mainImage.offsetWidth;
-                    mainImage.classList.add('fade-in');
-                }
-
-                if (element) {
-                    document.querySelectorAll('.image-thumb').forEach(function(thumb) {
-                        thumb.classList.remove('active');
-                    });
-                    element.classList.add('active');
-                } else {
-                    document.querySelectorAll('.image-thumb').forEach(function(thumb) {
-                        if (thumb.dataset.image === imageUrl) {
-                            thumb.classList.add('active');
-                        } else {
-                            thumb.classList.remove('active');
-                        }
-                    });
-                }
-            }
-
-            // ============================================
-            // BUY NOW FUNCTION
-            // ============================================
-            window.buyNow = function() {
-                const variantId = selectedVariantInput.value;
-                const quantity = parseInt(qtyInput.value) || 1;
-
-                if (!variantId) {
-                    alert('Pilih varian produk terlebih dahulu!');
-                    return;
-                }
-
-                const variant = productVariants.find(function(v) { return v.id == variantId; });
-                if (variant && quantity > variant.stock) {
-                    alert('Stok tidak mencukupi! Stok tersedia: ' + variant.stock);
-                    return;
-                }
-
-                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
-                const btn = document.getElementById('buy-now-btn');
-                
-                btn.disabled = true;
-                btn.textContent = 'Memproses...';
-                btn.classList.add('opacity-50');
-
-                fetch('{{ route("customer.buy-now") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken,
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        product_id: {{ $product->id }},
-                        variant_id: variantId,
-                        quantity: quantity
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        window.location.href = data.redirect || '{{ route("customer.checkout.index") }}';
-                    } else {
-                        alert(data.message || 'Gagal memproses pesanan');
-                        btn.disabled = false;
-                        btn.textContent = '⚡ Beli Sekarang';
-                        btn.classList.remove('opacity-50');
-                    }
-                })
-                .catch(() => {
-                    alert('Terjadi kesalahan. Silakan coba lagi.');
-                    btn.disabled = false;
-                    btn.textContent = '⚡ Beli Sekarang';
-                    btn.classList.remove('opacity-50');
-                });
-            };
-
-            window.toggleWishlist = function(productId) {
-                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
-                const btn = document.getElementById('wishlist-toggle-product');
-                
-                // Toggle loading state
-                btn.disabled = true;
-                btn.classList.add('opacity-50');
-                
-                fetch('{{ route("customer.wishlist.add") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken,
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({ product_id: productId })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Update UI
-                        if (data.in_wishlist) {
-                            btn.classList.add('text-red-500', 'border-red-300');
-                            btn.classList.remove('text-slate-700');
-                            const svg = btn.querySelector('svg');
-                            if (svg) {
-                                svg.setAttribute('fill', 'currentColor');
-                            }
-                            showToast('❤️ ' + data.message, 'success');
-                        } else {
-                            btn.classList.remove('text-red-500', 'border-red-300');
-                            btn.classList.add('text-slate-700');
-                            const svg = btn.querySelector('svg');
-                            if (svg) {
-                                svg.removeAttribute('fill');
-                            }
-                            showToast('💔 ' + data.message, 'info');
-                        }
-                        
-                        // Update wishlist count di navbar
-                        const wishlistCount = document.getElementById('wishlist-count');
-                        if (wishlistCount) {
-                            wishlistCount.textContent = data.count || 0;
-                        }
-                        
-                        // 🔥 BUKA POPUP WISHLIST JIKA PRODUK DITAMBAHKAN
-                        if (data.in_wishlist && typeof openWishlistPopup === 'function') {
-                            setTimeout(function() {
-                                openWishlistPopup();
-                            }, 500);
-                        }
-                    } else {
-                        showToast(data.message || 'Gagal menambahkan ke wishlist', 'error');
-                    }
-                })
-                .catch(() => {
-                    showToast('Terjadi kesalahan', 'error');
-                })
-                .finally(() => {
-                    btn.disabled = false;
-                    btn.classList.remove('opacity-50');
-                });
-            }
-
-            setTimeout(checkWishlistStatus, 400);
-
-            // ============================================
-            // CARI GAMBAR UNTUK WARNA
-            // ============================================
-            function findColorImage(variant) {
-                if (!variant) return null;
-
-                const variantValueIds = variant.values.map(Number);
-                
-                for (let i = 0; i < variantValueIds.length; i++) {
-                    const valueId = variantValueIds[i];
-                    const optionName = getOptionNameByValueId(valueId);
-                    
-                    if (optionName.toLowerCase() === 'warna' || optionName.toLowerCase() === 'color') {
-                        const thumb = document.querySelector(`.image-thumb[data-option-value-id="${valueId}"]`);
-                        if (thumb) {
-                            return thumb.dataset.image;
-                        }
-                    }
-                }
-
-                return null;
-            }
-
-            // ============================================
-            // TAMPILKAN GAMBAR BERDASARKAN VARIAN
-            // ============================================
-            function updateVariantImage(variant) {
-                if (!variant) return;
-
-                const colorImage = findColorImage(variant);
-                if (colorImage) {
-                    changeMainImage(colorImage);
-                    return;
-                }
-
-                if (variant.image) {
-                    changeMainImage(variant.image);
-                    return;
-                }
-
-                const firstImage = productImages.length > 0 ? 
-                    '{{ $product->images->first() ? Storage::url($product->images->first()->image) : '' }}' : null;
-                if (firstImage) {
-                    changeMainImage(firstImage);
+    // ============================================
+    // DETEKSI OPSI UKURAN
+    // ============================================
+    function detectSizeOption() {
+        document.querySelectorAll('.variant-options[data-option-id]').forEach(function(group) {
+            const optionLabel = group.closest('.variant-section')?.querySelector('.variant-label');
+            if (optionLabel) {
+                const labelText = optionLabel.textContent.toLowerCase();
+                if (labelText === 'ukuran' || labelText === 'size') {
+                    group.dataset.isSize = 'true';
                 }
             }
-
-            // ============================================
-            // 🔥 UPDATE ACTIVE STATE VARIAN
-            // ============================================
-            function updateVariantActiveState(variant) {
-                if (!variant) return;
-
-                const variantValueIds = variant.values.map(Number);
-
-                document.querySelectorAll('.variant-option').forEach(function(btn) {
-                    const valueId = parseInt(btn.dataset.valueId);
-                    
-                    // 🔥 HAPUS SEMUA CLASS ACTIVE TERLEBIH DAHULU
-                    btn.classList.remove('active');
-                    
-                    // 🔥 TAMBAHKAN CLASS ACTIVE HANYA JIKA VALUE ADA DI VARIAN
-                    if (variantValueIds.includes(valueId)) {
-                        btn.classList.add('active');
-                        btn.classList.remove('border-slate-200', 'bg-white');
-                    } else {
-                        btn.classList.add('border-slate-200', 'bg-white');
-                    }
-                });
-            }
-
-            // ============================================
-            // SELECT VARIANT AND UPDATE UI
-            // ============================================
-            function selectVariant(variant) {
-                if (!variant) return;
-
-                currentVariantId = variant.id;
-                selectedVariantInput.value = variant.id;
-
-                // Update price
-                var price = variant.discount_price ?? variant.price;
-                displayPrice.textContent = 'Rp ' + new Intl.NumberFormat('id-ID').format(price);
-
-                // Update stock
-                stockDisplay.textContent = 'Stok: ' + variant.stock;
-                qtyInput.max = variant.stock > 0 ? variant.stock : 1;
-
-                // Update button
-                if (variant.stock > 0) {
-                    addToCartBtn.disabled = false;
-                    addToCartBtn.textContent = 'Tambah ke Keranjang';
-                } else {
-                    addToCartBtn.disabled = true;
-                    addToCartBtn.textContent = 'Stok Habis';
-                }
-
-                // 🔥 UPDATE ACTIVE STATE SEMUA VARIAN
-                updateVariantActiveState(variant);
-            }
-
-            // ============================================
-            // HANDLE THUMBNAIL CLICK
-            // ============================================
-            window.handleThumbnailClick = function(imageUrl, optionValueId, element) {
-                changeMainImage(imageUrl, element);
-
-                if (optionValueId) {
-                    var foundVariant = null;
-                    for (var i = 0; i < productVariants.length; i++) {
-                        var variant = productVariants[i];
-                        if (variant.values.includes(parseInt(optionValueId))) {
-                            foundVariant = variant;
-                            break;
-                        }
-                    }
-
-                    if (foundVariant) {
-                        var variantValues = {};
-                        var valueIds = foundVariant.values;
-
-                        document.querySelectorAll('[data-option-id]').forEach(function(group) {
-                            var optionId = group.dataset.optionId;
-                            var optionButtons = group.querySelectorAll('.variant-option');
-                            optionButtons.forEach(function(btn) {
-                                var valId = parseInt(btn.dataset.valueId);
-                                if (valueIds.includes(valId)) {
-                                    variantValues[optionId] = valId;
-                                }
-                            });
-                        });
-
-                        selectedValues = variantValues;
-                        variantValuesInput.value = JSON.stringify(Object.values(variantValues));
-                        selectVariant(foundVariant);
-                        updateAvailableVariants();
-                    }
-                }
-            }
-
-            // ============================================
-            // UPDATE UI BERDASARKAN VARIAN TERPILIH
-            // ============================================
-            function updateVariantUI(variant) {
-                if (!variant) {
-                    displayPrice.textContent = 'Pilih varian';
-                    stockDisplay.textContent = 'Stok: 0';
-                    addToCartBtn.disabled = true;
-                    addToCartBtn.textContent = 'Pilih Varian';
-                    selectedVariantInput.value = '';
-                    return;
-                }
-
-                selectVariant(variant);
-            }
-
-            // ============================================
-            // CEK VARIAN YANG TERSEDIA
-            // ============================================
-            function updateAvailableVariants() {
-                var optionButtons = document.querySelectorAll('.variant-option');
-
-                optionButtons.forEach(function(button) {
-                    var optionId = button.dataset.optionId;
-                    var valueId = button.dataset.valueId;
-
-                    var tempValues = Object.assign({}, selectedValues);
-                    tempValues[optionId] = parseInt(valueId);
-
-                    var variant = findVariantByValues(tempValues);
-                    var isAvailable = variant && variant.stock > 0;
-
-                    if (!isAvailable) {
-                        button.classList.add('disabled');
-                        button.disabled = true;
-                    } else {
-                        button.classList.remove('disabled');
-                        button.disabled = false;
-                    }
-                });
-            }
-
-            // ============================================
-            // 🔥 HANDLE KLIK VARIAN
-            // ============================================
-            document.querySelectorAll('.variant-option').forEach(function(button) {
-                button.addEventListener('click', function() {
-                    if (this.disabled) return;
-
-                    var optionId = this.dataset.optionId;
-                    var valueId = this.dataset.valueId;
-
-                    // 🔥 HAPUS SEMUA CLASS ACTIVE DI GROUP INI
-                    var group = this.closest('[data-option-id]');
-                    group.querySelectorAll('.variant-option').forEach(function(btn) {
-                        btn.classList.remove('active');
-                    });
-
-                    // 🔥 TAMBAHKAN CLASS ACTIVE KE BUTTON YANG DIKLIK
-                    this.classList.add('active');
-                    this.classList.remove('border-slate-200', 'bg-white');
-
-                    // Simpan pilihan
-                    selectedValues[optionId] = parseInt(valueId);
-
-                    // Update variant values input
-                    var values = Object.values(selectedValues);
-                    variantValuesInput.value = JSON.stringify(values);
-
-                    // Cari varian
-                    var variant = findVariantByValues(selectedValues);
-                    
-                    if (variant) {
-                        // 🔥 UPDATE SEMUA UI
-                        selectVariant(variant);
-                        
-                        // 🔥 UPDATE GAMBAR HANYA JIKA BUKAN UKURAN
-                        var isSize = group.dataset.isSize === 'true';
-                        if (!isSize) {
-                            updateVariantImage(variant);
-                        }
-                    }
-
-                    updateAvailableVariants();
-                });
-            });
-
-            // ============================================
-            // QUANTITY BUTTONS
-            // ============================================
-            document.querySelectorAll('.qty-btn').forEach(function(button) {
-                button.addEventListener('click', function() {
-                    var value = parseInt(qtyInput.value) || 1;
-                    var max = parseInt(qtyInput.max) || 999;
-
-                    if (this.dataset.action === 'increase' && value < max) {
-                        value += 1;
-                    } else if (this.dataset.action === 'decrease' && value > 1) {
-                        value -= 1;
-                    }
-                    qtyInput.value = value;
-                });
-            });
-
-            // ============================================
-            // SHARE PRODUCT
-            // ============================================
-            window.shareProduct = function() {
-                var url = window.location.href;
-                var title = '{{ $product->name }}';
-
-                if (navigator.share) {
-                    navigator.share({ title: title, url: url }).catch(function() {});
-                } else {
-                    navigator.clipboard.writeText(url).then(function() {
-                        alert('Link produk telah disalin!');
-                    }).catch(function() {
-                        prompt('Salin link ini:', url);
-                    });
-                }
-            }
-
-            // ============================================
-            // VALIDASI ADD TO CART
-            // ============================================
-            document.getElementById('add-to-cart-form').addEventListener('submit', function(e) {
-                var variantId = selectedVariantInput.value;
-                if (!variantId) {
-                    e.preventDefault();
-                    alert('Pilih varian produk terlebih dahulu!');
-                    return;
-                }
-
-                var quantity = parseInt(qtyInput.value) || 1;
-                var variant = productVariants.find(function(v) { return v.id == variantId; });
-                if (variant && quantity > variant.stock) {
-                    e.preventDefault();
-                    alert('Stok tidak mencukupi! Stok tersedia: ' + variant.stock);
-                    return;
-                }
-            });
-
-            // ============================================
-            // INISIALISASI
-            // ============================================
-            function initVariantSelection() {
-                // Cari variant pertama yang tersedia
-                var firstVariant = productVariants.find(function(v) { return v.stock > 0; });
-                
-                if (firstVariant) {
-                    var valueIds = firstVariant.values.map(Number);
-                    
-                    // Set selected values
-                    document.querySelectorAll('[data-option-id]').forEach(function(group) {
-                        var optionButtons = group.querySelectorAll('.variant-option');
-                        optionButtons.forEach(function(btn) {
-                            var valId = parseInt(btn.dataset.valueId);
-                            if (valueIds.includes(valId)) {
-                                selectedValues[group.dataset.optionId] = valId;
-                            }
-                        });
-                    });
-
-                    variantValuesInput.value = JSON.stringify(Object.values(selectedValues));
-                    
-                    // 🔥 SELECT VARIANT (INI AKAN UPDATE ACTIVE STATE)
-                    selectVariant(firstVariant);
-                    
-                    // Set gambar
-                    updateVariantImage(firstVariant);
-                    
-                    updateAvailableVariants();
-                } else {
-                    // Jika tidak ada stok, pilih yang pertama
-                    document.querySelectorAll('[data-option-id]').forEach(function(group) {
-                        var first = group.querySelector('.variant-option');
-                        if (first) {
-                            first.click();
-                        }
-                    });
-                }
-            }
-
-            setTimeout(initVariantSelection, 300);
-
         });
-    </script>
+    }
+    detectSizeOption();
 
-    @endsection
+    // ============================================
+    // FIND VARIANT BY VALUES
+    // ============================================
+    function findVariantByValues(values) {
+        const selectedValueIds = Object.values(values).map(Number).sort();
+
+        return productVariants.find(function(variant) {
+            const variantValueIds = variant.values.map(Number).sort();
+            return JSON.stringify(variantValueIds) === JSON.stringify(selectedValueIds);
+        });
+    }
+
+    function findVariantForSelectedOption(optionId, valueId) {
+        const candidateValues = Object.assign({}, selectedValues, {
+            [optionId]: parseInt(valueId)
+        });
+
+        const exactMatch = findVariantByValues(candidateValues);
+        if (exactMatch) {
+            return exactMatch;
+        }
+
+        const targetValueId = parseInt(valueId);
+        const variantsWithValue = productVariants.filter(function(variant) {
+            return variant.values.includes(targetValueId) && variant.stock > 0;
+        });
+
+        if (variantsWithValue.length === 0) {
+            return productVariants.find(function(variant) {
+                return variant.values.includes(targetValueId);
+            }) || null;
+        }
+
+        const selectedIds = Object.values(candidateValues).map(Number);
+
+        return variantsWithValue.find(function(variant) {
+            const variantValueIds = variant.values.map(Number);
+            return selectedIds.every(function(id) {
+                return variantValueIds.includes(id);
+            });
+        }) || variantsWithValue[0];
+    }
+
+    function findVariantById(id) {
+        return productVariants.find(function(v) { return v.id == id; });
+    }
+
+    function getOptionNameByValueId(valueId) {
+        const btn = document.querySelector(`.variant-option[data-value-id="${valueId}"]`);
+        if (btn) {
+            return (btn.dataset.optionName || '').trim();
+        }
+        return '';
+    }
+
+    function getValueImageByValueId(valueId) {
+        const btn = document.querySelector(`.variant-option[data-value-id="${valueId}"]`);
+        if (btn) {
+            return btn.dataset.image || '';
+        }
+        return '';
+    }
+
+    // ============================================
+    // CHANGE MAIN IMAGE
+    // ============================================
+    window.changeMainImage = function(imageUrl, element) {
+        if (!imageUrl || !mainImage) return;
+
+        mainImage.src = imageUrl;
+        mainImage.classList.remove('fade-in');
+        void mainImage.offsetWidth;
+        mainImage.classList.add('fade-in');
+
+        // 🔥 RESET ZOOM SAAT GANTI GAMBAR
+        const container = document.getElementById('main-image-container');
+        const magnifier = document.getElementById('magnifier-glass');
+        if (container) {
+            container.classList.remove('zoomed');
+        }
+        if (magnifier) {
+            magnifier.classList.remove('active');
+            magnifier.style.backgroundImage = '';
+        }
+
+        document.querySelectorAll('.image-thumb').forEach(function(thumb) {
+            thumb.classList.remove('active');
+        });
+
+        if (element) {
+            element.classList.add('active');
+        } else {
+            document.querySelectorAll('.image-thumb').forEach(function(thumb) {
+                if (thumb.dataset.image === imageUrl) {
+                    thumb.classList.add('active');
+                }
+            });
+        }
+    };
+
+    // ============================================
+    // HANDLE THUMBNAIL CLICK
+    // ============================================
+    window.handleThumbnailClick = function(imageUrl, optionValueId, element) {
+        changeMainImage(imageUrl, element);
+
+        if (optionValueId) {
+            var foundVariant = null;
+            for (var i = 0; i < productVariants.length; i++) {
+                var variant = productVariants[i];
+                if (variant.values.includes(parseInt(optionValueId))) {
+                    foundVariant = variant;
+                    break;
+                }
+            }
+
+            if (foundVariant) {
+                var variantValues = {};
+                var valueIds = foundVariant.values;
+
+                document.querySelectorAll('.variant-options[data-option-id]').forEach(function(group) {
+                    var optionId = group.dataset.optionId;
+                    var optionButtons = group.querySelectorAll('.variant-option');
+                    optionButtons.forEach(function(btn) {
+                        var valId = parseInt(btn.dataset.valueId);
+                        if (valueIds.includes(valId)) {
+                            variantValues[optionId] = valId;
+                        }
+                    });
+                });
+
+                selectedValues = variantValues;
+                variantValuesInput.value = JSON.stringify(Object.values(variantValues));
+                selectVariant(foundVariant);
+                updateAvailableVariants();
+            }
+        }
+    }
+
+    function selectVariant(variant) {
+        if (!variant) return;
+
+        currentVariantId = variant.id;
+        selectedVariantInput.value = variant.id;
+
+        var price = variant.discount_price ?? variant.price;
+        displayPrice.textContent = 'Rp ' + new Intl.NumberFormat('id-ID').format(price);
+
+        stockDisplay.textContent = variant.stock > 0 ? 'Stok: ' + variant.stock : 'Stok Habis';
+        stockDisplay.className = 'product_stock_status ' + (variant.stock > 0 ? 'in-stock' : 'out-of-stock');
+
+        qtyInput.max = variant.stock > 0 ? variant.stock : 1;
+
+        if (variant.stock > 0) {
+            addToCartBtn.disabled = false;
+            addToCartBtn.textContent = 'Tambah ke Keranjang';
+            document.getElementById('buy-now-btn').disabled = false;
+            document.getElementById('buy-now-btn').textContent = 'Beli Sekarang';
+        } else {
+            addToCartBtn.disabled = true;
+            addToCartBtn.textContent = 'Stok Habis';
+            document.getElementById('buy-now-btn').disabled = true;
+            document.getElementById('buy-now-btn').textContent = 'Stok Habis';
+        }
+
+        updateVariantActiveState(variant);
+        updateVariantImage(variant);
+    }
+
+    function updateVariantActiveState(variant) {
+        if (!variant) return;
+
+        const variantValueIds = variant.values.map(Number);
+
+        document.querySelectorAll('.variant-option').forEach(function(btn) {
+            const valueId = parseInt(btn.dataset.valueId);
+            btn.classList.remove('active');
+
+            if (variantValueIds.includes(valueId)) {
+                btn.classList.add('active');
+            }
+        });
+    }
+
+    function updateAvailableVariants() {
+        document.querySelectorAll('.variant-option').forEach(function(button) {
+            var optionId = button.dataset.optionId;
+            var valueId = button.dataset.valueId;
+
+            var tempValues = Object.assign({}, selectedValues);
+            tempValues[optionId] = parseInt(valueId);
+
+            var variant = findVariantByValues(tempValues);
+            var isAvailable = variant && variant.stock > 0;
+
+            if (!isAvailable) {
+                button.disabled = true;
+                button.classList.add('disabled');
+            } else {
+                button.disabled = false;
+                button.classList.remove('disabled');
+            }
+        });
+    }
+
+    function findColorImage(variant) {
+        if (!variant) return null;
+
+        const variantValueIds = variant.values.map(Number);
+
+        for (let i = 0; i < variantValueIds.length; i++) {
+            const valueId = variantValueIds[i];
+            const optionName = getOptionNameByValueId(valueId);
+            
+            if (optionName.toLowerCase() === 'warna' || optionName.toLowerCase() === 'color') {
+                const thumb = document.querySelector(`.image-thumb[data-option-value-id="${valueId}"]`);
+                if (thumb) {
+                    return thumb.dataset.image;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    function updateVariantImage(variant) {
+        if (!variant) return;
+
+        const variantValueIds = variant.values.map(Number);
+        let colorImage = null;
+
+        for (let i = 0; i < variantValueIds.length; i++) {
+            const valueId = variantValueIds[i];
+            const optionName = getOptionNameByValueId(valueId);
+            const valueImage = getValueImageByValueId(valueId);
+
+            if ((optionName || '').toLowerCase() === 'warna' || (optionName || '').toLowerCase() === 'color') {
+                if (valueImage) {
+                    colorImage = valueImage;
+                    break;
+                }
+            }
+
+            const thumb = document.querySelector(`.image-thumb[data-option-value-id="${valueId}"]`);
+            if (thumb && thumb.dataset.image) {
+                colorImage = thumb.dataset.image;
+            }
+        }
+
+        if (colorImage) {
+            changeMainImage(colorImage);
+            return;
+        }
+
+        if (variant.image) {
+            changeMainImage(variant.image);
+            return;
+        }
+
+        const firstImage = productImages.length > 0 ? 
+            '{{ $product->images->first() ? Storage::url($product->images->first()->image) : '' }}' : null;
+        if (firstImage) {
+            changeMainImage(firstImage);
+        }
+    }
+
+    // ============================================
+    // SHOW TOAST
+    // ============================================
+    function showToast(message, type = 'info') {
+        if (typeof window.showToast === 'function') {
+            window.showToast(message, type);
+            return;
+        }
+
+        const toast = document.createElement('div');
+        const colors = {
+            success: '#10b981',
+            error: '#ef4444',
+            warning: '#f59e0b',
+            info: '#3b82f6'
+        };
+        toast.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            background: ${colors[type] || colors.info};
+            color: white;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 9999;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            animation: slideInRight 0.3s ease;
+            max-width: 400px;
+        `;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+
+        setTimeout(function() {
+            toast.style.animation = 'slideOutRight 0.3s ease forwards';
+            setTimeout(function() {
+                toast.remove();
+            }, 300);
+        }, 3000);
+
+        if (!document.getElementById('toast-styles')) {
+            const style = document.createElement('style');
+            style.id = 'toast-styles';
+            style.textContent = `
+                @keyframes slideInRight {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+                @keyframes slideOutRight {
+                    from { transform: translateX(0); opacity: 1; }
+                    to { transform: translateX(100%); opacity: 0; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+    }
+
+    // ============================================
+    // BUY NOW
+    // ============================================
+    window.buyNow = function() {
+        const variantId = selectedVariantInput.value;
+        const quantity = parseInt(qtyInput.value) || 1;
+
+        if (!variantId) {
+            alert('Pilih varian produk terlebih dahulu!');
+            return;
+        }
+
+        const variant = productVariants.find(function(v) { return v.id == variantId; });
+        if (variant && quantity > variant.stock) {
+            alert('Stok tidak mencukupi! Stok tersedia: ' + variant.stock);
+            return;
+        }
+
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+        const btn = document.getElementById('buy-now-btn');
+
+        btn.disabled = true;
+        btn.textContent = '⏳ Memproses...';
+
+        fetch('{{ route("customer.buy-now") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                product_id: {{ $product->id }},
+                variant_id: variantId,
+                quantity: quantity
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = data.redirect || '{{ route("customer.checkout.index") }}';
+            } else {
+                alert(data.message || 'Gagal memproses pesanan');
+                btn.disabled = false;
+                btn.textContent = 'Beli Sekarang';
+            }
+        })
+        .catch(() => {
+            alert('Terjadi kesalahan. Silakan coba lagi.');
+            btn.disabled = false;
+            btn.textContent = 'Beli Sekarang';
+        });
+    };
+
+    // ============================================
+    // TOGGLE WISHLIST
+    // ============================================
+    window.toggleWishlist = function(productId) {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+        const btn = document.getElementById('wishlist-toggle-product');
+
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+
+        fetch('{{ route("customer.wishlist.add") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ product_id: productId })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (data.in_wishlist) {
+                    btn.classList.add('active');
+                    btn.textContent = '❤️';
+                    showToast('❤️ ' + data.message, 'success');
+                    
+                    // 🔥 BUKA POPUP WISHLIST
+                    if (typeof loadWishlistPopup === 'function') {
+                        setTimeout(function() {
+                            loadWishlistPopup();
+                            const popup = document.getElementById('wishlist-popup');
+                            if (popup) {
+                                popup.classList.add('active');
+                                document.body.classList.add('popup-open');
+                            }
+                        }, 400);
+                    }
+                } else {
+                    btn.classList.remove('active');
+                    btn.textContent = '🤍';
+                    showToast('💔 ' + data.message, 'info');
+                }
+
+                // 🔥 UPDATE WISHLIST COUNT
+                const wishlistCount = document.getElementById('wishlist-count');
+                if (wishlistCount) {
+                    wishlistCount.textContent = data.count || 0;
+                    wishlistCount.style.display = (data.count > 0) ? 'inline-flex' : 'none';
+                }
+                
+                if (typeof window.updateNavbarWishlistCount === 'function') {
+                    window.updateNavbarWishlistCount(data.count);
+                }
+            } else {
+                showToast(data.message || 'Gagal menambahkan ke wishlist', 'error');
+            }
+        })
+        .catch(() => {
+            showToast('Terjadi kesalahan', 'error');
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.style.opacity = '1';
+        });
+    };
+
+    // ============================================
+    // SHARE PRODUCT
+    // ============================================
+    window.shareProduct = function() {
+        var url = window.location.href;
+        var title = '{{ $product->name }}';
+
+        if (navigator.share) {
+            navigator.share({ title: title, url: url }).catch(function() {});
+        } else {
+            navigator.clipboard.writeText(url).then(function() {
+                alert('Link produk telah disalin!');
+            }).catch(function() {
+                prompt('Salin link ini:', url);
+            });
+        }
+    };
+
+    // ============================================
+    // QUANTITY BUTTONS
+    // ============================================
+    document.querySelectorAll('.qty-btn').forEach(function(button) {
+        button.addEventListener('click', function() {
+            var value = parseInt(qtyInput.value) || 1;
+            var max = parseInt(qtyInput.max) || 999;
+
+            if (this.dataset.action === 'increase' && value < max) {
+                value += 1;
+            } else if (this.dataset.action === 'decrease' && value > 1) {
+                value -= 1;
+            }
+            qtyInput.value = value;
+        });
+    });
+
+    // ============================================
+    // HANDLE KLIK VARIAN
+    // ============================================
+    document.querySelectorAll('.variant-option').forEach(function(button) {
+        button.addEventListener('click', function() {
+            if (this.disabled) return;
+
+            var optionId = this.dataset.optionId;
+            var valueId = this.dataset.valueId;
+
+            var group = this.closest('[data-option-id]');
+            group.querySelectorAll('.variant-option').forEach(function(btn) {
+                btn.classList.remove('active');
+            });
+
+            this.classList.add('active');
+
+            selectedValues[optionId] = parseInt(valueId);
+
+            var values = Object.values(selectedValues);
+            variantValuesInput.value = JSON.stringify(values);
+
+            var variant = findVariantForSelectedOption(optionId, valueId);
+
+            if (variant) {
+                selectVariant(variant);
+                updateVariantImage(variant);
+            }
+
+            updateAvailableVariants();
+        });
+    });
+
+    // ============================================
+    // ADD TO CART - AJAX
+    // ============================================
+    document.getElementById('add-to-cart-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const variantId = selectedVariantInput.value;
+        const productId = {{ $product->id }};
+        const quantity = parseInt(qtyInput.value) || 1;
+
+        if (!variantId) {
+            alert('Pilih varian produk terlebih dahulu!');
+            return;
+        }
+
+        const variant = productVariants.find(function(v) { return v.id == variantId; });
+        if (variant && quantity > variant.stock) {
+            alert('Stok tidak mencukupi! Stok tersedia: ' + variant.stock);
+            return;
+        }
+
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+        const btn = document.getElementById('add-to-cart-btn');
+
+        btn.disabled = true;
+        btn.textContent = '⏳ Memproses...';
+
+        fetch('{{ route("customer.cart.add") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                product_id: productId,
+                variant_id: variantId,
+                quantity: quantity
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // 🔥 UPDATE CART COUNT
+                const cartCountEl = document.getElementById('cart-count');
+                if (cartCountEl) {
+                    cartCountEl.textContent = data.count || 0;
+                    cartCountEl.style.display = (data.count > 0) ? 'inline-flex' : 'none';
+                }
+                
+                if (typeof window.updateNavbarCartCount === 'function') {
+                    window.updateNavbarCartCount(data.count);
+                }
+                
+                // 🔥 BUKA POPUP CART
+                if (typeof loadCartPopup === 'function') {
+                    setTimeout(function() {
+                        loadCartPopup();
+                        const popup = document.getElementById('cart-popup');
+                        if (popup) {
+                            popup.classList.add('active');
+                            document.body.classList.add('popup-open');
+                        }
+                    }, 300);
+                }
+                
+                showToast(data.message, 'success');
+            } else {
+                showToast(data.message || 'Gagal menambahkan ke keranjang', 'error');
+            }
+        })
+        .catch(() => {
+            showToast('Terjadi kesalahan. Silakan coba lagi.', 'error');
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.textContent = 'Tambah ke Keranjang';
+        });
+    });
+
+    // ============================================
+    // CHECK WISHLIST STATUS
+    // ============================================
+    function checkWishlistStatus() {
+        const productId = {{ $product->id }};
+        const wishlistData = @json(session('wishlist', []));
+
+        if (wishlistData[productId]) {
+            const btn = document.getElementById('wishlist-toggle-product');
+            if (btn) {
+                btn.classList.add('active');
+                btn.textContent = '❤️';
+            }
+        }
+    }
+
+    // ============================================
+    // INITIALIZATION
+    // ============================================
+    function initVariantSelection() {
+        var firstVariant = productVariants.find(function(v) { return v.stock > 0; });
+
+        if (firstVariant) {
+            var valueIds = firstVariant.values.map(Number);
+
+            document.querySelectorAll('.variant-options[data-option-id]').forEach(function(group) {
+                var optionButtons = group.querySelectorAll('.variant-option');
+                optionButtons.forEach(function(btn) {
+                    var valId = parseInt(btn.dataset.valueId);
+                    if (valueIds.includes(valId)) {
+                        selectedValues[group.dataset.optionId] = valId;
+                    }
+                });
+            });
+
+            variantValuesInput.value = JSON.stringify(Object.values(selectedValues));
+            selectVariant(firstVariant);
+            updateAvailableVariants();
+        } else {
+            document.querySelectorAll('.variant-options[data-option-id]').forEach(function(group) {
+                var first = group.querySelector('.variant-option:not(:disabled)');
+                if (first) {
+                    first.click();
+                }
+            });
+        }
+    }
+
+    window.toggleAccordion = function(button) {
+        const item = button.closest('.accordion-item');
+        const body = item ? item.querySelector('.accordion-body') : button.nextElementSibling;
+        const icon = button.querySelector('.accordion-icon');
+
+        if (!body) return;
+
+        const isOpen = body.classList.contains('open');
+
+        if (isOpen) {
+            body.classList.remove('open');
+            body.style.maxHeight = '0px';
+            if (icon) {
+                icon.classList.remove('open');
+            }
+        } else {
+            body.classList.add('open');
+            body.style.maxHeight = body.scrollHeight + 'px';
+            if (icon) {
+                icon.classList.add('open');
+            }
+        }
+    };
+
+    function initAccordionState() {
+        document.querySelectorAll('.accordion-item').forEach(function(item) {
+            const body = item.querySelector('.accordion-body');
+            const icon = item.querySelector('.accordion-icon');
+
+            if (!body) return;
+
+            const isOpen = body.classList.contains('open');
+            body.style.maxHeight = isOpen ? body.scrollHeight + 'px' : '0px';
+
+            if (icon) {
+                icon.classList.toggle('open', isOpen);
+            }
+        });
+    }
+
+    (function() {
+        const container = document.getElementById('main-image-container');
+        const image = document.getElementById('main-image');
+        const magnifier = document.getElementById('magnifier-glass');
+
+        // 🔥 CEK APAKAH ELEMEN TERSEDIA
+        if (!container || !image || !magnifier) return;
+
+        let isZoomed = false;
+        container.addEventListener('mousemove', function(e) {
+            if (!isZoomed) return;
+
+            const rect = container.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            const glassSize = magnifier.offsetWidth;
+            const glassX = x - glassSize / 2;
+            const glassY = y - glassSize / 2;
+
+            const maxX = rect.width - glassSize;
+            const maxY = rect.height - glassSize;
+            
+            magnifier.style.left = Math.max(0, Math.min(glassX, maxX)) + 'px';
+            magnifier.style.top = Math.max(0, Math.min(glassY, maxY)) + 'px';
+
+            const percentX = (x / rect.width) * 100;
+            const percentY = (y / rect.height) * 100;
+
+            magnifier.style.backgroundImage = `url('${image.src}')`;
+            magnifier.style.backgroundPosition = `${percentX}% ${percentY}%`;
+            magnifier.style.backgroundSize = `${rect.width * 2}px ${rect.height * 2}px`;
+        });
+
+        // ============================================
+        // 🔥 MOUSE ENTER - AKTIFKAN ZOOM
+        // ============================================
+        container.addEventListener('mouseenter', function() {
+            isZoomed = true;
+            container.classList.add('zoomed');
+            magnifier.classList.add('active');
+        });
+
+        // ============================================
+        // 🔥 MOUSE LEAVE - NONAKTIFKAN ZOOM
+        // ============================================
+        container.addEventListener('mouseleave', function() {
+            isZoomed = false;
+            container.classList.remove('zoomed');
+            magnifier.classList.remove('active');
+            magnifier.style.backgroundImage = '';
+        });
+
+        // ============================================
+        // 🔥 KLIK UNTUK ZOOM TOGGLE (ALTERNATIF)
+        // ============================================
+        container.addEventListener('click', function() {
+            if (isZoomed) {
+                // Jika sudah zoom, nonaktifkan
+                isZoomed = false;
+                container.classList.remove('zoomed');
+                magnifier.classList.remove('active');
+                magnifier.style.backgroundImage = '';
+            } else {
+                // Aktifkan zoom
+                isZoomed = true;
+                container.classList.add('zoomed');
+                magnifier.classList.add('active');
+                
+                // Set posisi magnifier di tengah
+                const rect = container.getBoundingClientRect();
+                const glassSize = magnifier.offsetWidth;
+                const centerX = (rect.width - glassSize) / 2;
+                const centerY = (rect.height - glassSize) / 2;
+                
+                magnifier.style.left = centerX + 'px';
+                magnifier.style.top = centerY + 'px';
+                
+                // Set background image
+                magnifier.style.backgroundImage = `url('${image.src}')`;
+                magnifier.style.backgroundSize = `${rect.width * 2}px ${rect.height * 2}px`;
+                magnifier.style.backgroundPosition = `50% 50%`;
+            }
+        });
+
+        // ============================================
+        // 🔥 UPDATE SAAT GAMBAR BERUBAH
+        // ============================================
+        window.updateZoomImage = function(newImageUrl) {
+            if (!newImageUrl) return;
+            image.src = newImageUrl;
+            
+            // Reset zoom
+            isZoomed = false;
+            container.classList.remove('zoomed');
+            magnifier.classList.remove('active');
+            magnifier.style.backgroundImage = '';
+        };
+
+        // ============================================
+        // 🔥 RESIZE - UPDATE MAGNIFIER SIZE
+        // ============================================
+        window.addEventListener('resize', function() {
+            if (isZoomed) {
+                const rect = container.getBoundingClientRect();
+                magnifier.style.backgroundSize = `${rect.width * 2}px ${rect.height * 2}px`;
+            }
+        });
+
+    })();
+
+    document.addEventListener('DOMContentLoaded', function() {
+        initAccordionState();
+    });
+
+    window.addEventListener('resize', function() {
+        document.querySelectorAll('.accordion-body.open').forEach(function(body) {
+            body.style.maxHeight = body.scrollHeight + 'px';
+        });
+    });
+
+    setTimeout(initVariantSelection, 500);
+    setTimeout(checkWishlistStatus, 400);
+
+});
+
+function openSizeGuide() {
+    const overlay = document.getElementById('size-guide-overlay');
+    if (overlay) {
+        overlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+/**
+ * Tutup popup panduan ukuran
+ */
+function closeSizeGuide() {
+    const overlay = document.getElementById('size-guide-overlay');
+    if (overlay) {
+        overlay.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+}
+
+// 🔥 Tutup popup dengan tombol ESC
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeSizeGuide();
+    }
+});
+</script>
+
+@endsection

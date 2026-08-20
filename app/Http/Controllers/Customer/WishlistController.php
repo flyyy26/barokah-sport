@@ -55,6 +55,7 @@ class WishlistController extends Controller
                 'success' => true,
                 'html' => $html,
                 'count' => $count,
+                'wishlist_ids' => array_keys($wishlist), // 🔥 Kirim daftar ID wishlist
             ]);
         }
         
@@ -98,6 +99,7 @@ class WishlistController extends Controller
                 'message' => $message,
                 'count' => $count,
                 'in_wishlist' => $inWishlist,
+                'product_id' => (int) $request->product_id,
             ]);
         }
         
@@ -130,6 +132,7 @@ class WishlistController extends Controller
                 'success' => true,
                 'message' => $message,
                 'count' => $count,
+                'product_id' => (int) $request->product_id,
             ]);
         }
         
@@ -154,5 +157,19 @@ class WishlistController extends Controller
         return redirect()
             ->route('customer.wishlist.index')
             ->with('success', 'Wishlist berhasil dikosongkan.');
+    }
+
+    /**
+     * Get wishlist status for multiple products
+     */
+    public function status(Request $request)
+    {
+        $wishlist = session()->get('wishlist', []);
+        $wishlistIds = array_keys($wishlist);
+        
+        return response()->json([
+            'success' => true,
+            'wishlist_ids' => $wishlistIds,
+        ]);
     }
 }

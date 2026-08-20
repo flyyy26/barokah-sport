@@ -1,54 +1,67 @@
+{{-- customer/wishlist/popup.blade.php --}}
 @if (empty($products) || $products->isEmpty())
-    <div class="flex h-full flex-col items-center justify-center text-slate-400">
-        <svg class="h-16 w-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
-        </svg>
-        <p class="mt-4 font-medium text-slate-600">Wishlist kosong</p>
-        <p class="text-sm text-slate-400">Simpan produk favoritmu di sini!</p>
-        <a href="{{ route('customer.products.index') }}" class="mt-4 rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700">
+    <div class="popup-body-empty">
+        <iconify-icon icon="mdi:heart-outline"></iconify-icon>
+        <p>Wishlist kosong</p>
+        <p>Simpan produk favoritmu di sini!</p>
+        <a href="{{ route('customer.products.index') }}" class="btn-primary" style="margin-top: 16px; display: inline-flex;">
+            <iconify-icon icon="mdi:shopping-outline" width="18"></iconify-icon>
             Mulai Belanja
         </a>
     </div>
 @else
-    <div class="space-y-4">
+    <div class="wishlist-items">
         @foreach ($products as $product)
-            <div class="wishlist-item flex items-center gap-3 border-b border-slate-100 pb-3 last:border-0" data-product-id="{{ $product->id }}">
+            <div class="wishlist-item" data-product-id="{{ $product->id }}">
                 {{-- Image --}}
-                <div class="h-16 w-16 rounded-xl bg-slate-100 overflow-hidden shrink-0">
+                <div class="wishlist-item-image">
                     @if ($product->images->first())
                         <img src="{{ Storage::url($product->images->first()->image) }}" 
-                             alt="{{ $product->name }}" 
-                             class="h-full w-full object-cover">
+                             alt="{{ $product->name }}">
                     @else
-                        <div class="flex h-full items-center justify-center text-2xl text-slate-300">📦</div>
+                        <span class="placeholder">📦</span>
                     @endif
                 </div>
 
                 {{-- Info --}}
-                <div class="flex-1 min-w-0">
-                    <a href="{{ route('customer.products.show', $product) }}" class="text-sm font-semibold text-slate-900 hover:text-blue-600 line-clamp-1" target="_blank">
+                <div class="wishlist-item-info">
+                    <a href="{{ route('customer.products.show', $product) }}" 
+                       class="wishlist-item-name hover:text-blue-600" 
+                       target="_blank">
                         {{ $product->name }}
                     </a>
                     @if ($product->category)
-                        <p class="text-xs text-slate-400">{{ $product->category->name }}</p>
+                        <p class="wishlist-item-category">{{ $product->category->name }}</p>
                     @endif
-                    <p class="text-sm font-bold text-slate-900">
-                        Rp {{ number_format($product->price, 0, ',', '.') }}
-                    </p>
+                    {{-- 🔥 TAMPILKAN HARGA ASLI (RANGE HARGA) --}}
+                    @php
+                        $minPrice = $product->variants->min('price');
+                        $maxPrice = $product->variants->max('price');
+                        
+                        // Jika harga min dan max sama
+                        if ($minPrice == $maxPrice) {
+                            $priceDisplay = 'Rp ' . number_format($minPrice, 0, ',', '.');
+                        } else {
+                            $priceDisplay = 'Rp ' . number_format($minPrice, 0, ',', '.') . ' - Rp ' . number_format($maxPrice, 0, ',', '.');
+                        }
+                    @endphp
+                    <p class="wishlist-item-price">{{ $priceDisplay }}</p>
                 </div>
 
                 {{-- Actions --}}
-                <div class="flex flex-col gap-1">
+                <div class="wishlist-item-actions">
                     @if ($product->stock > 0)
-                        <button class="add-to-cart-wishlist px-2 py-1 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition"
+                        <button class="btn-sm btn-sm-primary add-to-cart-wishlist" 
                                 data-product-id="{{ $product->id }}"
-                                data-variant-id="{{ $product->variants->first()?->id }}">
-                            🛒
+                                data-variant-id="{{ $product->variants->first()?->id }}"
+                                title="Tambah ke Keranjang">
+                            <iconify-icon icon="mdi:cart-plus" width="16"></iconify-icon>
                         </button>
                     @endif
-                    <button class="remove-wishlist px-2 py-1 text-xs font-medium text-red-500 hover:text-red-700 transition"
-                            data-product-id="{{ $product->id }}">
-                        ✕
+                    <button class="btn-sm btn-sm-danger remove-wishlist" 
+                            data-product-id="{{ $product->id }}"
+                            title="Hapus dari Wishlist">
+                        <iconify-icon icon="mdi:heart-broken" width="16"></iconify-icon>
                     </button>
                 </div>
             </div>

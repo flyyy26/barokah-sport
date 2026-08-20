@@ -3,146 +3,370 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
-use App\Models\Product;
 use App\Models\Category;
+use App\Models\Product;
+use App\Models\ProductOptionValue;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 class CustomerProductController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Product::with(['category', 'variants', 'images'])
-            ->where('is_active', true)
-            ->whereHas('variants', function($q) {
-                $q->where('stock', '>', 0);
-            });
+        $query = Product::with(['category', 'images', 'variants'])
+            ->where('is_active', true);
 
-        // ============================================
-        // FILTER: PRODUK UNGGULAN
-        // ============================================
-        if ($request->boolean('featured')) {
-            $query->where('is_featured', true);
-        }
-
-        // Search
+        // 🔥 SEARCH
         if ($request->filled('search')) {
-            $query->where(function($q) use ($request) {
-                $q->where('name', 'like', '%' . $request->search . '%')
-                  ->orWhere('description', 'like', '%' . $request->search . '%');
-            });
+            $query->where('name', 'like', '%' . $request->search . '%');
         }
 
-        // Filter by category
+        // 🔥 CATEGORY FILTER
         if ($request->filled('category')) {
             $query->where('category_id', $request->category);
         }
 
-        // Filter by price
-        if ($request->filled('min_price')) {
-            $query->whereExists(function($q) use ($request) {
-                $q->selectRaw('1')
-                  ->from('product_variants')
-                  ->whereColumn('product_variants.product_id', 'products.id')
-                  ->where('price', '>=', $request->min_price);
-            });
+        // 🔥 GENDER FILTER
+        if ($request->filled('gender')) {
+            $query->where('gender', $request->gender);
         }
-        if ($request->filled('max_price')) {
-            $query->whereExists(function($q) use ($request) {
-                $q->selectRaw('1')
-                  ->from('product_variants')
-                  ->whereColumn('product_variants.product_id', 'products.id')
-                  ->where('price', '<=', $request->max_price);
+
+        // 🔥 SIZE FILTER (melalui variants)
+        if ($request->filled('size')) {
+            $query->whereHas('variants', function($q) use ($request) {
+                $q->whereHas('values', function($qq) use ($request) {
+                    $qq->where('value', $request->size);
+                });
             });
         }
 
-        // Sort
-        $sort = $request->sort ?? 'newest';
-        switch ($sort) {
+        // 🔥 COLOR FILTER (melalui variants)
+        if ($request->filled('color')) {
+            $query->whereHas('variants', function($q) use ($request) {
+                $q->whereHas('values', function($qq) use ($request) {
+                    $qq->where('value', $request->color);
+                });
+            });
+        }
+
+        // 🔥 PRICE RANGE FILTER
+        if ($request->filled('min_price') || $request->filled('max_price')) {
+            $query->whereHas('variants', function($q) use ($request) {
+                if ($request->filled('min_price')) {
+                    $q->where('price', '>=', (float) $request->min_price);
+                }
+                if ($request->filled('max_price')) {
+                    $q->where('price', '<=', (float) $request->max_price);
+                }
+            });
+        }
+
+        // 🔥 SORTING
+        switch ($request->sort) {
             case 'price_asc':
-                $query->orderBy(
-                    Product::select('price')
-                        ->from('product_variants')
-                        ->whereColumn('product_variants.product_id', 'products.id')
-                        ->orderBy('price')
-                        ->limit(1),
-                    'asc'
-                );
+                $query->select('products.*')
+                      ->addSelect(\DB::raw('(SELECT MIN(price) FROM product_variants WHERE product_variants.product_id = products.id) as min_price'))
+                      ->orderBy('min_price', 'asc');
                 break;
             case 'price_desc':
-                $query->orderBy(
-                    Product::select('price')
-                        ->from('product_variants')
-                        ->whereColumn('product_variants.product_id', 'products.id')
-                        ->orderBy('price', 'desc')
-                        ->limit(1),
-                    'desc'
-                );
+                $query->select('products.*')
+                      ->addSelect(\DB::raw('(SELECT MIN(price) FROM product_variants WHERE product_variants.product_id = products.id) as min_price'))
+                      ->orderBy('min_price', 'desc');
                 break;
             case 'name':
                 $query->orderBy('name', 'asc');
                 break;
+            case 'newest':
             default:
-                $query->orderBy('created_at', 'desc');
+                $query->latest('created_at');
+                break;
         }
 
-        $products = $query->paginate(12)->withQueryString();
+        $products = $query->paginate(12);
         $categories = Category::where('is_active', true)->orderBy('name')->get();
 
-        return view('customer.products.index', compact('products', 'categories'));
+        // 🔥 AMBIL DATA UNTUK FILTER
+        $genders = ['pria', 'wanita', 'unisex'];
+        
+        // Ambil semua ukuran dari option values (yang mengandung 'ukuran')
+        $sizes = ProductOptionValue::whereHas('option', function($q) {
+            $q->whereRaw('LOWER(name) LIKE ?', ['%ukuran%'])
+              ->orWhereRaw('LOWER(name) LIKE ?', ['%size%']);
+        })->distinct()->pluck('value')->toArray();
+        sort($sizes);
+
+        // Ambil semua warna dari option values (yang mengandung 'warna')
+        $colors = ProductOptionValue::whereHas('option', function($q) {
+            $q->whereRaw('LOWER(name) LIKE ?', ['%warna%'])
+              ->orWhereRaw('LOWER(name) LIKE ?', ['%color%']);
+        })->distinct()->pluck('value')->toArray();
+        sort($colors);
+
+        return view('customer.products.index', compact('products', 'categories', 'genders', 'sizes', 'colors'));
     }
 
     public function show($slug)
     {
         $product = Product::with([
             'category',
-            'images' => function ($query) {
+            'images',
+            'options' => function($query) {
                 $query->orderBy('sort_order', 'asc');
             },
-            'options' => function ($query) {
+            'options.values' => function($query) {
                 $query->orderBy('sort_order', 'asc');
             },
-            'options.values' => function ($query) {
-                $query->orderBy('sort_order', 'asc');
-            },
-            'variants' => function ($query) {
-                $query->where('is_active', true)->orderBy('price', 'asc');
+            'variants' => function($query) {
+                $query->orderBy('price', 'asc');
             },
             'variants.variantValues',
             'variants.variantValues.optionValue',
         ])->where('slug', $slug)->firstOrFail();
 
-        // 🔥 BUILD VARIANT DATA DENGAN GAMBAR DARI OPTION VALUE
-        $variantData = $product->variants->map(function ($variant) {
-            // Cari gambar dari option values (prioritas: warna)
-            $variantImage = null;
-            foreach ($variant->variantValues as $vv) {
-                if ($vv->optionValue && $vv->optionValue->image) {
-                    $variantImage = Storage::url($vv->optionValue->image);
-                    break;
-                }
-            }
-
+        // 🔥 BUILD VARIANT DATA UNTUK JAVASCRIPT
+        $variantData = $product->variants->map(function($variant) {
             return [
                 'id' => $variant->id,
-                'sku' => $variant->sku,
-                'price' => (float) $variant->price,
-                'discount_price' => $variant->discount_price ? (float) $variant->discount_price : null,
-                'stock' => (int) $variant->stock,
-                'weight' => (int) $variant->weight,
-                'image' => $variantImage, // Gunakan gambar dari option value
-                'values' => $variant->variantValues->pluck('product_option_value_id')->toArray(),
+                'price' => $variant->price,
+                'discount_price' => $variant->discount_price,
+                'stock' => $variant->stock,
+                'weight' => $variant->weight,
+                'image' => $variant->image ? Storage::url($variant->image) : null,
+                'values' => $variant->variantValues->pluck('product_option_value_id')->map(function($id) {
+                    return (int) $id;
+                })->toArray(),
             ];
-        });
+        })->toArray();
 
+        $firstVariant = $product->variants->first();
+
+        // 🔥 AMBIL DATA WARNA DAN UKURAN DARI OPSI PRODUK
+        $colors = [];
+        $sizes = [];
+        
+        foreach ($product->options as $option) {
+            if (strtolower($option->name) === 'warna' || strtolower($option->name) === 'color') {
+                $colors = $option->values->pluck('value')->toArray();
+            }
+            if (strtolower($option->name) === 'ukuran' || strtolower($option->name) === 'size') {
+                $sizes = $option->values->pluck('value')->toArray();
+            }
+        }
+
+        // RELATED PRODUCTS
         $relatedProducts = Product::with(['images', 'variants'])
-            ->where('category_id', $product->category_id)
-            ->where('id', '!=', $product->id)
             ->where('is_active', true)
-            ->limit(8)
+            ->where('id', '!=', $product->id)
+            ->when($product->category_id, function($query) use ($product) {
+                return $query->where('category_id', $product->category_id);
+            })
+            ->limit(5)
             ->get();
 
-        return view('customer.products.show', compact('product', 'relatedProducts', 'variantData'));
+        return view('customer.products.show', compact(
+            'product', 
+            'variantData', 
+            'firstVariant', 
+            'relatedProducts',
+            'colors',
+            'sizes'
+        ));
+    }
+
+    public function latest(Request $request)
+    {
+        $query = Product::with(['category', 'images', 'variants'])
+            ->where('is_active', true)
+            // 🔥 FILTER PRODUK 1 BULAN TERAKHIR
+            ->where('created_at', '>=', now()->subMonth());
+
+        // 🔥 SEARCH
+        if ($request->filled('search')) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+
+        // 🔥 CATEGORY FILTER
+        if ($request->filled('category')) {
+            $query->where('category_id', $request->category);
+        }
+
+        // 🔥 GENDER FILTER
+        if ($request->filled('gender')) {
+            $query->where('gender', $request->gender);
+        }
+
+        // 🔥 SIZE FILTER (melalui variants)
+        if ($request->filled('size')) {
+            $query->whereHas('variants', function($q) use ($request) {
+                $q->whereHas('values', function($qq) use ($request) {
+                    $qq->where('value', $request->size);
+                });
+            });
+        }
+
+        // 🔥 COLOR FILTER (melalui variants)
+        if ($request->filled('color')) {
+            $query->whereHas('variants', function($q) use ($request) {
+                $q->whereHas('values', function($qq) use ($request) {
+                    $qq->where('value', $request->color);
+                });
+            });
+        }
+
+        // 🔥 PRICE RANGE FILTER
+        if ($request->filled('min_price') || $request->filled('max_price')) {
+            $query->whereHas('variants', function($q) use ($request) {
+                if ($request->filled('min_price')) {
+                    $q->where('price', '>=', (float) $request->min_price);
+                }
+                if ($request->filled('max_price')) {
+                    $q->where('price', '<=', (float) $request->max_price);
+                }
+            });
+        }
+
+        // 🔥 SORTING
+        switch ($request->sort) {
+            case 'price_asc':
+                $query->select('products.*')
+                      ->addSelect(DB::raw('(SELECT MIN(price) FROM product_variants WHERE product_variants.product_id = products.id) as min_price'))
+                      ->orderBy('min_price', 'asc');
+                break;
+            case 'price_desc':
+                $query->select('products.*')
+                      ->addSelect(DB::raw('(SELECT MIN(price) FROM product_variants WHERE product_variants.product_id = products.id) as min_price'))
+                      ->orderBy('min_price', 'desc');
+                break;
+            case 'name':
+                $query->orderBy('name', 'asc');
+                break;
+            case 'newest':
+            default:
+                $query->latest('created_at');
+                break;
+        }
+
+        $products = $query->paginate(12);
+        $categories = Category::where('is_active', true)->orderBy('name')->get();
+
+        // 🔥 AMBIL DATA UNTUK FILTER
+        $genders = ['pria', 'wanita', 'unisex'];
+        
+        $sizes = ProductOptionValue::whereHas('option', function($q) {
+            $q->whereRaw('LOWER(name) LIKE ?', ['%ukuran%'])
+              ->orWhereRaw('LOWER(name) LIKE ?', ['%size%']);
+        })->distinct()->pluck('value')->toArray();
+        sort($sizes);
+
+        $colors = ProductOptionValue::whereHas('option', function($q) {
+            $q->whereRaw('LOWER(name) LIKE ?', ['%warna%'])
+              ->orWhereRaw('LOWER(name) LIKE ?', ['%color%']);
+        })->distinct()->pluck('value')->toArray();
+        sort($colors);
+
+        return view('customer.products.latest', compact('products', 'categories', 'genders', 'sizes', 'colors'));
+    }
+
+    public function promo(Request $request)
+    {
+        $query = Product::with(['category', 'images', 'variants'])
+            ->where('is_active', true)
+            // 🔥 FILTER PRODUK YANG MEMILIKI DISKON
+            ->whereHas('variants', function($q) {
+                $q->whereNotNull('discount_price')
+                  ->whereColumn('discount_price', '<', 'price');
+            });
+
+        // 🔥 SEARCH
+        if ($request->filled('search')) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+
+        // 🔥 CATEGORY FILTER
+        if ($request->filled('category')) {
+            $query->where('category_id', $request->category);
+        }
+
+        // 🔥 GENDER FILTER
+        if ($request->filled('gender')) {
+            $query->where('gender', $request->gender);
+        }
+
+        // 🔥 SIZE FILTER (melalui variants)
+        if ($request->filled('size')) {
+            $query->whereHas('variants', function($q) use ($request) {
+                $q->whereHas('values', function($qq) use ($request) {
+                    $qq->where('value', $request->size);
+                });
+            });
+        }
+
+        // 🔥 COLOR FILTER (melalui variants)
+        if ($request->filled('color')) {
+            $query->whereHas('variants', function($q) use ($request) {
+                $q->whereHas('values', function($qq) use ($request) {
+                    $qq->where('value', $request->color);
+                });
+            });
+        }
+
+        // 🔥 PRICE RANGE FILTER
+        if ($request->filled('min_price') || $request->filled('max_price')) {
+            $query->whereHas('variants', function($q) use ($request) {
+                if ($request->filled('min_price')) {
+                    $q->where('price', '>=', (float) $request->min_price);
+                }
+                if ($request->filled('max_price')) {
+                    $q->where('price', '<=', (float) $request->max_price);
+                }
+            });
+        }
+
+        // 🔥 SORTING
+        switch ($request->sort) {
+            case 'discount_desc':
+                // Urutkan berdasarkan diskon terbesar
+                $query->select('products.*')
+                      ->addSelect(DB::raw('(SELECT MAX((price - discount_price) / price * 100) FROM product_variants WHERE product_variants.product_id = products.id AND discount_price IS NOT NULL) as max_discount'))
+                      ->orderBy('max_discount', 'desc');
+                break;
+            case 'price_asc':
+                $query->select('products.*')
+                      ->addSelect(DB::raw('(SELECT MIN(price) FROM product_variants WHERE product_variants.product_id = products.id) as min_price'))
+                      ->orderBy('min_price', 'asc');
+                break;
+            case 'price_desc':
+                $query->select('products.*')
+                      ->addSelect(DB::raw('(SELECT MIN(price) FROM product_variants WHERE product_variants.product_id = products.id) as min_price'))
+                      ->orderBy('min_price', 'desc');
+                break;
+            case 'name':
+                $query->orderBy('name', 'asc');
+                break;
+            case 'newest':
+            default:
+                $query->latest('created_at');
+                break;
+        }
+
+        $products = $query->paginate(12);
+        $categories = Category::where('is_active', true)->orderBy('name')->get();
+
+        // 🔥 AMBIL DATA UNTUK FILTER
+        $genders = ['pria', 'wanita', 'unisex'];
+        
+        $sizes = ProductOptionValue::whereHas('option', function($q) {
+            $q->whereRaw('LOWER(name) LIKE ?', ['%ukuran%'])
+              ->orWhereRaw('LOWER(name) LIKE ?', ['%size%']);
+        })->distinct()->pluck('value')->toArray();
+        sort($sizes);
+
+        $colors = ProductOptionValue::whereHas('option', function($q) {
+            $q->whereRaw('LOWER(name) LIKE ?', ['%warna%'])
+              ->orWhereRaw('LOWER(name) LIKE ?', ['%color%']);
+        })->distinct()->pluck('value')->toArray();
+        sort($colors);
+
+        return view('customer.products.promo', compact('products', 'categories', 'genders', 'sizes', 'colors'));
     }
 }

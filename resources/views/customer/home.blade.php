@@ -6,86 +6,66 @@
 <div class="banner_slide">
     <div class="swiper mySwiper">
         <div class="swiper-wrapper">
-            <div class="swiper-slide">
-                <div class="slide_box" style="background-image:url(../images/slide_img.webp); background-position:center; background-size:cover;">
-                    <h2>Performa dan Gaya dalam <span>Satu</span> Pilihan.</h2>
-                    <p>Tampil sporty dengan jaket dan celana olahraga yang nyaman, stylish, dan siap menemani setiap aktivitas.</p>
-                    <div class="banner_button">
-                        <a href="#">
-                            <button>Belanja Sekarang</button>
-                        </a>
-                        <a href="#">
-                            <button>Hubungi Kami</button>
-                        </a>
+            @forelse($banners as $banner)
+                <div class="swiper-slide">
+                    <div class="slide_box" 
+                         style="background-image:url('{{ Storage::url($banner->image) }}'); 
+                                background-position:center; 
+                                background-size:cover;">
+                        
+                        @if($banner->title)
+                            <h2>{{ $banner->title }}</h2>
+                        @endif
+                        
+                        @if($banner->subtitle)
+                            <p>{{ $banner->subtitle }}</p>
+                        @endif
+                        
+                        @if($banner->button_text && $banner->button_url)
+                            <div class="banner_button">
+                                <a href="{{ $banner->button_url }}">
+                                    <button>{{ $banner->button_text }}</button>
+                                </a>
+                            </div>
+                        @endif
                     </div>
                 </div>
-            </div>
-            <div class="swiper-slide">
-                <div class="slide_box" style="background-image:url(../images/slide_img_2.png); background-position:center; background-size:cover;">
-                    <h2>Nyaman <span>Maksimal</span>, Bergerak Bebas.</h2>
-                    <p>Dirancang dengan material ringan dan fleksibel, paduan sempurna untuk performa latihan terbaik dan gaya kasual harianmu.</p>
-                    <div class="banner_button">
-                        <a href="#">
-                            <button>Belanja Sekarang</button>
-                        </a>
-                        <a href="#">
-                            <button>Hubungi Kami</button>
-                        </a>
+            @empty
+                {{-- Default banner jika tidak ada data --}}
+                <div class="swiper-slide">
+                    <div class="slide_box" style="background-image:url({{ asset('images/slide_img.webp') }}); background-position:center; background-size:cover;">
+                        <h2>Performa dan Gaya dalam <span>Satu</span> Pilihan.</h2>
+                        <p>Tampil sporty dengan jaket dan celana olahraga yang nyaman, stylish, dan siap menemani setiap aktivitas.</p>
+                        <div class="banner_button">
+                            <a href="{{ route('customer.products.index') }}">
+                                <button>Belanja Sekarang</button>
+                            </a>
+                            <a href="https://api.whatsapp.com/send?phone=6287866291056" target="_blank">
+                                <button>Hubungi Kami</button>
+                            </a>
+                        </div>
                     </div>
                 </div>
-            </div>
+                <div class="swiper-slide">
+                    <div class="slide_box" style="background-image:url({{ asset('images/slide_img_2.png') }}); background-position:center; background-size:cover;">
+                        <h2>Nyaman <span>Maksimal</span>, Bergerak Bebas.</h2>
+                        <p>Dirancang dengan material ringan dan fleksibel, paduan sempurna untuk performa latihan terbaik dan gaya kasual harianmu.</p>
+                        <div class="banner_button">
+                            <a href="{{ route('customer.products.index') }}">
+                                <button>Belanja Sekarang</button>
+                            </a>
+                            <a href="https://api.whatsapp.com/send?phone=6287866291056" target="_blank">
+                                <button>Hubungi Kami</button>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            @endforelse
         </div>
         <div class="swiper-button-next"></div>
         <div class="swiper-button-prev"></div>
     </div>
 </div>
-        <!-- @if ($banners->isNotEmpty())
-            <section class="relative overflow-hidden bg-slate-900">
-                <div class="relative mx-auto max-w-7xl">
-                    @foreach ($banners as $index => $banner)
-                        <div class="banner-slide relative h-[300px] sm:h-[400px] lg:h-[500px] {{ $index === 0 ? 'opacity-100' : 'opacity-0 absolute inset-0' }}" 
-                            data-index="{{ $index }}">
-                            {{-- Cek apakah image ada --}}
-                            @if ($banner->image && Storage::disk('public')->exists($banner->image))
-                                <img src="{{ Storage::url($banner->image) }}" 
-                                    alt="{{ $banner->title }}" 
-                                    class="h-full w-full object-cover">
-                            @else
-                                <div class="flex h-full w-full items-center justify-center bg-slate-800 text-4xl text-slate-600">
-                                    🖼️ No Image
-                                </div>
-                            @endif
-                            <div class="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent">
-                                <div class="flex h-full items-center px-6 sm:px-12 lg:px-16">
-                                    <div class="max-w-xl text-white">
-                                        @if ($banner->title)
-                                            <h2 class="text-2xl font-bold sm:text-4xl lg:text-5xl">{{ $banner->title }}</h2>
-                                        @endif
-                                        @if ($banner->subtitle)
-                                            <p class="mt-2 text-sm text-white/80 sm:text-base">{{ $banner->subtitle }}</p>
-                                        @endif
-                                        @if ($banner->button_text && $banner->button_url)
-                                            <a href="{{ $banner->button_url }}" 
-                                            class="mt-4 inline-block rounded-lg bg-white px-6 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-100">
-                                                {{ $banner->button_text }}
-                                            </a>
-                                        @endif
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    @endforeach
-                    @if ($banners->count() > 1)
-                        <div class="banner-dots absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 gap-2">
-                            @foreach ($banners as $index => $banner)
-                                <button class="h-2 w-2 rounded-full transition-all {{ $index === 0 ? 'w-6 bg-white' : 'bg-white/50 hover:bg-white/70' }}" 
-                                        data-slide="{{ $index }}"></button>
-                            @endforeach
-                        </div>
-                    @endif
-                </div>
-            </section>
-        @endif -->
 
 <div class="keunggulan_layout">
     <div class="keunggulan_box_layout">
@@ -119,455 +99,617 @@
 </div>
 
 <div class="kategori_layout">
-    <div class="kategori_box_layout" style="background-image:url({{ asset('images/jaket_category_img.png') }});">
-        <h3>Jaket</h3>
-        <a href="#">BELI SEKARANG</a>
-    </div>
-    <div class="kategori_box_layout" style="background-image:url({{ asset('images/trening_category_img.png') }});">
-        <h3>Trening</h3>
-        <a href="#">BELI SEKARANG</a>
-    </div>
-    <div class="kategori_box_layout" style="background-image:url({{ asset('images/oneset_category_img.png') }});">
-        <h3>Oneset</h3>
-        <a href="#">BELI SEKARANG</a>
-    </div>
-    <div class="kategori_box_layout" style="background-image:url({{ asset('images/rompi_category_img.png') }});">
-        <h3>Rompi</h3>
-        <a href="#">BELI SEKARANG</a>
-    </div>
-    <div class="kategori_box_layout" style="background-image:url({{ asset('images/cargo_category_img.png') }});">
-        <h3>Cargo</h3>
-        <a href="#">BELI SEKARANG</a>
+    <div class="swiper categoriesSwiper">
+        <div class="swiper-wrapper">
+            @foreach($categories as $category)
+            <div class="swiper-slide">
+                <div class="kategori_box_layout" 
+                    style="background-image:url('{{ $category->image ? Storage::url($category->image) : asset('images/default_category.png') }}'); 
+                            background-size:100% 100%; 
+                            background-position:center; cursor:pointer;"
+                    onclick="window.location.href='{{ route('customer.products.index', ['category' => $category->id]) }}'">
+                    <h3>{{ $category->name }}</h3>
+                    <a href="{{ route('customer.products.index', ['category' => $category->id]) }}" 
+                       onclick="event.stopPropagation();">
+                       BELI SEKARANG
+                    </a>
+                </div>
+            </div>
+            @endforeach
+        </div>
+        <div class="swiper-button-next"></div>
+        <div class="swiper-button-prev"></div>
     </div>
 </div>
 
 <div class="product_layout">
     <div class="heading_product_layout">
         <h3>KOLEKSI TERBARU</h3>
-        <a href="">LIHAT SEMUA</a>
+        <a href="{{ route('customer.products.latest') }}">LIHAT SEMUA</a>
     </div>
     <div class="product_layout_grid">
-        <div class="product_layout_box">
+        @forelse($latestProducts as $product)
+        <div class="product_layout_box" data-product-id="{{ $product->id }}">
             <div class="product_layout_img">
-                <a href="#">
-                    <img src="{{ asset('images/product_dummy.png') }}" alt="">
+                <a href="{{ route('customer.products.show', $product->slug) }}">
+                    <img src="{{ $product->images->first() ? Storage::url($product->images->first()->image) : asset('images/product_dummy.png') }}" 
+                        alt="{{ $product->name }}">
                 </a>
+                @if($product->isOutOfStock())
+                <span class="product_badge out-of-stock">HABIS</span>
+                @endif
             </div>
             <div class="product_layout_content">
-                <h5>ONESET SPORT</h5>
+                <h5>{{ $product->name }}</h5>
                 <div class="product_layout_price">
-                    <p>Rp. 110.000</p>
+                    @php
+                        // Harga efektif (diskon jika ada)
+                        $prices = [];
+                        foreach ($product->variants as $variant) {
+                            $prices[] = $variant->discount_price ? (float) $variant->discount_price : (float) $variant->price;
+                        }
+                        $minEffective = min($prices);
+                        $maxEffective = max($prices);
+                        
+                        // Harga asli
+                        $minPrice = $product->variants->min('price');
+                        $maxPrice = $product->variants->max('price');
+                        
+                        $hasDiscount = $product->variants->contains(function($v) {
+                            return $v->discount_price !== null && $v->discount_price < $v->price;
+                        });
+                    @endphp
+                    
+                    @if($hasDiscount)
+                        <div class="product_layout_price_box">
+                            @if($minEffective == $maxEffective)
+                                <p class="price-discount">Rp {{ number_format($minEffective, 0, ',', '.') }}</p>
+                            @else
+                                <p class="price-discount">Rp {{ number_format($minEffective, 0, ',', '.') }} - Rp {{ number_format($maxEffective, 0, ',', '.') }}</p>
+                            @endif
+                            @if($minPrice == $maxPrice)
+                                <span class="price-original">Rp {{ number_format($minPrice, 0, ',', '.') }}</span>
+                            @else
+                                <span class="price-original">Rp {{ number_format($minPrice, 0, ',', '.') }} - Rp {{ number_format($maxPrice, 0, ',', '.') }}</span>
+                            @endif
+                        </div>
+                    @else
+                        @if($minEffective == $maxEffective)
+                            <p>Rp {{ number_format($minEffective, 0, ',', '.') }}</p>
+                        @else
+                            <p>Rp {{ number_format($minEffective, 0, ',', '.') }} - Rp {{ number_format($maxEffective, 0, ',', '.') }}</p>
+                        @endif
+                    @endif
                 </div>
             </div>
             <div class="product_layout_button">
-                <a href="#">
-                    <button class="buy_now_btn">BELI SEKARANG</button>
-                </a>
-                <button class="add_to_cart_btn">
+                <button class="buy_now_btn {{ $product->isOutOfStock() ? 'disabled' : '' }}" 
+                        onclick="{{ $product->isOutOfStock() ? '' : 'buyNow(' . $product->id . ')' }}"
+                        {{ $product->isOutOfStock() ? 'disabled' : '' }}>
+                    {{ $product->isOutOfStock() ? 'HABIS' : 'BELI SEKARANG' }}
+                </button>
+                <button class="add_to_cart_btn {{ $product->isOutOfStock() ? 'disabled' : '' }}" 
+                        onclick="{{ $product->isOutOfStock() ? '' : 'addToCart(' . $product->id . ')' }}"
+                        {{ $product->isOutOfStock() ? 'disabled' : '' }}>
                     <iconify-icon icon="solar:cart-linear"></iconify-icon>
                 </button>
-                <button class="add_to_wishlist_btn">
-                    <iconify-icon icon="solar:heart-linear"></iconify-icon>
+                <button class="add_to_wishlist_btn" 
+                        data-product-id="{{ $product->id }}"
+                        data-in-wishlist="{{ in_array($product->id, array_keys(session()->get('wishlist', []))) ? 'true' : 'false' }}"
+                        onclick="addToWishlist({{ $product->id }})">
+                    @if(in_array($product->id, array_keys(session()->get('wishlist', []))))
+                        <iconify-icon icon="solar:heart-bold" style="color: #ef4444;"></iconify-icon>
+                    @else
+                        <iconify-icon icon="solar:heart-linear"></iconify-icon>
+                    @endif
                 </button>
             </div>
         </div>
-        <div class="product_layout_box">
-            <div class="product_layout_img">
-                <a href="#">
-                    <img src="{{ asset('images/product_dummy.png') }}" alt="">
-                </a>
-            </div>
-            <div class="product_layout_content">
-                <h5>ONESET SPORT</h5>
-                <div class="product_layout_price">
-                    <p>Rp. 110.000</p>
-                </div>
-            </div>
-            <div class="product_layout_button">
-                <a href="#">
-                    <button class="buy_now_btn">BELI SEKARANG</button>
-                </a>
-                <button class="add_to_cart_btn">
-                    <iconify-icon icon="solar:cart-linear"></iconify-icon>
-                </button>
-                <button class="add_to_wishlist_btn">
-                    <iconify-icon icon="solar:heart-linear"></iconify-icon>
-                </button>
-            </div>
+        @empty
+        <div class="empty_state">
+            <p>Belum ada produk terbaru</p>
         </div>
-        <div class="product_layout_box">
-            <div class="product_layout_img">
-                <a href="#">
-                    <img src="{{ asset('images/product_dummy.png') }}" alt="">
-                </a>
-            </div>
-            <div class="product_layout_content">
-                <h5>ONESET SPORT</h5>
-                <div class="product_layout_price">
-                    <p>Rp. 110.000</p>
-                </div>
-            </div>
-            <div class="product_layout_button">
-                <a href="#">
-                    <button class="buy_now_btn">BELI SEKARANG</button>
-                </a>
-                <button class="add_to_cart_btn">
-                    <iconify-icon icon="solar:cart-linear"></iconify-icon>
-                </button>
-                <button class="add_to_wishlist_btn">
-                    <iconify-icon icon="solar:heart-linear"></iconify-icon>
-                </button>
-            </div>
-        </div>
-        <div class="product_layout_box">
-            <div class="product_layout_img">
-                <a href="#">
-                    <img src="{{ asset('images/product_dummy.png') }}" alt="">
-                </a>
-            </div>
-            <div class="product_layout_content">
-                <h5>ONESET SPORT</h5>
-                <div class="product_layout_price">
-                    <p>Rp. 110.000</p>
-                </div>
-            </div>
-            <div class="product_layout_button">
-                <a href="#">
-                    <button class="buy_now_btn">BELI SEKARANG</button>
-                </a>
-                <button class="add_to_cart_btn">
-                    <iconify-icon icon="solar:cart-linear"></iconify-icon>
-                </button>
-                <button class="add_to_wishlist_btn">
-                    <iconify-icon icon="solar:heart-linear"></iconify-icon>
-                </button>
-            </div>
-        </div>
-        <div class="product_layout_box">
-            <div class="product_layout_img">
-                <a href="#">
-                    <img src="{{ asset('images/product_dummy.png') }}" alt="">
-                </a>
-            </div>
-            <div class="product_layout_content">
-                <h5>ONESET SPORT</h5>
-                <div class="product_layout_price">
-                    <p>Rp. 110.000</p>
-                </div>
-            </div>
-            <div class="product_layout_button">
-                <a href="#">
-                    <button class="buy_now_btn">BELI SEKARANG</button>
-                </a>
-                <button class="add_to_cart_btn">
-                    <iconify-icon icon="solar:cart-linear"></iconify-icon>
-                </button>
-                <button class="add_to_wishlist_btn">
-                    <iconify-icon icon="solar:heart-linear"></iconify-icon>
-                </button>
-            </div>
-        </div>
+        @endforelse
     </div>
 </div>
 
 <div class="product_layout">
     <div class="heading_product_layout">
         <h3>PRODUK UNGGULAN</h3>
-        <a href="">LIHAT SEMUA</a>
+        <a href="{{ route('customer.products.index') }}">LIHAT SEMUA</a>
     </div>
     <div class="product_layout_grid">
-        <div class="product_layout_box">
+        @forelse($featuredProducts as $product)
+        <div class="product_layout_box" data-product-id="{{ $product->id }}">
             <div class="product_layout_img">
-                <a href="#">
-                    <img src="{{ asset('images/product_dummy.png') }}" alt="">
+                <a href="{{ route('customer.products.show', $product->slug) }}">
+                    <img src="{{ $product->images->first() ? Storage::url($product->images->first()->image) : asset('images/product_dummy.png') }}" 
+                        alt="{{ $product->name }}">
                 </a>
             </div>
             <div class="product_layout_content">
-                <h5>ONESET SPORT</h5>
+                <h5>{{ $product->name }}</h5>
                 <div class="product_layout_price">
-                    <p>Rp. 110.000</p>
+                    @php
+                        // Harga efektif (diskon jika ada)
+                        $prices = [];
+                        foreach ($product->variants as $variant) {
+                            $prices[] = $variant->discount_price ? (float) $variant->discount_price : (float) $variant->price;
+                        }
+                        $minEffective = min($prices);
+                        $maxEffective = max($prices);
+                        
+                        // Harga asli
+                        $minPrice = $product->variants->min('price');
+                        $maxPrice = $product->variants->max('price');
+                        
+                        $hasDiscount = $product->variants->contains(function($v) {
+                            return $v->discount_price !== null && $v->discount_price < $v->price;
+                        });
+                    @endphp
+                    
+                    @if($hasDiscount)
+                        <div class="product_layout_price_box">
+                            @if($minEffective == $maxEffective)
+                                <p class="price-discount">Rp {{ number_format($minEffective, 0, ',', '.') }}</p>
+                            @else
+                                <p class="price-discount">Rp {{ number_format($minEffective, 0, ',', '.') }} - Rp {{ number_format($maxEffective, 0, ',', '.') }}</p>
+                            @endif
+                            @if($minPrice == $maxPrice)
+                                <span class="price-original">Rp {{ number_format($minPrice, 0, ',', '.') }}</span>
+                            @else
+                                <span class="price-original">Rp {{ number_format($minPrice, 0, ',', '.') }} - Rp {{ number_format($maxPrice, 0, ',', '.') }}</span>
+                            @endif
+                        </div>
+                    @else
+                        @if($minEffective == $maxEffective)
+                            <p>Rp {{ number_format($minEffective, 0, ',', '.') }}</p>
+                        @else
+                            <p>Rp {{ number_format($minEffective, 0, ',', '.') }} - Rp {{ number_format($maxEffective, 0, ',', '.') }}</p>
+                        @endif
+                    @endif
                 </div>
             </div>
             <div class="product_layout_button">
-                <a href="#">
-                    <button class="buy_now_btn">BELI SEKARANG</button>
-                </a>
-                <button class="add_to_cart_btn">
+                <button class="buy_now_btn" onclick="buyNow({{ $product->id }})">BELI SEKARANG</button>
+                <button class="add_to_cart_btn" onclick="addToCart({{ $product->id }})">
                     <iconify-icon icon="solar:cart-linear"></iconify-icon>
                 </button>
-                <button class="add_to_wishlist_btn">
-                    <iconify-icon icon="solar:heart-linear"></iconify-icon>
+                <button class="add_to_wishlist_btn" 
+                        data-product-id="{{ $product->id }}"
+                        data-in-wishlist="{{ in_array($product->id, array_keys(session()->get('wishlist', []))) ? 'true' : 'false' }}"
+                        onclick="addToWishlist({{ $product->id }})">
+                    @if(in_array($product->id, array_keys(session()->get('wishlist', []))))
+                        <iconify-icon icon="solar:heart-bold" style="color: #ef4444;"></iconify-icon>
+                    @else
+                        <iconify-icon icon="solar:heart-linear"></iconify-icon>
+                    @endif
                 </button>
             </div>
         </div>
-        <div class="product_layout_box">
+        @empty
+        <div class="empty_state">
+            <p>Belum ada produk unggulan</p>
+        </div>
+        @endforelse
+    </div>
+</div>
+
+
+<div class="promo_section" style="background-image:url({{ asset('images/promo_section_bg.png') }}); background-size:cover; background-position:center; background-repeat:no-repeat;">
+    <div class="promo_section_content">
+        <button><iconify-icon icon="mdi:fire"></iconify-icon> PROMO TERBATAS</button>
+    </div>
+    <h3>Harga Lebih Hemat<span>.</span></h3>
+    <p>Pilihan Sporty, Harga Lebih Hemat <br/>Temukan produk favorit dengan harga spesial.</p>
+    <a href="/katalog/promo">
+        <button class="promo_button">Lihat Produk Promo</button>
+    </a>
+</div>
+
+<div class="product_layout">
+    <div class="heading_product_layout">
+        <h3>PRODUK <span>TERLARIS BULAN</span> INI</h3>
+        <a href="{{ route('customer.products.index') }}">LIHAT SEMUA</a>
+    </div>
+    <div class="product_layout_grid">
+        @forelse($bestSellers as $product)
+        <div class="product_layout_box" data-product-id="{{ $product->id }}">
             <div class="product_layout_img">
-                <a href="#">
-                    <img src="{{ asset('images/product_dummy.png') }}" alt="">
+                <a href="{{ route('customer.products.show', $product->slug) }}">
+                    <img src="{{ $product->images->first() ? Storage::url($product->images->first()->image) : asset('images/product_dummy.png') }}" 
+                        alt="{{ $product->name }}">
                 </a>
             </div>
             <div class="product_layout_content">
-                <h5>ONESET SPORT</h5>
+                <h5>{{ $product->name }}</h5>
                 <div class="product_layout_price">
-                    <p>Rp. 110.000</p>
+                    @php
+                        $prices = [];
+                        foreach ($product->variants as $variant) {
+                            $prices[] = $variant->discount_price ? (float) $variant->discount_price : (float) $variant->price;
+                        }
+                        $minEffective = min($prices);
+                        $maxEffective = max($prices);
+                        
+                        $minPrice = $product->variants->min('price');
+                        $maxPrice = $product->variants->max('price');
+                        
+                        $hasDiscount = $product->variants->contains(function($v) {
+                            return $v->discount_price !== null && $v->discount_price < $v->price;
+                        });
+                    @endphp
+                    
+                    @if($hasDiscount)
+                        <div class="product_layout_price_box">
+                            @if($minEffective == $maxEffective)
+                                <p class="price-discount">Rp {{ number_format($minEffective, 0, ',', '.') }}</p>
+                            @else
+                                <p class="price-discount">Rp {{ number_format($minEffective, 0, ',', '.') }} - Rp {{ number_format($maxEffective, 0, ',', '.') }}</p>
+                            @endif
+                            @if($minPrice == $maxPrice)
+                                <span class="price-original">Rp {{ number_format($minPrice, 0, ',', '.') }}</span>
+                            @else
+                                <span class="price-original">Rp {{ number_format($minPrice, 0, ',', '.') }} - Rp {{ number_format($maxPrice, 0, ',', '.') }}</span>
+                            @endif
+                        </div>
+                    @else
+                        @if($minEffective == $maxEffective)
+                            <p>Rp {{ number_format($minEffective, 0, ',', '.') }}</p>
+                        @else
+                            <p>Rp {{ number_format($minEffective, 0, ',', '.') }} - Rp {{ number_format($maxEffective, 0, ',', '.') }}</p>
+                        @endif
+                    @endif
                 </div>
             </div>
             <div class="product_layout_button">
-                <a href="#">
-                    <button class="buy_now_btn">BELI SEKARANG</button>
-                </a>
-                <button class="add_to_cart_btn">
+                <button class="buy_now_btn" onclick="buyNow({{ $product->id }})">BELI SEKARANG</button>
+                <button class="add_to_cart_btn" onclick="addToCart({{ $product->id }})">
                     <iconify-icon icon="solar:cart-linear"></iconify-icon>
                 </button>
-                <button class="add_to_wishlist_btn">
-                    <iconify-icon icon="solar:heart-linear"></iconify-icon>
+                <button class="add_to_wishlist_btn" 
+                        data-product-id="{{ $product->id }}"
+                        data-in-wishlist="{{ in_array($product->id, array_keys(session()->get('wishlist', []))) ? 'true' : 'false' }}"
+                        onclick="addToWishlist({{ $product->id }})">
+                    @if(in_array($product->id, array_keys(session()->get('wishlist', []))))
+                        <iconify-icon icon="solar:heart-bold" style="color: #ef4444;"></iconify-icon>
+                    @else
+                        <iconify-icon icon="solar:heart-linear"></iconify-icon>
+                    @endif
                 </button>
             </div>
         </div>
-        <div class="product_layout_box">
-            <div class="product_layout_img">
-                <a href="#">
-                    <img src="{{ asset('images/product_dummy.png') }}" alt="">
-                </a>
-            </div>
-            <div class="product_layout_content">
-                <h5>ONESET SPORT</h5>
-                <div class="product_layout_price">
-                    <p>Rp. 110.000</p>
-                </div>
-            </div>
-            <div class="product_layout_button">
-                <a href="#">
-                    <button class="buy_now_btn">BELI SEKARANG</button>
-                </a>
-                <button class="add_to_cart_btn">
-                    <iconify-icon icon="solar:cart-linear"></iconify-icon>
-                </button>
-                <button class="add_to_wishlist_btn">
-                    <iconify-icon icon="solar:heart-linear"></iconify-icon>
-                </button>
-            </div>
+        @empty
+        <div class="empty_state">
+            <p>Belum ada produk terlaris</p>
         </div>
-        <div class="product_layout_box">
-            <div class="product_layout_img">
-                <a href="#">
-                    <img src="{{ asset('images/product_dummy.png') }}" alt="">
-                </a>
-            </div>
-            <div class="product_layout_content">
-                <h5>ONESET SPORT</h5>
-                <div class="product_layout_price">
-                    <p>Rp. 110.000</p>
+        @endforelse
+    </div>
+</div>
+
+<div class="testimonial_section">
+    <div class="heading_product_layout">
+        <h3>MEREKA SUDAH <span>MEMBUKTIKAN</span></h3>
+        <a href="">LIHAT SEMUA</a>
+    </div>
+    <div class="testimonial_layout">
+        <div class="swiper testimonialSwiper">
+            <div class="swiper-wrapper">
+                <div class="swiper-slide">
+                    <div class="testimonial_box">
+                        <div class="testimonial_box_header">
+                            <div class="testimonial_box_header_profile">
+                                <div class="testimonial_box_header_profile_name">
+                                    <h5>MR</h5>
+                                </div>
+                                <div class="testimonial_box_header_desc">
+                                    <h3>M****** R****</h3>
+                                    <div class="testimonial_box_rating">
+                                        <iconify-icon icon="material-symbols:star-rounded"></iconify-icon>
+                                        <iconify-icon icon="material-symbols:star-rounded"></iconify-icon>
+                                        <iconify-icon icon="material-symbols:star-rounded"></iconify-icon>
+                                        <iconify-icon icon="material-symbols:star-rounded"></iconify-icon>
+                                        <iconify-icon icon="material-symbols:star-rounded"></iconify-icon>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="testimonial_box_header_img">
+                                <img src="images/pap.png" alt="">
+                            </div>
+                        </div>
+                        <div class="testimonial_box_content">
+                            <p>Udah 2 kali order jaket dan celana running di Barokah Sport, kualitas bahan emang ga pernah ngecewain. Bahannya adem, jahitan rapi, dan dipakainya nyaman banget buat olahraga harian.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="swiper-slide">
+                    <div class="testimonial_box">
+                        <div class="testimonial_box_header">
+                            <div class="testimonial_box_header_profile">
+                                <div class="testimonial_box_header_profile_name">
+                                    <h5>MR</h5>
+                                </div>
+                                <div class="testimonial_box_header_desc">
+                                    <h3>M****** R****</h3>
+                                    <div class="testimonial_box_rating">
+                                        <iconify-icon icon="material-symbols:star-rounded"></iconify-icon>
+                                        <iconify-icon icon="material-symbols:star-rounded"></iconify-icon>
+                                        <iconify-icon icon="material-symbols:star-rounded"></iconify-icon>
+                                        <iconify-icon icon="material-symbols:star-rounded"></iconify-icon>
+                                        <iconify-icon icon="material-symbols:star-rounded"></iconify-icon>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="testimonial_box_header_img">
+                                <img src="images/pap.png" alt="">
+                            </div>
+                        </div>
+                        <div class="testimonial_box_content">
+                            <p>Udah 2 kali order jaket dan celana running di Barokah Sport, kualitas bahan emang ga pernah ngecewain. Bahannya adem, jahitan rapi, dan dipakainya nyaman banget buat olahraga harian.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="swiper-slide">
+                    <div class="testimonial_box">
+                        <div class="testimonial_box_header">
+                            <div class="testimonial_box_header_profile">
+                                <div class="testimonial_box_header_profile_name">
+                                    <h5>MR</h5>
+                                </div>
+                                <div class="testimonial_box_header_desc">
+                                    <h3>M****** R****</h3>
+                                    <div class="testimonial_box_rating">
+                                        <iconify-icon icon="material-symbols:star-rounded"></iconify-icon>
+                                        <iconify-icon icon="material-symbols:star-rounded"></iconify-icon>
+                                        <iconify-icon icon="material-symbols:star-rounded"></iconify-icon>
+                                        <iconify-icon icon="material-symbols:star-rounded"></iconify-icon>
+                                        <iconify-icon icon="material-symbols:star-rounded"></iconify-icon>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="testimonial_box_header_img">
+                                <img src="images/pap.png" alt="">
+                            </div>
+                        </div>
+                        <div class="testimonial_box_content">
+                            <p>Udah 2 kali order jaket dan celana running di Barokah Sport, kualitas bahan emang ga pernah ngecewain. Bahannya adem, jahitan rapi, dan dipakainya nyaman banget buat olahraga harian.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="swiper-slide">
+                    <div class="testimonial_box">
+                        <div class="testimonial_box_header">
+                            <div class="testimonial_box_header_profile">
+                                <div class="testimonial_box_header_profile_name">
+                                    <h5>MR</h5>
+                                </div>
+                                <div class="testimonial_box_header_desc">
+                                    <h3>M****** R****</h3>
+                                    <div class="testimonial_box_rating">
+                                        <iconify-icon icon="material-symbols:star-rounded"></iconify-icon>
+                                        <iconify-icon icon="material-symbols:star-rounded"></iconify-icon>
+                                        <iconify-icon icon="material-symbols:star-rounded"></iconify-icon>
+                                        <iconify-icon icon="material-symbols:star-rounded"></iconify-icon>
+                                        <iconify-icon icon="material-symbols:star-rounded"></iconify-icon>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="testimonial_box_header_img">
+                                <img src="images/pap.png" alt="">
+                            </div>
+                        </div>
+                        <div class="testimonial_box_content">
+                            <p>Udah 2 kali order jaket dan celana running di Barokah Sport, kualitas bahan emang ga pernah ngecewain. Bahannya adem, jahitan rapi, dan dipakainya nyaman banget buat olahraga harian.</p>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="product_layout_button">
-                <a href="#">
-                    <button class="buy_now_btn">BELI SEKARANG</button>
-                </a>
-                <button class="add_to_cart_btn">
-                    <iconify-icon icon="solar:cart-linear"></iconify-icon>
-                </button>
-                <button class="add_to_wishlist_btn">
-                    <iconify-icon icon="solar:heart-linear"></iconify-icon>
-                </button>
-            </div>
-        </div>
-        <div class="product_layout_box">
-            <div class="product_layout_img">
-                <a href="#">
-                    <img src="{{ asset('images/product_dummy.png') }}" alt="">
-                </a>
-            </div>
-            <div class="product_layout_content">
-                <h5>ONESET SPORT</h5>
-                <div class="product_layout_price">
-                    <p>Rp. 110.000</p>
-                </div>
-            </div>
-            <div class="product_layout_button">
-                <a href="#">
-                    <button class="buy_now_btn">BELI SEKARANG</button>
-                </a>
-                <button class="add_to_cart_btn">
-                    <iconify-icon icon="solar:cart-linear"></iconify-icon>
-                </button>
-                <button class="add_to_wishlist_btn">
-                    <iconify-icon icon="solar:heart-linear"></iconify-icon>
-                </button>
-            </div>
+            <div class="swiper-pagination"></div>
         </div>
     </div>
 </div>
 
-        {{-- KATEGORI --}}
-        @if ($categories->isNotEmpty())
-            <section class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-                <div class="flex items-center justify-between">
-                    <h2 class="text-2xl font-bold text-slate-900">Kategori Populer</h2>
-                    <a href="{{ route('customer.products.index') }}" class="text-sm font-medium text-blue-600 hover:text-blue-700">Lihat Semua →</a>
-                </div>
-                <div class="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-                    @foreach ($categories as $category)
-                        <a href="{{ route('customer.categories.show', $category) }}" 
-                           class="group rounded-2xl border border-slate-200 bg-white p-4 text-center transition hover:shadow-md">
-                            <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-2xl group-hover:bg-blue-100">
-                                📁
-                            </div>
-                            <p class="mt-2 text-sm font-medium text-slate-700 line-clamp-1">{{ $category->name }}</p>
-                            <p class="text-xs text-slate-400">{{ $category->products_count }} produk</p>
+@if($articles->isNotEmpty())
+    <div class="artikel_section">
+        <div class="heading_product_layout">
+            <h3>ARTIKEL <span>TERBARU</span> KAMI</h3>
+            <a href="{{ route('customer.articles.index') }}">LIHAT SEMUA</a>
+        </div>
+        <div class="artikel_section_layout">
+            @foreach($articles as $article)
+                <div class="artikel_section_box">
+                    <div class="artikel_section_box_img">
+                        <a href="{{ route('customer.articles.show', $article->slug) }}">
+                            @if($article->image)
+                                <img src="{{ Storage::url($article->image) }}" alt="{{ $article->title }}">
+                            @else
+                                <img src="{{ asset('images/default-article.jpg') }}" alt="{{ $article->title }}">
+                            @endif
                         </a>
-                    @endforeach
-                </div>
-            </section>
-        @endif
-
-        {{-- PRODUK TERBARU --}}
-        <section class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between">
-                <h2 class="text-2xl font-bold text-slate-900">Produk Terbaru</h2>
-                <a href="{{ route('customer.products.index') }}" class="text-sm font-medium text-blue-600 hover:text-blue-700">Lihat Semua →</a>
-            </div>
-            <div class="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-                @forelse ($latestProducts as $product)
-                    <div class="group rounded-2xl border border-slate-200 bg-white p-3 transition hover:shadow-lg">
-                        <a href="{{ route('customer.products.show', $product) }}" class="block">
-                            <div class="aspect-square overflow-hidden rounded-xl bg-slate-100">
-                                @if ($product->images->first())
-                                    <img src="{{ Storage::url($product->images->first()->image) }}" 
-                                        alt="{{ $product->name }}" 
-                                        class="h-full w-full object-cover transition group-hover:scale-105">
-                                @else
-                                    <div class="flex h-full items-center justify-center text-4xl text-slate-300">📦</div>
-                                @endif
-                            </div>
-                            <div class="mt-3">
-                                <p class="text-xs text-slate-400">{{ $product->category->name ?? 'Tanpa Kategori' }}</p>
-                                <h3 class="text-sm font-semibold text-slate-900 line-clamp-1">{{ $product->name }}</h3>
-                                <div class="mt-1 flex items-center justify-between">
-                                    <span class="font-bold text-slate-900">{{ $product->price_formatted }}</span>
-                                    @if ($product->stock > 0)
-                                        <span class="text-xs text-emerald-600">Tersedia</span>
-                                    @else
-                                        <span class="text-xs text-red-500">Habis</span>
-                                    @endif
-                                </div>
-                            </div>
-                        </a>
-                        
-                        {{-- 🔥 TOMBOL TAMBAH KE KERANJANG --}}
-                        @if ($product->stock > 0)
-                            <button type="button" 
-                                    onclick="openVariantModal({{ $product->id }})"
-                                    class="mt-3 w-full rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700">
-                                🛒 Tambah ke Keranjang
-                            </button>
-                        @else
-                            <button type="button" 
-                                    disabled
-                                    class="mt-3 w-full rounded-xl bg-slate-300 px-4 py-2 text-sm font-medium text-slate-500 cursor-not-allowed">
-                                Stok Habis
-                            </button>
-                        @endif
                     </div>
-                @empty
-                    <p class="col-span-full text-center text-slate-500">Belum ada produk tersedia.</p>
-                @endforelse
-            </div>
-        </section>
-
-        {{-- BEST SELLER --}}
-        <section class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between">
-                <h2 class="text-2xl font-bold text-slate-900">Produk Unggulan</h2>
-                <a href="{{ route('customer.products.index', ['featured' => 1]) }}" class="text-sm font-medium text-blue-600 hover:text-blue-700">Lihat Semua →</a>
-            </div>
-
-            @if ($bestSellers->isNotEmpty())
-                <div class="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-                    @foreach ($bestSellers as $product)
-                        <div class="group rounded-2xl border border-slate-200 bg-white p-3 transition hover:shadow-lg relative">
-                            {{-- Label Unggulan --}}
-                            <div class="absolute left-3 top-3 z-10 rounded-full bg-amber-500 px-2.5 py-0.5 text-xs font-semibold text-white shadow">
-                                Unggulan
+                    <div class="artikel_section_content">
+                        <div class="artikel_section_meta">
+                            <div class="artikel_section_meta_box">
+                                <iconify-icon icon="mdi:user"></iconify-icon>
+                                <span>{{ $article->author ?? 'Admin' }}</span>
                             </div>
-
-                            <a href="{{ route('customer.products.show', $product) }}" class="block">
-                                <div class="aspect-square overflow-hidden rounded-xl bg-slate-100">
-                                    @if ($product->images->first())
-                                        <img src="{{ Storage::url($product->images->first()->image) }}" 
-                                            alt="{{ $product->name }}" 
-                                            class="h-full w-full object-cover transition group-hover:scale-105">
-                                    @else
-                                        <div class="flex h-full items-center justify-center text-4xl text-slate-300">📦</div>
-                                    @endif
+                            <div class="artikel_section_meta_box">
+                                <iconify-icon icon="lets-icons:date-fill"></iconify-icon>
+                                <span>{{ $article->formatted_published_at }}</span>
+                            </div>
+                            {{-- 🔥 GANTI category dengan articleCategory->name --}}
+                            @if($article->articleCategory)
+                                <div class="artikel_section_meta_box">
+                                    <iconify-icon icon="material-symbols:category"></iconify-icon>
+                                    <span>{{ $article->articleCategory->name }}</span>
                                 </div>
-                                <div class="mt-3">
-                                    <p class="text-xs text-slate-400">{{ $product->category->name ?? 'Tanpa Kategori' }}</p>
-                                    <h3 class="text-sm font-semibold text-slate-900 line-clamp-1">{{ $product->name }}</h3>
-                                    <div class="mt-1 flex items-center justify-between">
-                                        <span class="font-bold text-slate-900">{{ $product->price_formatted }}</span>
-                                        @if ($product->stock > 0)
-                                            <span class="text-xs text-emerald-600">Tersedia</span>
-                                        @else
-                                            <span class="text-xs text-red-500">Habis</span>
-                                        @endif
-                                    </div>
-                                </div>
-                            </a>
+                            @endif
                         </div>
-                    @endforeach
+                        <h3>{{ $article->title }}</h3>
+                        <p>{{ Str::limit(strip_tags($article->excerpt ?: $article->content), 120) }}</p>
+                        <a href="{{ route('customer.articles.show', $article->slug) }}">
+                            <button>Baca Selengkapnya</button>
+                        </a>
+                    </div>
                 </div>
-            @else
-                <div class="mt-6 rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center">
-                    <p class="text-slate-500">Belum ada produk unggulan.</p>
-                </div>
-            @endif
-        </section>
+            @endforeach
+        </div>
+    </div>
+@endif
 
-        <script>
-            // ============================================
-            // TAMBAH KE KERANJANG VIA AJAX
-            // ============================================
-            function addToCart(productId, variantId = null, quantity = 1) {
-                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
-                
-                fetch('{{ route("customer.cart.add") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken,
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        product_id: productId,
-                        variant_id: variantId,
-                        quantity: quantity
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Update badge cart
-                        const cartCount = document.getElementById('cart-count');
-                        if (cartCount) {
-                            cartCount.textContent = data.count || 0;
-                        }
-                        
-                        // Buka popup cart
-                        if (typeof openCartPopup === 'function') {
-                            openCartPopup();
-                        }
-                        
-                        // Tampilkan notifikasi
-                        showToast(data.message || 'Produk ditambahkan ke keranjang!', 'success');
-                    } else {
-                        showToast(data.message || 'Gagal menambahkan produk', 'error');
-                    }
-                })
-                .catch(() => {
-                    showToast('Terjadi kesalahan', 'error');
-                });
+{{-- GANTI DENGAN INI --}}
+<script>
+    // ============================================
+    // FUNGSI UNTUK MEMASTIKAN COUNTER UPDATE
+    // ============================================
+    
+    // Override fungsi addToCartDirect dari cart.js untuk memastikan counter update
+    if (typeof window.addToCartDirect === 'function') {
+        const originalAddToCartDirect = window.addToCartDirect;
+        
+        window.addToCartDirect = function(productId, variantId = null, quantity = 1) {
+            console.log('🔥 addToCartDirect called from home page');
+            
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+            
+            // Tampilkan loading
+            const btn = document.querySelector(`.product_layout_box[data-product-id="${productId}"] .add_to_cart_btn`);
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '⏳';
             }
-        </script>
+            
+            fetch(window.customerRoutes.cartAdd, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    product_id: productId,
+                    variant_id: variantId,
+                    quantity: quantity
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const count = data.count || data.cart_count || 0;
+                    console.log('✅ Cart add success, count:', count);
+                    
+                    // 🔥 UPDATE CART COUNT - PAKAI FUNGSI DARI CART.JS
+                    if (typeof window.updateNavbarCartCount === 'function') {
+                        window.updateNavbarCartCount(count);
+                    } else {
+                        // Fallback manual
+                        const cartCountEl = document.getElementById('cart-count');
+                        if (cartCountEl) {
+                            cartCountEl.textContent = count;
+                            cartCountEl.style.display = count > 0 ? 'inline-flex' : 'none';
+                        }
+                    }
+                    
+                    // 🔥 TRIGGER EVENT
+                    document.dispatchEvent(new CustomEvent('cart-updated', {
+                        detail: { count: count, message: data.message }
+                    }));
+                    
+                    showToast(data.message || 'Produk ditambahkan ke keranjang!', 'success');
+                    
+                    if (typeof loadCartPopup === 'function') {
+                        loadCartPopup();
+                    }
+                    
+                    if (window._buyNowMode) {
+                        window._buyNowMode = false;
+                        setTimeout(() => {
+                            window.location.href = window.customerRoutes.checkout;
+                        }, 500);
+                    }
+                } else {
+                    showToast(data.message || 'Gagal menambahkan produk', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('Terjadi kesalahan', 'error');
+            })
+            .finally(() => {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<iconify-icon icon="solar:cart-linear"></iconify-icon>';
+                }
+            });
+        };
+    }
+    
+    // Override fungsi addToWishlist dari cart.js
+    if (typeof window.addToWishlist === 'function') {
+        const originalAddToWishlist = window.addToWishlist;
+        
+        window.addToWishlist = function(productId) {
+            console.log('❤️ addToWishlist called from home page');
+            
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+            
+            const btn = document.querySelector(`.product_layout_box[data-product-id="${productId}"] .add_to_wishlist_btn`);
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '⏳';
+            }
+            
+            fetch(window.customerRoutes.wishlistAdd, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    product_id: productId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // 🔥 UPDATE WISHLIST COUNT
+                    if (typeof window.updateNavbarWishlistCount === 'function') {
+                        window.updateNavbarWishlistCount(data.count || 0);
+                    } else {
+                        const wishlistCountEl = document.getElementById('wishlist-count');
+                        if (wishlistCountEl) {
+                            wishlistCountEl.textContent = data.count || 0;
+                            wishlistCountEl.style.display = data.count > 0 ? 'inline-flex' : 'none';
+                        }
+                    }
+                    
+                    if (btn) {
+                        btn.innerHTML = '<iconify-icon icon="solar:heart-bold"></iconify-icon>';
+                        btn.classList.add('active');
+                    }
+                    
+                    showToast(data.message || 'Produk ditambahkan ke wishlist!', 'success');
+                    
+                    if (typeof loadWishlistPopup === 'function') {
+                        loadWishlistPopup();
+                    }
+                } else {
+                    showToast(data.message || 'Gagal menambahkan ke wishlist', 'error');
+                }
+            })
+            .catch(() => {
+                showToast('Terjadi kesalahan', 'error');
+            })
+            .finally(() => {
+                if (btn) {
+                    btn.disabled = false;
+                }
+            });
+        };
+    }
+    
+    console.log('✅ Home page cart functions initialized');
+</script>
 
 @endsection

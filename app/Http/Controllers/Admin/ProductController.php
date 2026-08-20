@@ -4,10 +4,11 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
+use App\Models\Feature;
 use App\Models\Product;
 use App\Models\ProductOption;
-use App\Models\ProductOptionValue;      // ✅ Tambahkan ini
-use App\Models\ProductVariantValue; 
+use App\Models\ProductOptionValue;
+use App\Models\ProductVariantValue;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -47,17 +48,13 @@ class ProductController extends Controller
 
     public function create()
     {
-        $categories = Category::where(
-            'is_active',
-            true
-        )
-        ->orderBy('name')
-        ->get();
+        $categories = Category::where('is_active', true)
+            ->orderBy('name')
+            ->get();
 
-        return view(
-            'admin.products.create',
-            compact('categories')
-        );
+        $features = Feature::active()->orderBy('name')->get();
+
+        return view('admin.products.create', compact('categories', 'features'));
     }
 
 
@@ -74,20 +71,21 @@ class ProductController extends Controller
         $uploadedFiles = [];
 
         try {
-
             DB::transaction(function () use (
                 $request,
                 $validated,
                 &$uploadedFiles
             ) {
-
                 // 1. CREATE PRODUCT
                 $product = Product::create([
                     'category_id' => $validated['category_id'],
                     'name' => $validated['name'],
                     'slug' => $this->generateUniqueSlug($validated['name']),
                     'description' => $validated['description'] ?? null,
+                    'gender' => $validated['gender'] ?? null,
+                    'material' => $validated['material'] ?? null,
                     'is_featured' => $request->boolean('is_featured'),
+                    'is_best_seller' => $request->boolean('is_best_seller'),
                     'is_active' => $request->boolean('is_active'),
                 ]);
 
@@ -103,21 +101,27 @@ class ProductController extends Controller
                     }
                 }
 
-                // 3. CREATE OPTIONS
-                $optionValueMap = $this->createProductOptions(
-                    $product,
-                    $validated['options'] ?? []
-                );
+                // 🔥 3. CREATE OPTIONS (WARNA & UKURAN) - DENGAN GAMBAR
+                if (!empty($validated['options'])) {
+                    $optionValueMap = $this->createProductOptions(
+                        $product,
+                        $validated['options'],
+                        $request->file('options') ?? [] // 🔥 Kirim file dari request
+                    );
 
-                // 🔥 DEBUG: Log optionValueMap
-                \Log::info('Option Value Map:', $optionValueMap);
+                    // 4. CREATE VARIANTS
+                    if (!empty($validated['variants'])) {
+                        $this->createProductVariants(
+                            $product,
+                            $validated['variants'],
+                            $optionValueMap
+                        );
+                    }
+                }
 
-                // 4. CREATE VARIANTS
-                $this->createProductVariants(
-                    $product,
-                    $validated['variants'] ?? [],
-                    $optionValueMap
-                );
+                if (!empty($validated['features'])) {
+                    $product->features()->sync($validated['features']);
+                }
             });
 
             return redirect()
@@ -161,13 +165,52 @@ class ProductController extends Controller
             },
             'variants.variantValues',
             'variants.variantValues.optionValue',
+            'features', // 🔥 LOAD FEATURES
         ]);
+
+        $existingOptions = $product->options->map(function ($option) {
+            return [
+                'id' => $option->id,
+                'name' => $option->name,
+                'values' => $option->values->map(function ($value) {
+                    return [
+                        'id' => $value->id,
+                        'value' => $value->value,
+                        'image' => $value->image ? Storage::url($value->image) : null,
+                    ];
+                })->values()->toArray(),
+            ];
+        })->values()->toArray();
+
+        $existingVariants = $product->variants->map(function ($variant) {
+            return [
+                'id' => $variant->id,
+                'sku' => $variant->sku,
+                'price' => $variant->price,
+                'discount_price' => $variant->discount_price,
+                'stock' => $variant->stock,
+                'weight' => $variant->weight,
+                'image' => $variant->image ? Storage::url($variant->image) : null,
+                'option_value_ids' => $variant->variantValues->pluck('product_option_value_id')->values()->toArray(),
+                'option_value_names' => $variant->variantValues->map(function($vv) {
+                    return $vv->optionValue->value ?? '';
+                })->values()->toArray(),
+            ];
+        })->values()->toArray();
 
         $categories = Category::where('is_active', true)
             ->orderBy('name')
             ->get();
 
-        return view('admin.products.edit', compact('product', 'categories'));
+        $features = Feature::active()->orderBy('name')->get();
+
+        return view('admin.products.edit', compact(
+            'product',
+            'categories',
+            'existingOptions',
+            'existingVariants',
+            'features'
+        ));
     }
 
 
@@ -177,59 +220,6 @@ class ProductController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    public function checkSku(Request $request)
-    {
-        $request->validate([
-            'skus' => 'required|array',
-            'skus.*' => 'required|string',
-            'product_id' => 'nullable|exists:products,id',
-            'is_edit' => 'nullable|boolean',
-        ]);
-
-        $skus = array_map('trim', $request->skus);
-        $skus = array_filter($skus, function($sku) {
-            return !empty($sku);
-        });
-
-        if (empty($skus)) {
-            return response()->json(['success' => true]);
-        }
-
-        // 🔥 CEK DUPLIKAT DI DALAM FORM (lebih cepat)
-        $counts = array_count_values($skus);
-        $duplicates = [];
-        foreach ($counts as $sku => $count) {
-            if ($count > 1 && !empty($sku)) {
-                $duplicates[] = $sku;
-            }
-        }
-
-        if (!empty($duplicates)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'SKU ' . implode(', ', $duplicates) . ' duplikat dalam form.',
-            ], 400);
-        }
-
-        // 🔥 CEK DI DATABASE (1 query untuk semua SKU)
-        $query = \App\Models\ProductVariant::whereIn('sku', $skus);
-        
-        if ($request->is_edit && $request->product_id) {
-            $query->where('product_id', '!=', $request->product_id);
-        }
-        
-        $existingSkus = $query->pluck('sku')->toArray();
-
-        if (!empty($existingSkus)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'SKU ' . implode(', ', $existingSkus) . ' sudah digunakan di produk lain.',
-            ], 400);
-        }
-
-        return response()->json(['success' => true]);
-    }
-
     public function update(Request $request, Product $product)
     {
         $validated = $this->validateProduct($request, $product);
@@ -237,21 +227,22 @@ class ProductController extends Controller
         $uploadedFiles = [];
 
         try {
-
             DB::transaction(function () use (
                 $request,
                 $product,
                 $validated,
                 &$uploadedFiles
             ) {
-
                 // 1. UPDATE PRODUCT
                 $product->update([
                     'category_id' => $validated['category_id'],
                     'name' => $validated['name'],
                     'slug' => $this->generateUniqueSlug($validated['name'], $product->id),
                     'description' => $validated['description'] ?? null,
+                    'gender' => $validated['gender'] ?? null,
+                    'material' => $validated['material'] ?? null,
                     'is_featured' => $request->boolean('is_featured'),
+                    'is_best_seller' => $request->boolean('is_best_seller'),
                     'is_active' => $request->boolean('is_active'),
                 ]);
 
@@ -288,27 +279,48 @@ class ProductController extends Controller
                     }
                 }
 
-                // 4. DELETE OLD OPTIONS
-                $product->options()->delete();
+                // ============================================
+                // 🔥 UPDATE OPTIONS (WARNA & UKURAN) - PERTAHANKAN GAMBAR LAMA
+                // ============================================
 
-                // 5. DELETE OLD VARIANTS
+                // 🔥 AMBIL DATA OPTIONS LAMA
+                $oldOptions = $product->options()->with('values')->get();
+                $oldOptionValuesMap = [];
+
+                foreach ($oldOptions as $oldOption) {
+                    foreach ($oldOption->values as $oldValue) {
+                        $oldOptionValuesMap[$oldOption->id][$oldValue->id] = $oldValue->image;
+                    }
+                }
+
+                // Hapus old options & variants
+                $product->options()->delete();
                 $product->variants()->delete();
 
-                // 6. CREATE OPTIONS AGAIN
-                $optionValueMap = $this->createProductOptions(
-                    $product,
-                    $validated['options'] ?? []
-                );
+                // Create new options & variants
+                if (!empty($validated['options'])) {
+                    // 🔥 PROSES OPTIONS DENGAN MEMPERTAHANKAN GAMBAR LAMA
+                    $optionValueMap = $this->createProductOptionsWithExistingImages(
+                        $product,
+                        $validated['options'],
+                        $request->file('options') ?? [],
+                        $oldOptionValuesMap
+                    );
 
-                // 🔥 DEBUG: Log optionValueMap
-                \Log::info('Update Option Value Map:', $optionValueMap);
+                    if (!empty($validated['variants'])) {
+                        $this->createProductVariants(
+                            $product,
+                            $validated['variants'],
+                            $optionValueMap
+                        );
+                    }
+                }
 
-                // 7. CREATE VARIANTS AGAIN
-                $this->createProductVariants(
-                    $product,
-                    $validated['variants'] ?? [],
-                    $optionValueMap
-                );
+                if (!empty($validated['features'])) {
+                    $product->features()->sync($validated['features']);
+                } else {
+                    $product->features()->detach();
+                }
             });
 
             return redirect()
@@ -327,6 +339,94 @@ class ProductController extends Controller
         }
     }
 
+    private function createProductOptionsWithExistingImages(
+        Product $product,
+        array $options,
+        array $optionFiles = [],
+        array $oldOptionValuesMap = []
+    ): array {
+        $optionValueMap = [];
+
+        foreach ($options as $optionIndex => $optionData) {
+            $option = $product->options()->create([
+                'name' => trim($optionData['name']),
+                'sort_order' => $optionIndex,
+            ]);
+
+            $optionValueMap[$optionIndex] = [];
+
+            $values = $optionData['values'] ?? [];
+            $newImages = $optionFiles[$optionIndex]['images'] ?? [];
+            $oldOptionId = $optionData['old_id'] ?? null;
+            $oldValueIds = $optionData['old_value_ids'] ?? [];
+            $existingImages = $optionData['existing_images'] ?? [];
+
+            foreach ($values as $valueIndex => $value) {
+                $imagePath = null;
+                $newImage = $newImages[$valueIndex] ?? null;
+                $selectedExistingImage = $existingImages[$valueIndex] ?? null;
+                $oldValueId = $oldValueIds[$valueIndex] ?? null;
+
+                // 1. Prioritas: upload baru dari input file
+                if ($newImage instanceof \Illuminate\Http\UploadedFile) {
+                    if ($oldOptionId && $oldValueId && isset($oldOptionValuesMap[$oldOptionId][$oldValueId])) {
+                        $oldImagePath = $oldOptionValuesMap[$oldOptionId][$oldValueId];
+                        if ($oldImagePath && Storage::disk('public')->exists($oldImagePath)) {
+                            Storage::disk('public')->delete($oldImagePath);
+                        }
+                    }
+
+                    $imagePath = $newImage->store('products/option-values', 'public');
+                }
+                // 2. Jika tidak ada upload baru, pertahankan gambar lama yang sudah dikirim dari form
+                elseif (!empty($selectedExistingImage)) {
+                    $imagePath = $this->normalizeStoredImagePath($selectedExistingImage);
+                }
+                // 3. Jika masih tidak ada, cek mapping value lama berdasarkan id lama / posisi index
+                elseif ($oldOptionId && isset($oldOptionValuesMap[$oldOptionId])) {
+                    if ($oldValueId && isset($oldOptionValuesMap[$oldOptionId][$oldValueId])) {
+                        $imagePath = $oldOptionValuesMap[$oldOptionId][$oldValueId];
+                    } else {
+                        $oldValueIdList = array_keys($oldOptionValuesMap[$oldOptionId]);
+                        if (isset($oldValueIdList[$valueIndex])) {
+                            $mappedOldValueId = $oldValueIdList[$valueIndex];
+                            $imagePath = $oldOptionValuesMap[$oldOptionId][$mappedOldValueId] ?? null;
+                        }
+                    }
+                }
+
+                $optionValue = $option->values()->create([
+                    'value' => trim($value),
+                    'image' => $imagePath,
+                    'sort_order' => $valueIndex,
+                ]);
+
+                $optionValueMap[$optionIndex][$valueIndex] = $optionValue->id;
+            }
+        }
+
+        return $optionValueMap;
+    }
+
+    private function normalizeStoredImagePath(?string $imagePath): ?string
+    {
+        if (empty($imagePath)) {
+            return null;
+        }
+
+        if (preg_match('#^https?://#i', $imagePath)) {
+            $parsed = parse_url($imagePath, PHP_URL_PATH);
+            $imagePath = $parsed ?: $imagePath;
+        }
+
+        $storagePrefix = '/storage/';
+        if (str_starts_with($imagePath, $storagePrefix)) {
+            $imagePath = substr($imagePath, strlen($storagePrefix));
+        }
+
+        return ltrim($imagePath, '/');
+    }
+
 
     /*
     |--------------------------------------------------------------------------
@@ -336,12 +436,6 @@ class ProductController extends Controller
 
     public function destroy(Product $product)
     {
-        /*
-        |--------------------------------------------------------------------------
-        | LOAD RELASI YANG DIPERLUKAN
-        |--------------------------------------------------------------------------
-        */
-        
         $product->load([
             'images',
             'options',
@@ -355,12 +449,6 @@ class ProductController extends Controller
                 ->with('error', 'Produk tidak dapat dihapus karena sudah digunakan pada pesanan.');
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | SIMPAN PATH GAMBAR
-        |--------------------------------------------------------------------------
-        */
-
         $imagePaths = $product
             ->images
             ->pluck('image')
@@ -370,13 +458,7 @@ class ProductController extends Controller
 
         try {
             DB::transaction(function () use ($product) {
-
-                /*
-                |--------------------------------------------------------------------------
-                | 1. HAPUS VARIANT VALUES (PIVOT)
-                |--------------------------------------------------------------------------
-                */
-
+                // 1. HAPUS VARIANT VALUES (PIVOT)
                 $variantIds = $product
                     ->variants
                     ->pluck('id')
@@ -389,22 +471,10 @@ class ProductController extends Controller
                     )->delete();
                 }
 
-                /*
-                |--------------------------------------------------------------------------
-                | 2. HAPUS VARIANTS
-                |--------------------------------------------------------------------------
-                */
+                // 2. HAPUS VARIANTS
+                $product->variants()->delete();
 
-                $product
-                    ->variants()
-                    ->delete();
-
-                /*
-                |--------------------------------------------------------------------------
-                | 3. HAPUS OPTION VALUES
-                |--------------------------------------------------------------------------
-                */
-
+                // 3. HAPUS OPTION VALUES
                 $optionIds = $product
                     ->options
                     ->pluck('id')
@@ -417,42 +487,17 @@ class ProductController extends Controller
                     )->delete();
                 }
 
-                /*
-                |--------------------------------------------------------------------------
-                | 4. HAPUS OPTIONS
-                |--------------------------------------------------------------------------
-                */
+                // 4. HAPUS OPTIONS
+                $product->options()->delete();
 
-                $product
-                    ->options()
-                    ->delete();
+                // 5. HAPUS IMAGES (DATABASE)
+                $product->images()->delete();
 
-                /*
-                |--------------------------------------------------------------------------
-                | 5. HAPUS IMAGES (DATABASE)
-                |--------------------------------------------------------------------------
-                */
-
-                $product
-                    ->images()
-                    ->delete();
-
-                /*
-                |--------------------------------------------------------------------------
-                | 6. HAPUS PRODUCT
-                |--------------------------------------------------------------------------
-                */
-
+                // 6. HAPUS PRODUCT
                 $product->delete();
-
             });
 
-            /*
-            |--------------------------------------------------------------------------
-            | HAPUS FILE GAMBAR DARI STORAGE
-            |--------------------------------------------------------------------------
-            */
-
+            // HAPUS FILE GAMBAR DARI STORAGE
             foreach ($imagePaths as $imagePath) {
                 if (Storage::disk('public')->exists($imagePath)) {
                     Storage::disk('public')->delete($imagePath);
@@ -475,62 +520,171 @@ class ProductController extends Controller
 
     /*
     |--------------------------------------------------------------------------
+    | BULK DESTROY
+    |--------------------------------------------------------------------------
+    */
+
+    public function bulkDestroy(Request $request)
+    {
+        $request->validate([
+            'product_ids' => 'required|array',
+            'product_ids.*' => 'required|integer|exists:products,id',
+        ]);
+
+        $productIds = $request->product_ids;
+        $deletedCount = 0;
+        $failedIds = [];
+        $failedNames = [];
+
+        try {
+            DB::transaction(function () use ($productIds, &$deletedCount, &$failedIds, &$failedNames) {
+                
+                $products = Product::with(['images', 'orderItems'])
+                    ->whereIn('id', $productIds)
+                    ->get();
+
+                foreach ($products as $product) {
+                    if ($product->orderItems()->exists()) {
+                        $failedIds[] = $product->id;
+                        $failedNames[] = $product->name;
+                        continue;
+                    }
+
+                    $imagePaths = $product->images->pluck('image')->filter()->toArray();
+
+                    $variantIds = $product->variants->pluck('id')->toArray();
+                    if (!empty($variantIds)) {
+                        ProductVariantValue::whereIn('product_variant_id', $variantIds)->delete();
+                    }
+
+                    $product->variants()->delete();
+
+                    $optionIds = $product->options->pluck('id')->toArray();
+                    if (!empty($optionIds)) {
+                        ProductOptionValue::whereIn('product_option_id', $optionIds)->delete();
+                    }
+
+                    $product->options()->delete();
+                    $product->images()->delete();
+                    $product->delete();
+
+                    foreach ($imagePaths as $imagePath) {
+                        if (Storage::disk('public')->exists($imagePath)) {
+                            Storage::disk('public')->delete($imagePath);
+                        }
+                    }
+
+                    $deletedCount++;
+                }
+            });
+
+            $message = "Berhasil menghapus {$deletedCount} produk.";
+
+            if (!empty($failedIds)) {
+                $message .= " Gagal menghapus " . count($failedIds) . " produk: " . implode(', ', $failedNames) . " (sudah digunakan di pesanan).";
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'deleted' => $deletedCount,
+                'failed' => $failedIds,
+                'failed_names' => $failedNames,
+            ]);
+
+        } catch (Throwable $e) {
+            \Log::error('Bulk delete error:', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menghapus produk: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
     | DESTROY IMAGE
     |--------------------------------------------------------------------------
     */
 
-    public function destroyImage(
-        Product $product,
-        $image
-    ) {
+    public function destroyImage(Product $product, $image)
+    {
+        $productImage = $product->images()->findOrFail($image);
+        $path = $productImage->image;
 
-        $productImage =
-            $product->images()
-                ->findOrFail($image);
+        DB::transaction(function () use ($productImage, $path) {
+            $productImage->delete();
 
-
-        $path =
-            $productImage->image;
-
-
-        DB::transaction(
-            function () use (
-                $productImage,
-                $path
-            ) {
-
-                /*
-                |--------------------------------------------------------------------------
-                | Hapus data database
-                |--------------------------------------------------------------------------
-                */
-
-                $productImage->delete();
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | Hapus file
-                |--------------------------------------------------------------------------
-                */
-
-                if (
-                    Storage::disk('public')
-                        ->exists($path)
-                ) {
-
-                    Storage::disk('public')
-                        ->delete($path);
-                }
+            if (Storage::disk('public')->exists($path)) {
+                Storage::disk('public')->delete($path);
             }
-        );
-
+        });
 
         return back()
-            ->with(
-                'success',
-                'Gambar produk berhasil dihapus.'
-            );
+            ->with('success', 'Gambar produk berhasil dihapus.');
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | CHECK SKU
+    |--------------------------------------------------------------------------
+    */
+
+    public function checkSku(Request $request)
+    {
+        $request->validate([
+            'skus' => 'required|array',
+            'skus.*' => 'required|string',
+            'product_id' => 'nullable|exists:products,id',
+            'is_edit' => 'nullable|boolean',
+        ]);
+
+        $skus = array_map('trim', $request->skus);
+        $skus = array_filter($skus, function($sku) {
+            return !empty($sku);
+        });
+
+        if (empty($skus)) {
+            return response()->json(['success' => true]);
+        }
+
+        $counts = array_count_values($skus);
+        $duplicates = [];
+        foreach ($counts as $sku => $count) {
+            if ($count > 1 && !empty($sku)) {
+                $duplicates[] = $sku;
+            }
+        }
+
+        if (!empty($duplicates)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'SKU ' . implode(', ', $duplicates) . ' duplikat dalam form.',
+            ], 400);
+        }
+
+        $query = \App\Models\ProductVariant::whereIn('sku', $skus);
+        
+        if ($request->is_edit && $request->product_id) {
+            $query->where('product_id', '!=', $request->product_id);
+        }
+        
+        $existingSkus = $query->pluck('sku')->toArray();
+
+        if (!empty($existingSkus)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'SKU ' . implode(', ', $existingSkus) . ' sudah digunakan di produk lain.',
+            ], 400);
+        }
+
+        return response()->json(['success' => true]);
     }
 
 
@@ -540,36 +694,41 @@ class ProductController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    private function validateProduct(
-        Request $request,
-        ?Product $product = null
-    ): array {
-
+    private function validateProduct(Request $request, ?Product $product = null): array
+    {
         $rules = [
             'category_id' => ['required', 'exists:categories,id'],
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'images' => ['nullable', 'array'],
             'images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
-            
-            // OPSI PRODUK
+            'gender' => ['nullable', 'string', 'in:pria,wanita,unisex'],
+            'material' => ['nullable', 'string', 'max:255'],
+            'features' => ['nullable', 'array'],
+            'features.*' => ['exists:features,id'],
             'options' => ['nullable', 'array'],
-            'options.*.name' => ['required', 'string', 'max:100'],
-            'options.*.values' => ['required', 'array', 'min:1'],
-            'options.*.values.*' => ['required', 'string', 'max:100'],
+            'options.*.name' => ['required_with:options', 'string', 'max:100'],
+            'options.*.values' => ['required_with:options', 'array', 'min:1'],
+            'options.*.values.*' => ['required_with:options', 'string', 'max:100'],
+            'options.*.old_id' => ['nullable', 'integer'],
+            'options.*.old_value_ids' => ['nullable', 'array'],
+            'options.*.old_value_ids.*' => ['nullable', 'integer'],
+            'options.*.existing_images' => ['nullable', 'array'],
+            'options.*.existing_images.*' => ['nullable', 'string'],
             
-            // 🔥 TAMBAHKAN VALIDASI GAMBAR OPSI DI SINI:
+            // 🔥 VALIDASI GAMBAR OPSI
             'options.*.images' => ['nullable', 'array'],
             'options.*.images.*' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
 
-            'variants' => ['required', 'array', 'min:1'],
-            'variants.*.sku' => ['required', 'string', 'max:100'],
-            'variants.*.price' => ['required', 'numeric', 'min:0'],
+            'variants' => ['nullable', 'array'],
+            'variants.*.id' => ['nullable', 'integer'],
+            'variants.*.sku' => ['required_with:variants', 'string', 'max:100'],
+            'variants.*.price' => ['required_with:variants', 'numeric', 'min:0'],
             'variants.*.discount_price' => ['nullable', 'numeric', 'min:0'],
-            'variants.*.stock' => ['required', 'integer', 'min:0'],
-            'variants.*.weight' => ['required', 'integer', 'min:0'],
-            'variants.*.option_value_indexes' => ['required', 'array', 'min:1'],
-            'variants.*.option_value_indexes.*' => ['required', 'integer', 'min:0'],
+            'variants.*.stock' => ['required_with:variants', 'integer', 'min:0'],
+            'variants.*.weight' => ['required_with:variants', 'integer', 'min:0'],
+            'variants.*.option_value_indexes' => ['required_with:variants', 'array', 'min:1'],
+            'variants.*.option_value_indexes.*' => ['required_with:variants', 'integer', 'min:0'],
         ];
 
         return $request->validate($rules);
@@ -582,14 +741,10 @@ class ProductController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    private function createProductOptions(
-        Product $product,
-        array $options
-    ): array {
-
+    private function createProductOptions(Product $product, array $options, array $optionFiles = []): array
+    {
         $optionValueMap = [];
 
-        // 🔥 PROSES SEMUA OPSI DARI FORM (TERMASUK UKURAN)
         foreach ($options as $optionIndex => $optionData) {
             $option = $product->options()->create([
                 'name' => trim($optionData['name']),
@@ -599,7 +754,12 @@ class ProductController extends Controller
             $optionValueMap[$optionIndex] = [];
 
             $values = $optionData['values'] ?? [];
-            $images = $optionData['images'] ?? [];
+            
+            // 🔥 AMBIL FILE GAMBAR UNTUK OPSI INI
+            $images = [];
+            if (isset($optionFiles[$optionIndex]['images'])) {
+                $images = $optionFiles[$optionIndex]['images'];
+            }
 
             foreach ($values as $valueIndex => $value) {
                 $imagePath = null;
@@ -612,7 +772,7 @@ class ProductController extends Controller
 
                 $optionValue = $option->values()->create([
                     'value' => trim($value),
-                    'image' => $imagePath, // NULL jika tidak ada gambar
+                    'image' => $imagePath,
                     'sort_order' => $valueIndex,
                 ]);
 
@@ -635,23 +795,20 @@ class ProductController extends Controller
         array $variants,
         array $optionValueMap
     ): void {
-
         foreach ($variants as $variantData) {
-
             $optionValueIndexes = $variantData['option_value_indexes'] ?? [];
-
-            // 🔥 BUILD OPTION VALUE IDS DENGAN MAPPING YANG BENAR
             $optionValueIds = [];
 
             foreach ($optionValueIndexes as $optionIndex => $valueIndex) {
+                $optionIndex = (int) $optionIndex;
+                $valueIndex = (int) $valueIndex;
+                
                 $optionValueId = null;
 
-                // Coba cari di map
                 if (isset($optionValueMap[$optionIndex][$valueIndex])) {
                     $optionValueId = $optionValueMap[$optionIndex][$valueIndex];
                 } else {
-                    // Coba cari di semua map berdasarkan valueIndex
-                    foreach ($optionValueMap as $mapIndex => $mapValues) {
+                    foreach ($optionValueMap as $mapOptionIndex => $mapValues) {
                         if (isset($mapValues[$valueIndex])) {
                             $optionValueId = $mapValues[$valueIndex];
                             break;
@@ -664,17 +821,25 @@ class ProductController extends Controller
                 }
             }
 
-            // 🔥 CREATE VARIANT
+            if (empty($optionValueIds)) {
+                \Log::warning('Skipping variant - no option value IDs:', [
+                    'sku' => $variantData['sku'],
+                    'optionValueIndexes' => $optionValueIndexes,
+                ]);
+                continue;
+            }
+
             $variant = $product->variants()->create([
                 'sku' => trim($variantData['sku']),
-                'price' => $variantData['price'],
-                'discount_price' => $variantData['discount_price'] ?? null,
-                'stock' => $variantData['stock'],
-                'weight' => $variantData['weight'],
+                'price' => (float) $variantData['price'],
+                'discount_price' => isset($variantData['discount_price']) && $variantData['discount_price'] !== '' 
+                    ? (float) $variantData['discount_price'] 
+                    : null,
+                'stock' => (int) $variantData['stock'],
+                'weight' => (int) ($variantData['weight'] ?? 1000),
                 'is_active' => true,
             ]);
 
-            // 🔥 HUBUNGKAN DENGAN OPTION VALUES
             foreach ($optionValueIds as $optionValueId) {
                 $variant->variantValues()->create([
                     'product_option_value_id' => $optionValueId,
@@ -690,52 +855,23 @@ class ProductController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    private function generateUniqueSlug(
-        string $name,
-        ?int $ignoreId = null
-    ): string {
-
-        $slug =
-            Str::slug($name);
-
-
-        $originalSlug =
-            $slug;
-
-
+    private function generateUniqueSlug(string $name, ?int $ignoreId = null): string
+    {
+        $slug = Str::slug($name);
+        $originalSlug = $slug;
         $counter = 1;
-
 
         while (
             Product::query()
-                ->where(
-                    'slug',
-                    $slug
-                )
-                ->when(
-                    $ignoreId,
-                    function ($query)
-                    use ($ignoreId) {
-
-                        $query->where(
-                            'id',
-                            '!=',
-                            $ignoreId
-                        );
-                    }
-                )
+                ->where('slug', $slug)
+                ->when($ignoreId, function ($query) use ($ignoreId) {
+                    $query->where('id', '!=', $ignoreId);
+                })
                 ->exists()
         ) {
-
-            $slug =
-                $originalSlug
-                . '-'
-                . $counter;
-
-
+            $slug = $originalSlug . '-' . $counter;
             $counter++;
         }
-
 
         return $slug;
     }

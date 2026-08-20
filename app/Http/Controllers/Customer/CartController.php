@@ -40,26 +40,39 @@ class CartController extends Controller
             'quantity' => 'required|integer|min:1',
         ]);
 
-        $product = Product::with(['variants', 'images'])->findOrFail($validated['product_id']);
+        $product = Product::with(['variants', 'images', 'options.values'])->findOrFail($validated['product_id']);
         
         $weight = 0;
         $variantName = null;
+        $price = 0;
+        $originalPrice = 0;
+        $variantImage = null; // 🔥 Tambahkan ini
 
         if (!empty($validated['variant_id'])) {
             $variant = ProductVariant::with('values')->find($validated['variant_id']);
             if ($variant) {
                 $weight = $variant->weight ?? 1000;
                 $price = $variant->discount_price ?? $variant->price;
-                // 🔥 Gunakan accessor option_combination atau relasi values
+                $originalPrice = $variant->price;
                 $variantName = $variant->option_combination ?? $variant->values->pluck('value')->implode(' / ');
+                
+                // 🔥 CARI GAMBAR VARIAN DARI OPTION VALUES (WARNA)
+                $variantImage = $this->getVariantImage($variant, $product);
             }
         } else {
             $firstVariant = $product->variants->first();
-            $weight = $firstVariant->weight ?? 1000;
-            $price = $firstVariant->discount_price ?? $firstVariant->price ?? 0;
+            if ($firstVariant) {
+                $weight = $firstVariant->weight ?? 1000;
+                $price = $firstVariant->discount_price ?? $firstVariant->price ?? 0;
+                $originalPrice = $firstVariant->price ?? 0;
+                $variantImage = $this->getVariantImage($firstVariant, $product);
+            }
         }
 
-        $image = $product->images->first()?->image;
+        // Jika tidak ada gambar varian, gunakan gambar produk pertama
+        if (!$variantImage) {
+            $variantImage = $product->images->first()?->image;
+        }
 
         $cart = session()->get('cart', []);
         $key = $validated['product_id'] . '-' . ($validated['variant_id'] ?? '0');
@@ -73,30 +86,58 @@ class CartController extends Controller
                 'variant_id' => $validated['variant_id'] ?? null,
                 'variant_name' => $variantName,
                 'price' => $price,
+                'original_price' => $originalPrice,
                 'quantity' => $validated['quantity'],
-                'image' => $image,
+                'image' => $variantImage, // 🔥 Gunakan gambar varian
                 'slug' => $product->slug,
                 'weight' => $weight,
             ];
         }
 
         session()->put('cart', $cart);
-
-        // 🔥 Hitung total jumlah item di keranjang
+        session()->save();
+        
+        $cart = session()->get('cart', []);
         $cartCount = array_sum(array_column($cart, 'quantity'));
 
-        // 🔥 Jika request berasal dari AJAX / Fetch, kembalikan JSON
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
                 'success' => true,
                 'message' => 'Produk berhasil ditambahkan ke keranjang.',
-                'cart_count' => $cartCount,
+                'count' => $cartCount,
             ]);
         }
 
         return redirect()
             ->route('customer.cart.index')
             ->with('success', 'Produk berhasil ditambahkan ke keranjang.');
+    }
+
+    /**
+     * 🔥 GET VARIANT IMAGE FROM OPTION VALUES (WARNA)
+     */
+    private function getVariantImage($variant, $product)
+    {
+        // Ambil semua option value IDs dari varian
+        $variantValueIds = $variant->variantValues->pluck('product_option_value_id')->toArray();
+        
+        // Cari opsi yang bernama "Warna" atau "Color"
+        foreach ($product->options as $option) {
+            if (strtolower($option->name) === 'warna' || strtolower($option->name) === 'color') {
+                foreach ($option->values as $value) {
+                    if (in_array($value->id, $variantValueIds) && $value->image) {
+                        return $value->image;
+                    }
+                }
+            }
+        }
+        
+        // Jika ada gambar di variant langsung
+        if ($variant->image) {
+            return $variant->image;
+        }
+        
+        return null;
     }
 
     // ============================================

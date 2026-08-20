@@ -31,16 +31,16 @@
             <a href="/katalog" class="{{ request()->is('katalog') ? 'active' : '' }}">
                 <li>Katalog</li>
             </a>
-            <a href="/produk-terbaru" class="{{ request()->is('produk-terbaru') ? 'active' : '' }}">
+            <a href="{{ route('customer.products.latest') }}" class="{{ request()->is('katalog/terbaru') ? 'active' : '' }}">
                 <li>Produk Terbaru</li>
             </a>
-            <a href="/promo" class="{{ request()->is('promo') ? 'active' : '' }}">
+            <a href="{{ route('customer.products.promo') }}" class="{{ request()->is('katalog/promo') ? 'active' : '' }}">
                 <li>Promo</li>
             </a>
             <a href="/testimoni" class="{{ request()->is('testimoni') ? 'active' : '' }}">
                 <li>Testimoni</li>
             </a>
-            <a href="/artikel" class="{{ request()->is('artikel') ? 'active' : '' }}">
+            <a href="{{ route('customer.articles.index') }}" class="{{ request()->is('artikel') ? 'active' : '' }}">
                 <li>Artikel</li>
             </a>
             <a href="/cara-pesan" class="{{ request()->is('cara-pesan') ? 'active' : '' }}">
@@ -72,14 +72,14 @@
                 </button>
             </a>
 
-            <button id="wishlist-toggle">
+            <button id="wishlist-toggle" style="position:relative;">
                 <iconify-icon icon="mynaui:heart"></iconify-icon>
-                <span id="wishlist-count" class="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">0</span>
+                <span id="wishlist-count" style="display:none;">0</span>
             </button>
 
-            <button id="cart-toggle">
+            <button id="cart-toggle" style="position:relative;">
                 <iconify-icon icon="solar:cart-linear"></iconify-icon>
-                <span id="cart-count" class="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-blue-600 text-[10px] font-bold text-white">0</span>
+                <span id="cart-count" style="display:none;">0</span>
             </button>
 
             <!-- @auth('customer')
@@ -98,25 +98,49 @@
 </div>
 
 <script>
-    function updateCartCount() {
-        fetch('{{ route("customer.cart.count") }}')
-            .then(response => response.json())
-            .then(data => {
-                const cartCount = document.getElementById('cart-count');
-                if (cartCount) {
-                    cartCount.textContent = data.count || 0;
-                }
-            })
-            .catch(() => {
-                // Silent fail
-            });
-    }
 
-    // Update saat halaman dimuat
     document.addEventListener('DOMContentLoaded', function() {
-        updateCartCount();
-    });
+        // Panggil fungsi dari cart.js
+        if (typeof window.loadCartCount === 'function') {
+            window.loadCartCount();
+        }
+        
+        if (typeof window.loadWishlistCount === 'function') {
+            window.loadWishlistCount();
+        }
 
-    // Update setiap 30 detik (opsional)
-    // setInterval(updateCartCount, 30000);
+        if (typeof window.loadWishlistStatus === 'function') {
+            setTimeout(function() {
+                window.loadWishlistStatus();
+            }, 500);
+        }
+        
+        // Jika cart.js belum load, gunakan fallback
+        if (typeof window.loadCartCount !== 'function') {
+            // Fallback: fetch langsung
+            fetch('{{ route("customer.cart.count") }}')
+                .then(response => response.json())
+                .then(data => {
+                    const cartCount = document.getElementById('cart-count');
+                    if (cartCount) {
+                        cartCount.textContent = data.count || 0;
+                        cartCount.style.display = (data.count > 0) ? 'inline-flex' : 'none';
+                    }
+                })
+                .catch(() => {});
+        }
+        
+        if (typeof window.loadWishlistCount !== 'function') {
+            fetch('{{ route("customer.wishlist.popup") }}')
+                .then(response => response.json())
+                .then(data => {
+                    const wishlistCount = document.getElementById('wishlist-count');
+                    if (wishlistCount && data.count !== undefined) {
+                        wishlistCount.textContent = data.count || 0;
+                        wishlistCount.style.display = (data.count > 0) ? 'inline-flex' : 'none';
+                    }
+                })
+                .catch(() => {});
+        }
+    });
 </script>

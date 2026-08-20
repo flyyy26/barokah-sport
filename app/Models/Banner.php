@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 
 class Banner extends Model
 {
@@ -18,14 +19,26 @@ class Banner extends Model
         'ends_at',
     ];
 
-
     protected $casts = [
-
         'is_active' => 'boolean',
-
         'starts_at' => 'datetime',
-
         'ends_at' => 'datetime',
-
     ];
+
+    /**
+     * Scope untuk banner aktif
+     */
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->where('is_active', true)
+            ->where(function($q) {
+                $q->whereNull('starts_at')
+                  ->orWhere('starts_at', '<=', now());
+            })
+            ->where(function($q) {
+                $q->whereNull('ends_at')
+                  ->orWhere('ends_at', '>=', now());
+            })
+            ->orderBy('sort_order');
+    }
 }

@@ -19,6 +19,10 @@ use App\Http\Controllers\Customer\AgenWebsiteController;
 use App\Http\Controllers\Api\VillageController;
 use App\Http\Controllers\Customer\BiteshipController;
 use App\Http\Controllers\Customer\WishlistController;
+use App\Http\Controllers\Admin\FeatureController;
+use App\Http\Controllers\Admin\ArticleController;
+use App\Http\Controllers\Admin\ArticleCategoryAjaxController;
+use App\Http\Controllers\Customer\CustomerArticleController;
 
 // ============================================
 // CUSTOMER FRONTEND
@@ -104,8 +108,19 @@ Route::get('/api/products/{product}/variants', function (App\Models\Product $pro
     ]);
 })->name('api.products.variants');
 
-Route::get('/produk', [CustomerProductController::class, 'index'])->name('customer.products.index');
+Route::get('/katalog', [CustomerProductController::class, 'index'])->name('customer.products.index');
 Route::get('/produk/{product:slug}', [CustomerProductController::class, 'show'])->name('customer.products.show');
+Route::get('/katalog/terbaru', [CustomerProductController::class, 'latest'])->name('customer.products.latest');
+Route::get('/katalog/promo', [CustomerProductController::class, 'promo'])->name('customer.products.promo'); 
+
+Route::get('/artikel', [CustomerArticleController::class, 'index'])
+    ->name('customer.articles.index');
+
+Route::get('/artikel/{slug}', [CustomerArticleController::class, 'show'])
+    ->name('customer.articles.show');
+
+Route::post('/api/articles/record-view', [App\Http\Controllers\Customer\CustomerArticleController::class, 'recordView'])
+    ->name('customer.articles.record-view');
 
 Route::get('/kategori/{category:slug}', [CustomerCategoryController::class, 'show'])->name('customer.categories.show');
 
@@ -126,6 +141,7 @@ Route::post('/logout', [CustomerAuthController::class, 'logout'])->name('custome
 
 Route::get('/wishlist', [WishlistController::class, 'index'])->name('customer.wishlist.index');
 Route::get('/wishlist/popup', [WishlistController::class, 'popup'])->name('customer.wishlist.popup');
+Route::get('/wishlist/status', [WishlistController::class, 'status'])->name('customer.wishlist.status');
 Route::post('/wishlist/add', [WishlistController::class, 'add'])->name('customer.wishlist.add');
 Route::delete('/wishlist/remove', [WishlistController::class, 'remove'])->name('customer.wishlist.remove');
 Route::delete('/wishlist/clear', [WishlistController::class, 'clear'])->name('customer.wishlist.clear');
@@ -242,6 +258,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::post('/products', [ProductController::class, 'store'])->name('admin.products.store');
     Route::get('/products/{product}/edit', [ProductController::class, 'edit'])->name('admin.products.edit');
     Route::put('/products/{product}', [ProductController::class, 'update'])->name('admin.products.update');
+    Route::delete('/products/bulk-delete', [ProductController::class, 'bulkDestroy'])->name('admin.products.bulk-destroy');
     Route::delete('/products/{product}', [ProductController::class, 'destroy'])->name('admin.products.destroy');
     Route::delete('/products/{product}/images/{image}', [ProductController::class, 'destroyImage'])->name('admin.products.images.destroy');
     Route::post('/products/check-sku', [ProductController::class, 'checkSku'])->name('admin.products.check-sku');
@@ -274,4 +291,17 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::put('/orders/{order}/shipping', [OrderController::class, 'updateShipping'])->name('admin.orders.shipping');
     Route::get('/orders/{order}/invoice', [OrderController::class, 'invoice'])->name('admin.orders.invoice');
 
+    Route::post('/features', [FeatureController::class, 'store'])->name('admin.features.store');
+
+    Route::get('/articles', [ArticleController::class, 'index'])->name('admin.articles.index');
+    Route::get('/articles/create', [ArticleController::class, 'create'])->name('admin.articles.create');
+    Route::post('/articles', [ArticleController::class, 'store'])->name('admin.articles.store');
+    Route::get('/articles/{article}/edit', [ArticleController::class, 'edit'])->name('admin.articles.edit');
+    Route::put('/articles/{article}', [ArticleController::class, 'update'])->name('admin.articles.update');
+    Route::delete('/articles/{article}', [ArticleController::class, 'destroy'])->name('admin.articles.destroy');
+
+    // 🔥 ARTICLE CATEGORIES AJAX
+    Route::get('/article-categories/ajax', [ArticleCategoryAjaxController::class, 'index'])->name('admin.article-categories.ajax');
+    Route::post('/article-categories/ajax', [ArticleCategoryAjaxController::class, 'store'])->name('admin.article-categories.ajax.store');
+    Route::delete('/article-categories/ajax/{id}', [ArticleCategoryAjaxController::class, 'destroy'])->name('admin.article-categories.ajax.destroy');
 });

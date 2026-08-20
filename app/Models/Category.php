@@ -22,9 +22,44 @@ class Category extends Model
         'is_active' => 'boolean',
     ];
 
-
     public function products(): HasMany
     {
         return $this->hasMany(Product::class);
+    }
+
+    public function sizeGuides(): HasMany
+    {
+        return $this->hasMany(SizeGuide::class)->orderBy('sort_order');
+    }
+
+    /**
+     * 🔥 Mendapatkan semua label dimensi yang digunakan di kategori ini
+     */
+    public function getDimensionLabelsAttribute()
+    {
+        $labels = [];
+        foreach ($this->sizeGuides as $guide) {
+            if ($guide->dimensions) {
+                foreach ($guide->dimensions as $key => $value) {
+                    if (!in_array($key, $labels)) {
+                        $labels[] = $key;
+                    }
+                }
+            }
+        }
+        return $labels;
+    }
+
+    /**
+     * 🔥 Mendapatkan data size guide dalam format array untuk JavaScript
+     */
+    public function getSizeGuideDataAttribute()
+    {
+        return $this->sizeGuides->map(function($guide) {
+            return [
+                'size' => $guide->size,
+                'dimensions' => $guide->dimensions ?? [],
+            ];
+        })->toArray();
     }
 }
