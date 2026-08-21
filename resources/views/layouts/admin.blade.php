@@ -129,6 +129,43 @@
                 </a>
 
                 <a
+                    href="{{ route('admin.faqs.index') }}"
+                    class="flex items-center gap-3 px-4 py-3
+                        rounded-lg text-sm font-medium
+                        text-gray-700 hover:bg-blue-50
+                        hover:text-blue-600"
+                >
+
+                    <span>
+                        FAQ
+                    </span>
+                </a>
+                <a
+                    href="{{ route('admin.terms.index') }}"
+                    class="flex items-center gap-3 px-4 py-3
+                        rounded-lg text-sm font-medium
+                        text-gray-700 hover:bg-blue-50
+                        hover:text-blue-600"
+                >
+
+                    <span>
+                        Syarat & Ketentuan
+                    </span>
+                </a>
+                <a
+                    href="{{ route('admin.privacy.index') }}"
+                    class="flex items-center gap-3 px-4 py-3
+                        rounded-lg text-sm font-medium
+                        text-gray-700 hover:bg-blue-50
+                        hover:text-blue-600"
+                >
+
+                    <span>
+                        Kebijakan Privasi
+                    </span>
+                </a>
+
+                <a
                     href="{{ route('admin.banners.index') }}"
                     class="flex items-center gap-3 px-4 py-3
                         rounded-lg text-sm font-medium

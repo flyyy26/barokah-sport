@@ -23,12 +23,21 @@ use App\Http\Controllers\Admin\FeatureController;
 use App\Http\Controllers\Admin\ArticleController;
 use App\Http\Controllers\Admin\ArticleCategoryAjaxController;
 use App\Http\Controllers\Customer\CustomerArticleController;
+use App\Http\Controllers\Customer\ContactController;
+use App\Http\Controllers\Admin\FaqController;
+use App\Http\Controllers\Admin\TermController;
+use App\Http\Controllers\Customer\CustomerTermController;
+use App\Http\Controllers\Admin\PrivacyPolicyController;
+use App\Http\Controllers\Customer\CustomerPrivacyController;
 
 // ============================================
 // CUSTOMER FRONTEND
 // ============================================
 
 Route::get('/', [CustomerHomeController::class, 'index'])->name('customer.home');
+Route::get('/kontak', [ContactController::class, 'index'])->name('customer.contact');
+Route::get('/syarat-dan-ketentuan', [CustomerTermController::class, 'index'])->name('customer.terms');
+Route::get('/kebijakan-privasi', [CustomerPrivacyController::class, 'index'])->name('customer.privacy');
 
 // ============================================
 // API PRODUCT VARIANTS (untuk modal)
@@ -304,4 +313,20 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::get('/article-categories/ajax', [ArticleCategoryAjaxController::class, 'index'])->name('admin.article-categories.ajax');
     Route::post('/article-categories/ajax', [ArticleCategoryAjaxController::class, 'store'])->name('admin.article-categories.ajax.store');
     Route::delete('/article-categories/ajax/{id}', [ArticleCategoryAjaxController::class, 'destroy'])->name('admin.article-categories.ajax.destroy');
+
+    Route::patch('faqs/{faq}/toggle', [FaqController::class, 'toggle'])->name('admin.faqs.toggle');
+    Route::get('/faqs', [FaqController::class, 'index'])->name('admin.faqs.index');
+    Route::get('/faqs/create', [FaqController::class, 'create'])->name('admin.faqs.create');
+    Route::post('/faqs', [FaqController::class, 'store'])->name('admin.faqs.store');
+    Route::get('/faqs/{faq}/edit', [FaqController::class, 'edit'])->name('admin.faqs.edit');
+    Route::put('/faqs/{faq}', [FaqController::class, 'update'])->name('admin.faqs.update');
+    Route::delete('/faqs/{faq}', [FaqController::class, 'destroy'])->name('admin.faqs.destroy');
+
+    Route::get('/terms', [TermController::class, 'index'])->name('admin.terms.index');
+    Route::put('/terms', [TermController::class, 'update'])->name('admin.terms.update');
+    Route::patch('/terms/toggle', [TermController::class, 'toggle'])->name('admin.terms.toggle');
+
+    Route::get('/privacy', [PrivacyPolicyController::class, 'index'])->name('admin.privacy.index');
+    Route::put('/privacy', [PrivacyPolicyController::class, 'update'])->name('admin.privacy.update');
+    Route::patch('/privacy/toggle', [PrivacyPolicyController::class, 'toggle'])->name('admin.privacy.toggle');
 });

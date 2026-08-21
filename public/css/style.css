@@ -681,6 +681,7 @@
 }
 .footer_identity img{
     width: 11vw;
+    filter: brightness(0) invert(1);
     margin-bottom: 1.3vw;
 }
 .footer_identity p{

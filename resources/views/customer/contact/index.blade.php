@@ -1,0 +1,578 @@
+@extends('layouts.customer')
+
+@section('title', 'Kontak - Barokah Sport')
+
+@section('content')
+
+<style>
+    html {
+        scroll-behavior: smooth;
+    }
+    /* ============================================
+       CATALOG CONTAINER
+       ============================================ */
+    .contact_container {
+        width: 100%;
+        margin: 0 auto;
+        border-top: 0.1vw solid #076694;
+    }
+
+    .contact-header h1 {
+        font-size: 2.3vw;
+        font-weight: 700;
+        color: #0f172a;
+        margin: 0;
+        font-family: heading, sans-serif;
+        text-transform: uppercase;
+    }
+
+    .contact-header p {
+        font-size: 0.85vw;
+        color: #94a3b8;
+        margin-top: 0.2vw;
+    }
+
+    /* ============================================
+       FILTER ROW
+       ============================================ */
+    .contact_top_container {
+        width: 100%;
+        padding: 1.3vw 7.54vw;
+        padding-bottom: 1.8vw;
+        background: #f9fafb;
+    }
+
+    .contact_layout_container {
+        width: 100%;
+        padding: 3vw 7.4vw;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        grid-gap: 2vw;
+        align-items: start;
+    }
+
+    .contact_maps {
+        width: 100%;
+        height: 16vw;
+        position: relative;
+        border-radius: .7vw;
+        overflow: hidden;
+    }
+
+    .contact_maps iframe {
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        top: 0;
+        left: 0;
+    }
+
+    .contact_content_box {
+        border-bottom: .1vw solid black;
+        padding-bottom: .4vw;
+    }
+
+    .contact_content_box h3 {
+        font-size: 1.4vw;
+        color: #076694;
+        margin-bottom: .5vw;
+    }
+
+    .contact_content_box_list ul {
+        list-style: none;
+    }
+
+    .contact_content_box_list ul li {
+        margin-bottom: .5vw;
+        display: flex;
+        align-items: center;
+        gap: .5vw;
+        font-size: .87vw;
+    }
+
+    .contact_content_box_list ul li iconify-icon {
+        font-size: 1.3vw;
+        color: #076694;
+    }
+
+    .contact_content_medsos {
+        display: flex;
+        align-items: center;
+        gap: 1vw;
+        padding: 1vw .4vw;
+    }
+
+    .contact_content_medsos_box {
+        width: 2.2vw;
+        height: 2.2vw;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 100vw;
+        border: .1vw solid black;
+        transition: all 0.3s ease;
+    }
+
+    .contact_content_medsos_box:hover {
+        background: #076694;
+        border-color: #076694;
+    }
+
+    .contact_content_medsos_box:hover iconify-icon {
+        color: white;
+    }
+
+    .contact_content_medsos_box iconify-icon {
+        font-size: 1.2vw;
+        color: black;
+        transition: color 0.3s ease;
+    }
+
+    /* ============================================
+       FAQ SECTION
+       ============================================ */
+    #faq-section {
+        scroll-margin-top: 5.7vw; /* Sesuaikan dengan tinggi navbar Anda */
+    }
+    .faq_section {
+        width: 100%;
+        padding: 3vw 7.4vw 4vw 7.4vw;
+        background: #f9fafb;
+    }
+
+    .faq_header {
+        text-align: center;
+        margin-bottom: 2vw;
+    }
+
+    .faq_header h2 {
+        font-size: 2vw;
+        font-weight: 700;
+        color: #0f172a;
+        font-family: heading, sans-serif;
+        text-transform: uppercase;
+    }
+
+    .faq_header p {
+        font-size: 0.85vw;
+        color: #94a3b8;
+        margin-top: 0.2vw;
+    }
+
+    /* FAQ Filter */
+    .faq_filters {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.6vw;
+        margin-bottom: 2vw;
+    }
+
+    .faq_filter_btn {
+        padding: 0.5vw 1.5vw;
+        border-radius: 100vw;
+        border: 0.1vw solid #e2e8f0;
+        background: white;
+        color: #64748b;
+        font-size: 0.8vw;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .faq_filter_btn:hover {
+        background: #f1f5f9;
+        border-color: #076694;
+    }
+
+    .faq_filter_btn.active {
+        background: #076694;
+        color: white;
+        border-color: #076694;
+    }
+
+    /* FAQ Items */
+    .faq_list {
+        max-width: 80%;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 0.8vw;
+    }
+
+    .faq_item {
+        background: white;
+        border-radius: 0.7vw;
+        overflow: hidden;
+        box-shadow: 0 0.1vw 0.5vw rgba(0, 0, 0, 0.05);
+        border: 0.1vw solid #e2e8f0;
+        transition: all 0.3s ease;
+    }
+
+    .faq_item:hover {
+        box-shadow: 0 0.3vw 1vw rgba(0, 0, 0, 0.08);
+    }
+
+    .faq_question {
+        width: 100%;
+        padding: 1vw 1.5vw;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: white;
+        border: none;
+        cursor: pointer;
+        font-size: 0.9vw;
+        font-weight: 600;
+        color: #0f172a;
+        text-align: left;
+        transition: all 0.3s ease;
+        font-family: heading, sans-serif;
+    }
+
+    .faq_question:hover {
+        background: #f8fafc;
+    }
+
+    .faq_question .faq_icon {
+        font-size: 1.2vw;
+        color: #076694;
+        transition: transform 0.3s ease;
+        flex-shrink: 0;
+        margin-left: 1vw;
+    }
+
+    .faq_question .faq_icon.open {
+        transform: rotate(180deg);
+    }
+
+    .faq_answer {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.4s ease, padding 0.3s ease;
+        background: #f8fafc;
+    }
+
+    .faq_answer.active {
+        max-height: 500px;
+    }
+
+    .faq_answer_content {
+        padding: 0 1.5vw 1.2vw 1.5vw;
+        font-size: 0.85vw;
+        color: #475569;
+        line-height: 1.6;
+        border-top: 0.1vw solid #e2e8f0;
+    }
+
+    /* Category Badge */
+    .faq_category_badge {
+        display: inline-block;
+        padding: 0.2vw 0.8vw;
+        border-radius: 100vw;
+        font-size: 0.6vw;
+        font-weight: 600;
+        margin-right: 0.5vw;
+        flex-shrink: 0;
+    }
+
+    .faq_category_badge.umum {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+
+    .faq_category_badge.produk {
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    .faq_category_badge.pengiriman {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .faq_category_badge.pembayaran {
+        background: #ede9fe;
+        color: #5b21b6;
+    }
+
+    .faq_category_badge.garansi {
+        background: #fce4ec;
+        color: #b91c1c;
+    }
+
+    /* No FAQ */
+    .faq_empty {
+        text-align: center;
+        padding: 3vw;
+        color: #94a3b8;
+        font-size: 0.9vw;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .contact_layout_container {
+            grid-template-columns: 1fr;
+            padding: 3vw 5vw;
+        }
+
+        .contact_maps {
+            height: 50vw;
+        }
+
+        .contact-header h1 {
+            font-size: 5vw;
+        }
+
+        .contact-header p {
+            font-size: 2.5vw;
+        }
+
+        .contact_content_box h3 {
+            font-size: 3.5vw;
+        }
+
+        .contact_content_box_list ul li {
+            font-size: 2.5vw;
+        }
+
+        .contact_content_medsos_box {
+            width: 6vw;
+            height: 6vw;
+        }
+
+        .contact_content_medsos_box iconify-icon {
+            font-size: 3vw;
+        }
+
+        .faq_section {
+            padding: 5vw 5vw 8vw 5vw;
+        }
+
+        .faq_header h2 {
+            font-size: 5vw;
+        }
+
+        .faq_header p {
+            font-size: 2.5vw;
+        }
+
+        .faq_filters {
+            gap: 1.5vw;
+        }
+
+        .faq_filter_btn {
+            padding: 1.5vw 4vw;
+            font-size: 2.2vw;
+        }
+
+        .faq_list {
+            max-width: 100%;
+        }
+
+        .faq_question {
+            font-size: 2.5vw;
+            padding: 3vw 4vw;
+        }
+
+        .faq_answer_content {
+            font-size: 2.3vw;
+            padding: 0 4vw 3vw 4vw;
+        }
+
+        .faq_category_badge {
+            font-size: 1.8vw;
+            padding: 0.5vw 2vw;
+        }
+
+        .faq_question .faq_icon {
+            font-size: 3.5vw;
+        }
+    }
+</style>
+
+<div class="contact_container">
+    {{-- CONTACT HEADER --}}
+    <div class="contact_top_container">
+        <div class="contact-header">
+            <h1>Kontak Kami</h1>
+            <p>Siap membantu Anda. Hubungi kami sekarang!</p>
+        </div>
+    </div>
+
+    {{-- CONTACT LAYOUT --}}
+    <div class="contact_layout_container">
+        <div class="contact_maps">
+            @if($setting?->google_maps)
+                {!! $setting->google_maps !!}
+            @else
+                <div style="width:100%;height:100%;background:#e2e8f0;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:0.9vw;">
+                    Map belum tersedia
+                </div>
+            @endif
+        </div>
+        <div class="contact_content">
+            <div class="contact_content_box">
+                <h3>Kantor Pusat Perusahaan</h3>
+                <div class="contact_content_box_list">
+                    <ul>
+                        <li>
+                            <iconify-icon icon="majesticons:map-marker"></iconify-icon>
+                            {{ $setting?->address ?? 'Alamat belum diisi' }}
+                        </li>
+                        <li>
+                            <iconify-icon icon="ic:baseline-whatsapp"></iconify-icon>
+                            {{ $setting?->whatsapp ?? 'WhatsApp belum diisi' }}
+                        </li>
+                        <li>
+                            <iconify-icon icon="ic:outline-email"></iconify-icon>
+                            {{ $setting?->email ?? 'Email belum diisi' }}
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="contact_content_medsos">
+                <a href="{{ $setting?->facebook ?? '#' }}" target="_blank">
+                    <div class="contact_content_medsos_box">
+                        <iconify-icon icon="ic:baseline-facebook"></iconify-icon>
+                    </div>
+                </a>
+                <a href="{{ $setting?->instagram ?? '#' }}" target="_blank">
+                    <div class="contact_content_medsos_box">
+                        <iconify-icon icon="mdi:instagram"></iconify-icon>
+                    </div>
+                </a>
+                <a href="{{ $setting?->tiktok ?? '#' }}" target="_blank">
+                    <div class="contact_content_medsos_box">
+                        <iconify-icon icon="ic:baseline-tiktok"></iconify-icon>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- FAQ SECTION --}}
+<div class="faq_section" id="faq-section">
+    <div class="faq_header">
+        <h2>Pertanyaan yang Sering Diajukan</h2>
+        <p>Temukan jawaban atas pertanyaan yang sering ditanyakan pelanggan</p>
+    </div>
+
+    {{-- Category Filters --}}
+    <div class="faq_filters">
+        <button class="faq_filter_btn active" data-category="all">Semua</button>
+        @foreach ($categories as $key => $label)
+            <button class="faq_filter_btn" data-category="{{ $key }}">{{ $label }}</button>
+        @endforeach
+    </div>
+
+    {{-- FAQ List --}}
+    <div class="faq_list">
+        @if ($faqs->count() > 0)
+            @foreach ($faqs as $faq)
+                <div class="faq_item" data-category="{{ $faq->category }}">
+                    <button class="faq_question" onclick="toggleFaq(this)">
+                        <span>
+                            {{ $faq->question }}
+                        </span>
+                        <iconify-icon class="faq_icon" icon="ic:sharp-keyboard-arrow-down"></iconify-icon>
+                    </button>
+                    <div class="faq_answer">
+                        <div class="faq_answer_content">
+                            {{ $faq->answer }}
+                        </div>
+                    </div>
+                </div>
+            @endforeach
+        @else
+            <div class="faq_empty">
+                <p>Belum ada FAQ tersedia saat ini.</p>
+            </div>
+        @endif
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Cek apakah URL memiliki hash #faq-section
+        if (window.location.hash === '#faq-section') {
+            setTimeout(function() {
+                const faqSection = document.getElementById('faq-section');
+                if (faqSection) {
+                    faqSection.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            }, 500); // Delay 500ms untuk memastikan halaman selesai load
+        }
+    });
+
+    // FAQ Toggle
+    function toggleFaq(button) {
+        const answer = button.nextElementSibling;
+        const icon = button.querySelector('.faq_icon');
+        const isActive = answer.classList.contains('active');
+
+        // Close all other FAQs
+        document.querySelectorAll('.faq_answer').forEach(el => {
+            if (el !== answer) {
+                el.classList.remove('active');
+                el.previousElementSibling.querySelector('.faq_icon').classList.remove('open');
+            }
+        });
+
+        // Toggle current FAQ
+        if (isActive) {
+            answer.classList.remove('active');
+            icon.classList.remove('open');
+        } else {
+            answer.classList.add('active');
+            icon.classList.add('open');
+        }
+    }
+
+    // FAQ Filter
+    document.querySelectorAll('.faq_filter_btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const category = this.dataset.category;
+
+            // Update active button
+            document.querySelectorAll('.faq_filter_btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            this.classList.add('active');
+
+            // Filter FAQ items
+            document.querySelectorAll('.faq_item').forEach(item => {
+                if (category === 'all' || item.dataset.category === category) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+
+            // Close all open FAQs when filtering
+            document.querySelectorAll('.faq_answer').forEach(el => {
+                el.classList.remove('active');
+                el.previousElementSibling.querySelector('.faq_icon').classList.remove('open');
+            });
+        });
+    });
+
+    // Auto-open first FAQ
+    document.addEventListener('DOMContentLoaded', function() {
+        const firstFaq = document.querySelector('.faq_item');
+        if (firstFaq) {
+            const firstButton = firstFaq.querySelector('.faq_question');
+            if (firstButton) {
+                setTimeout(() => {
+                    toggleFaq(firstButton);
+                }, 500);
+            }
+        }
+    });
+</script>
+
+@endsection

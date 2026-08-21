@@ -15,6 +15,7 @@ class Setting extends Model
         'whatsapp',
         'email',
         'address',
+        'google_maps',
         'instagram',
         'facebook',
         'tiktok',

@@ -1,7 +1,7 @@
  <div class="footer">
     <div class="footer_first">
         <div class="footer_identity">
-            <img src="{{ asset('images/logo-white.png') }}" alt="Bean Event Organizer">
+            <img src="{{ asset('images/logo.png') }}" alt="Bean Event Organizer">
             <p>Toko online terpercaya untuk jaket dan celana olahraga berkualitas dengan harga bersahabat. Nikmati produk olahraga terbaik dengan material unggulan, desain modern, dan promo menarik setiap bulannya.</p>
             <div class="social_media_footer">
                 @forelse($marketplaces ?? [] as $marketplace)
@@ -44,9 +44,9 @@
             <div class="menu_footer_box">
                 <h3>Navigation</h3>
                 <ul>
-                    <li><a href="/kontak-kami">Kontak Kami</a></li>
+                    <li><a href="{{ route('customer.contact') }}">Kontak Kami</a></li>
                     <li><a href="#">Tentang Kami</a></li>
-                    <li><a href="#">Faq</a></li>
+                    <li><a href="{{ route('customer.contact') }}#faq-section">Faq</a></li>
                     <li><a href="{{ route('customer.articles.index') }}">Artikel</a></li>
                 </ul>
             </div>
@@ -63,33 +63,35 @@
     </div>
     <div class="footer_second">
         <ul>
-            <li><a href="/syarat-ketentuan">Syarat & Ketentuan</a></li>
-            <li><a href="/kebijakan-privasi">Kebijakan Privasi</a></li>
+            <li><a href="{{ route('customer.terms') }}">Syarat & Ketentuan</a></li>
+            <li><a href="{{ route('customer.privacy') }}">Kebijakan Privasi</a></li>
         </ul>
         <span>© 2026 Barokah Sport | ID</span>
     </div>
     <div class="footer_third">
-        <p><span>Disclaimer:</span> Kami tidak bertanggung jawab atas konten situs pihak ketiga. Verifikasi informasi dan konsultasikan dengan profesional sebelum mengambil keputusan.</p>
+        <p>
+            <span>Disclaimer:</span> Kami tidak bertanggung jawab atas konten situs pihak ketiga. Verifikasi informasi dan konsultasikan dengan profesional sebelum mengambil keputusan.
+        </p>
         <div class="company_data">
             <div class="company_data_box">
                 <iconify-icon icon="carbon:location-filled"></iconify-icon>
                 <div class="company_data_content">
-                    <h5>Barokah Sport</h5>
-                    <p>Mugarsari, Tamansari, Tasikmalaya, Jawa Barat 46196</p>
+                    <h5>{{ $setting?->store_name ?? 'Barokah Sport' }}</h5>
+                    <p>{{ $setting?->address ?? 'Mugarsari, Tamansari, Tasikmalaya, Jawa Barat 46196' }}</p>
                 </div>
             </div>
             <div class="company_data_box">
                 <iconify-icon icon="mdi:envelope"></iconify-icon>
                 <div class="company_data_content">
                     <h5>Email</h5>
-                    <p>barokahsport.com</p>
+                    <p>{{ $setting?->email ?? 'barokahsport@gmail.com' }}</p>
                 </div>
             </div>
             <div class="company_data_box">
-                <iconify-icon icon="ic:baseline-phone"></iconify-icon>
+                <iconify-icon icon="ic:baseline-whatsapp"></iconify-icon>
                 <div class="company_data_content">
-                    <h5>Telepon</h5>
-                    <p>+62 878-6629-1056</p>
+                    <h5>WhatsApp</h5>
+                    <p>{{ $setting?->whatsapp ?? '08123516518' }}</p>
                 </div>
             </div>
         </div>

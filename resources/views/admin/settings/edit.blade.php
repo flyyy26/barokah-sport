@@ -673,6 +673,34 @@
 
                 </div>
 
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700">
+                        Google Maps
+                    </label>
+                    
+                    <textarea 
+                        name="google_maps" 
+                        rows="4"
+                        class="mt-2 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        placeholder="Tempelkan kode iframe Google Maps disini..."
+                    >{{ old('google_maps', $setting?->google_maps) }}</textarea>
+                    
+                    <div class="mt-2 text-xs text-gray-500 space-y-1">
+                        <p>🔹 Cara mendapatkan kode iframe:</p>
+                        <ol class="list-decimal list-inside ml-2">
+                            <li>Buka Google Maps dan cari lokasi toko</li>
+                            <li>Klik tombol "Bagikan" (Share)</li>
+                            <li>Pilih tab "Sematan peta" (Embed a map)</li>
+                            <li>Copy kode iframe dan tempelkan di atas</li>
+                        </ol>
+                        <p class="mt-1">📌 Contoh: <code class="bg-gray-100 px-1 py-0.5 rounded">&lt;iframe src="https://www.google.com/maps/embed?pb=..." width="100%" height="450" style="border:0;" allowfullscreen="" loading="lazy"&gt;&lt;/iframe&gt;</code></p>
+                    </div>
+                    
+                    @error('google_maps') 
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p> 
+                    @enderror
+                </div>
+
             </div>
 
         </div>
