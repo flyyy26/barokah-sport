@@ -8,11 +8,11 @@
         </div>
         <div class="text_top_section">
             <div class="text_top_section_link">
-                <a href="#">
+                <a href="{{ route('customer.help') }}">
                     BANTUAN & DUKUNGAN
                 </a>
                 |
-                <a href="#">
+                <a href="{{ route('customer.contact') }}">
                     LOKASI TOKO
                 </a>
             </div>
@@ -43,7 +43,7 @@
             <a href="{{ route('customer.articles.index') }}" class="{{ request()->is('artikel') ? 'active' : '' }}">
                 <li>Artikel</li>
             </a>
-            <a href="/cara-pesan" class="{{ request()->is('cara-pesan') ? 'active' : '' }}">
+            <a href="{{ route('customer.cara-pesan') }}" class="{{ request()->is('cara-pesan') ? 'active' : '' }}">
                 <li>Cara Pesan</li>
             </a>
         </ul>
@@ -62,15 +62,31 @@
         </div> -->
 
         <div class="btn_header_bottom">
-            <button>
+            <button onclick="openSearchPopup()">
                 <iconify-icon icon="mingcute:search-line"></iconify-icon>
-            </button>    
+            </button>
 
-            <a href="#">
-                <button>
-                    <iconify-icon icon="iconamoon:profile-light"></iconify-icon>
-                </button>
-            </a>
+            @auth
+                @if(auth()->user()->role === 'customer' || auth()->user()->role === null)
+                    <a href="{{ route('customer.account') }}">
+                        <button>
+                            <iconify-icon icon="iconamoon:profile-light"></iconify-icon>
+                        </button>
+                    </a>
+                @else
+                    <a href="{{ route('admin.dashboard') }}">
+                        <button>
+                            <iconify-icon icon="iconamoon:profile-light"></iconify-icon>
+                        </button>
+                    </a>
+                @endif
+            @else
+                <a href="{{ route('customer.login') }}">
+                    <button>
+                        <iconify-icon icon="iconamoon:profile-light"></iconify-icon>
+                    </button>
+                </a>
+            @endauth
 
             <button id="wishlist-toggle" style="position:relative;">
                 <iconify-icon icon="mynaui:heart"></iconify-icon>
@@ -81,18 +97,6 @@
                 <iconify-icon icon="solar:cart-linear"></iconify-icon>
                 <span id="cart-count" style="display:none;">0</span>
             </button>
-
-            <!-- @auth('customer')
-                <a href="{{ route('customer.account') }}" class="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900">
-                    <div class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-600">
-                        {{ strtoupper(substr(auth('customer')->user()->name, 0, 1)) }}
-                    </div>
-                    <span class="hidden md:inline">{{ auth('customer')->user()->name }}</span>
-                </a>
-            @else
-                <a href="{{ route('customer.login') }}" class="text-sm font-medium text-slate-600 hover:text-slate-900 hidden sm:inline">Masuk</a>
-                <a href="{{ route('customer.register') }}" class="rounded-lg bg-slate-900 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold text-white transition hover:bg-slate-800">Daftar</a>
-            @endauth -->
         </div>
     </div>
 </div>

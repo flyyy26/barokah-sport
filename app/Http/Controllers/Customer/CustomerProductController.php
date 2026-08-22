@@ -16,9 +16,16 @@ class CustomerProductController extends Controller
         $query = Product::with(['category', 'images', 'variants'])
             ->where('is_active', true);
 
-        // 🔥 SEARCH
+        // 🔥 SEARCH - PERBAIKI UNTUK MENCARI PRODUK
         if ($request->filled('search')) {
-            $query->where('name', 'like', '%' . $request->search . '%');
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', '%' . $search . '%')
+                ->orWhere('description', 'like', '%' . $search . '%')
+                ->orWhereHas('category', function($cat) use ($search) {
+                    $cat->where('name', 'like', '%' . $search . '%');
+                });
+            });
         }
 
         // 🔥 CATEGORY FILTER
@@ -65,13 +72,13 @@ class CustomerProductController extends Controller
         switch ($request->sort) {
             case 'price_asc':
                 $query->select('products.*')
-                      ->addSelect(\DB::raw('(SELECT MIN(price) FROM product_variants WHERE product_variants.product_id = products.id) as min_price'))
-                      ->orderBy('min_price', 'asc');
+                    ->addSelect(\DB::raw('(SELECT MIN(price) FROM product_variants WHERE product_variants.product_id = products.id) as min_price'))
+                    ->orderBy('min_price', 'asc');
                 break;
             case 'price_desc':
                 $query->select('products.*')
-                      ->addSelect(\DB::raw('(SELECT MIN(price) FROM product_variants WHERE product_variants.product_id = products.id) as min_price'))
-                      ->orderBy('min_price', 'desc');
+                    ->addSelect(\DB::raw('(SELECT MIN(price) FROM product_variants WHERE product_variants.product_id = products.id) as min_price'))
+                    ->orderBy('min_price', 'desc');
                 break;
             case 'name':
                 $query->orderBy('name', 'asc');
@@ -83,22 +90,26 @@ class CustomerProductController extends Controller
         }
 
         $products = $query->paginate(12);
+        
+        // 🔥 TAMBAHKAN SEARCH KEYWORD KE PAGINATION
+        if ($request->filled('search')) {
+            $products->appends(['search' => $request->search]);
+        }
+
         $categories = Category::where('is_active', true)->orderBy('name')->get();
 
         // 🔥 AMBIL DATA UNTUK FILTER
         $genders = ['pria', 'wanita', 'unisex'];
         
-        // Ambil semua ukuran dari option values (yang mengandung 'ukuran')
         $sizes = ProductOptionValue::whereHas('option', function($q) {
             $q->whereRaw('LOWER(name) LIKE ?', ['%ukuran%'])
-              ->orWhereRaw('LOWER(name) LIKE ?', ['%size%']);
+            ->orWhereRaw('LOWER(name) LIKE ?', ['%size%']);
         })->distinct()->pluck('value')->toArray();
         sort($sizes);
 
-        // Ambil semua warna dari option values (yang mengandung 'warna')
         $colors = ProductOptionValue::whereHas('option', function($q) {
             $q->whereRaw('LOWER(name) LIKE ?', ['%warna%'])
-              ->orWhereRaw('LOWER(name) LIKE ?', ['%color%']);
+            ->orWhereRaw('LOWER(name) LIKE ?', ['%color%']);
         })->distinct()->pluck('value')->toArray();
         sort($colors);
 

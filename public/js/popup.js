@@ -559,29 +559,33 @@ $(document).ready(function() {
                 $('#wishlist-content').removeClass('loading');
                 
                 if (response.success) {
-                    // Remove item from DOM after animation
                     setTimeout(function() {
                         $item.remove();
                         
-                        // Check if wishlist is empty
                         if ($('.wishlist-item').length === 0) {
                             loadWishlistPopup();
                         }
                         
-                        // Update count
+                        // 🔥 UPDATE COUNT
                         if (response.count !== undefined) {
                             if (typeof window.updateNavbarWishlistCount === 'function') {
                                 window.updateNavbarWishlistCount(response.count);
                             }
-                            updateWishlistCount(response.count);
                         }
                         
-                        // 🔥 UPDATE WISHLIST ICON DI HALAMAN
+                        // 🔥 UPDATE SEMUA TOMBOL WISHLIST DI HALAMAN
                         if (typeof window.updateWishlistIcon === 'function') {
                             window.updateWishlistIcon(productId, false);
                         }
                         
-                        // Hide clear button if empty
+                        // 🔥 UPDATE SEMUA TOMBOL LAINNYA
+                        document.querySelectorAll(`.add_to_wishlist_btn[data-product-id="${productId}"]`).forEach(function(btn) {
+                            btn.innerHTML = '<iconify-icon icon="solar:heart-linear"></iconify-icon>';
+                            btn.classList.remove('active');
+                            btn.dataset.inWishlist = 'false';
+                            btn.disabled = false;
+                        });
+                        
                         if (response.count === 0) {
                             $('#wishlist-clear').removeClass('visible').hide();
                         }
@@ -589,7 +593,6 @@ $(document).ready(function() {
                         showToast('Produk dihapus dari wishlist', 'info');
                     }, 350);
                 } else {
-                    // Reset animation if failed
                     $item.css({
                         'opacity': '1',
                         'transform': 'translateX(0)'
@@ -599,13 +602,10 @@ $(document).ready(function() {
             },
             error: function(xhr) {
                 $('#wishlist-content').removeClass('loading');
-                
-                // Reset animation
                 $item.css({
                     'opacity': '1',
                     'transform': 'translateX(0)'
                 });
-                
                 showToast('Terjadi kesalahan, silakan coba lagi', 'error');
             }
         });

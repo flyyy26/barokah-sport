@@ -333,10 +333,6 @@
                         Versi {{ $privacy->version ?? '1.0' }}
                     </span>
                 </div>
-                <a href="{{ route('customer.contact') }}" class="privacy-back">
-                    <iconify-icon icon="mdi:arrow-left"></iconify-icon>
-                    Kembali ke Kontak
-                </a>
             </div>
         @else
             <div class="text-center py-8">

@@ -45,7 +45,7 @@
                 <h3>Navigation</h3>
                 <ul>
                     <li><a href="{{ route('customer.contact') }}">Kontak Kami</a></li>
-                    <li><a href="#">Tentang Kami</a></li>
+                    <li><a href="{{ route('customer.about') }}">Tentang Kami</a></li>
                     <li><a href="{{ route('customer.contact') }}#faq-section">Faq</a></li>
                     <li><a href="{{ route('customer.articles.index') }}">Artikel</a></li>
                 </ul>
@@ -53,10 +53,10 @@
             <div class="menu_footer_box">
                 <h3>Bantuan</h3>
                 <ul>
-                    <li><a href="#">Pengiriman</a></li>
-                    <li><a href="#">Pembayaran</a></li>
-                    <li><a href="#">Panduan Ukuran</a></li>
-                    <li><a href="#">Pengembalian</a></li>
+                    <li><a href="{{ route('customer.contact', ['category' => 'pengiriman']) }}#faq-section">Pengiriman</a></li>
+                    <li><a href="{{ route('customer.contact', ['category' => 'pembayaran']) }}#faq-section">Pembayaran</a></li>
+                    <li><a href="{{ route('customer.size-guide') }}">Panduan Ukuran</a></li>
+                    <li><a href="{{ route('customer.contact', ['category' => 'pengembalian']) }}#faq-section">Pengembalian</a></li>
                 </ul>
             </div>
         </div>

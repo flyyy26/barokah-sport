@@ -22,7 +22,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'role', // 🔥 TAMBAHKAN INI
+        'role',
     ];
 
     /**
@@ -48,7 +48,6 @@ class User extends Authenticatable
         ];
     }
 
-    // 🔥 TAMBAHKAN METHOD INI
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
@@ -57,5 +56,17 @@ class User extends Authenticatable
     public function isCustomer(): bool
     {
         return $this->role === 'customer' || $this->role === null;
+    }
+
+    // 🔥 RELASI CART
+    public function carts()
+    {
+        return $this->hasMany(Cart::class);
+    }
+
+    // 🔥 RELASI WISHLIST
+    public function wishlists()
+    {
+        return $this->hasMany(Wishlist::class);
     }
 }

@@ -1,158 +1,260 @@
-<!DOCTYPE html>
-<html lang="id">
+@extends('layouts.customer')
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Akun Saya - {{ config('app.name') }}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
+@section('title', 'Akun Saya - Barokah Sport')
 
-<body class="min-h-screen bg-slate-50 text-slate-900">
+@section('content')
 
-    {{-- NAVBAR SAMA SEPERTI SEBELUMNYA --}}
-    <header class="border-b border-slate-200 bg-white">
-        <div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-8">
-            <a href="{{ route('customer.home') }}" class="flex items-center gap-3">
-                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 font-bold text-white">
-                    {{ strtoupper(substr(config('app.name'), 0, 1)) }}
-                </div>
-                <span class="font-bold text-slate-900">{{ config('app.name') }}</span>
-            </a>
+<style>
+    .account_container {
+        width: 100%;
+        max-width: 50vw;
+        margin: 3vw auto;
+        padding: 2.5vw;
+        background: #ffffff;
+        border-radius: 1vw;
+        border: 0.1vw solid #e2e8f0;
+        box-shadow: 0 0.5vw 2vw rgba(0, 0, 0, 0.05);
+    }
 
-            <div class="flex items-center gap-4">
-                <span class="hidden text-sm font-medium text-slate-600 sm:block">
-                    {{ auth('customer')->user()->name }}
-                </span>
+    .account_container h1 {
+        font-size: 2vw;
+        font-weight: 700;
+        color: #0f172a;
+        font-family: heading, sans-serif;
+        text-transform: uppercase;
+        margin-bottom: 0.3vw;
+    }
 
-                <form action="{{ route('customer.logout') }}" method="POST">
-                    @csrf
-                    <button type="submit" class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600">
-                        Logout
-                    </button>
-                </form>
-            </div>
+    .account_container .welcome-text {
+        font-size: 0.9vw;
+        color: #94a3b8;
+        margin-bottom: 2vw;
+    }
+
+    .account_info {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5vw;
+        margin-bottom: 2vw;
+    }
+
+    .account_info .info_item {
+        display: flex;
+        padding: 0.6vw 0;
+        border-bottom: 0.05vw solid #f1f5f9;
+    }
+
+    .account_info .info_item .label {
+        width: 8vw;
+        font-size: 0.8vw;
+        font-weight: 600;
+        color: #475569;
+    }
+
+    .account_info .info_item .value {
+        font-size: 0.8vw;
+        color: #0f172a;
+        font-weight: 500;
+    }
+
+    .account_menu {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.8vw;
+        margin: 1.5vw 0 2vw;
+    }
+
+    .account_menu .menu_item {
+        display: flex;
+        align-items: center;
+        gap: 0.8vw;
+        padding: 0.8vw 1.2vw;
+        background: #f8fafc;
+        border-radius: 0.5vw;
+        border: 0.05vw solid #e2e8f0;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        color: #0f172a;
+    }
+
+    .account_menu .menu_item:hover {
+        background: #f1f5f9;
+        border-color: #076694;
+        transform: translateX(0.2vw);
+    }
+
+    .account_menu .menu_item iconify-icon {
+        font-size: 1.2vw;
+        color: #076694;
+    }
+
+    .account_menu .menu_item .menu_text {
+        font-size: 0.8vw;
+        font-weight: 500;
+    }
+
+    .account_menu .menu_item .menu_badge {
+        margin-left: auto;
+        padding: 0.1vw 0.5vw;
+        background: #076694;
+        color: #ffffff;
+        border-radius: 100vw;
+        font-size: 0.6vw;
+        font-weight: 600;
+    }
+
+    .btn_logout {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5vw;
+        padding: 0.6vw 2vw;
+        background: #ef4444;
+        color: #ffffff;
+        border: none;
+        border-radius: 0.5vw;
+        font-size: 0.8vw;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .btn_logout:hover {
+        background: #dc2626;
+        transform: scale(1.02);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .account_container {
+            max-width: 85vw;
+            padding: 4vw;
+            border-radius: 2vw;
+        }
+
+        .account_container h1 {
+            font-size: 3.5vw;
+        }
+
+        .account_container .welcome-text {
+            font-size: 1.5vw;
+        }
+
+        .account_info .info_item .label {
+            width: 20vw;
+            font-size: 1.3vw;
+        }
+
+        .account_info .info_item .value {
+            font-size: 1.3vw;
+        }
+
+        .account_menu {
+            grid-template-columns: 1fr;
+            gap: 1.2vw;
+        }
+
+        .account_menu .menu_item {
+            padding: 1.2vw 2vw;
+        }
+
+        .account_menu .menu_item iconify-icon {
+            font-size: 2vw;
+        }
+
+        .account_menu .menu_item .menu_text {
+            font-size: 1.3vw;
+        }
+
+        .btn_logout {
+            font-size: 1.3vw;
+            padding: 1vw 3vw;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .account_container {
+            max-width: 95vw;
+            padding: 5vw;
+            border-radius: 3vw;
+        }
+
+        .account_container h1 {
+            font-size: 5vw;
+        }
+
+        .account_container .welcome-text {
+            font-size: 2.2vw;
+        }
+
+        .account_info .info_item .label {
+            width: 25vw;
+            font-size: 1.8vw;
+        }
+
+        .account_info .info_item .value {
+            font-size: 1.8vw;
+        }
+
+        .account_menu .menu_item {
+            padding: 2vw 3vw;
+        }
+
+        .account_menu .menu_item iconify-icon {
+            font-size: 3vw;
+        }
+
+        .account_menu .menu_item .menu_text {
+            font-size: 1.8vw;
+        }
+
+        .btn_logout {
+            font-size: 1.8vw;
+            padding: 1.5vw 4vw;
+        }
+    }
+</style>
+
+<div class="account_container">
+    <h1>👤 Akun Saya</h1>
+    <p class="welcome-text">Selamat datang, <strong>{{ Auth::guard('customer')->user()->name ?? 'Customer' }}</strong>!</p>
+
+    <div class="account_info">
+        <div class="info_item">
+            <span class="label">Nama</span>
+            <span class="value">{{ Auth::guard('customer')->user()->name ?? '-' }}</span>
         </div>
-    </header>
-
-    <main class="mx-auto max-w-7xl px-6 py-10 lg:px-8">
-
-        {{-- HEADER --}}
-        <div class="mb-8">
-            <p class="text-sm font-medium text-blue-600">Akun Saya</p>
-            <h1 class="mt-2 text-3xl font-bold tracking-tight text-slate-900">
-                Halo, {{ auth('customer')->user()->name }} 👋
-            </h1>
-            <p class="mt-2 text-sm text-slate-500">Kelola informasi akun dan aktivitas belanja Anda.</p>
+        <div class="info_item">
+            <span class="label">Email</span>
+            <span class="value">{{ Auth::guard('customer')->user()->email ?? '-' }}</span>
         </div>
-
-        {{-- FLASH MESSAGES --}}
-        @if (session('success'))
-            <div class="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
-                {{ session('success') }}
-            </div>
-        @endif
-
-        <div class="grid gap-6 lg:grid-cols-3">
-
-            {{-- SIDEBAR NAV --}}
-            <div class="space-y-2">
-                <a href="{{ route('customer.account') }}" class="block rounded-xl bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-600">
-                    📋 Profil Saya
-                </a>
-                <a href="{{ route('customer.orders') }}" class="block rounded-xl px-4 py-3 text-sm text-slate-600 transition hover:bg-slate-100">
-                    📦 Riwayat Pesanan
-                </a>
-                <a href="{{ route('customer.addresses.create') }}" class="block rounded-xl px-4 py-3 text-sm text-slate-600 transition hover:bg-slate-100">
-                    ➕ Tambah Alamat
-                </a>
-            </div>
-
-            {{-- MAIN CONTENT --}}
-            <div class="lg:col-span-2 space-y-6">
-
-                {{-- PROFILE CARD --}}
-                <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <h2 class="font-bold text-slate-900">Informasi Profil</h2>
-
-                    <div class="mt-4 space-y-4">
-                        <div class="border-b border-slate-100 pb-4">
-                            <p class="text-xs font-medium uppercase tracking-wide text-slate-400">Nama Lengkap</p>
-                            <p class="mt-1 font-medium text-slate-800">{{ auth('customer')->user()->name }}</p>
-                        </div>
-
-                        <div class="border-b border-slate-100 pb-4">
-                            <p class="text-xs font-medium uppercase tracking-wide text-slate-400">Email</p>
-                            <p class="mt-1 font-medium text-slate-800">{{ auth('customer')->user()->email }}</p>
-                        </div>
-
-                        <div class="pb-2">
-                            <p class="text-xs font-medium uppercase tracking-wide text-slate-400">Nomor Telepon</p>
-                            <p class="mt-1 font-medium text-slate-800">{{ auth('customer')->user()->phone ?: '-' }}</p>
-                        </div>
-                    </div>
-
-                    <div class="mt-6 rounded-xl bg-emerald-50 p-4">
-                        <div class="flex items-center gap-3">
-                            <div class="h-3 w-3 rounded-full bg-emerald-500"></div>
-                            <span class="font-semibold text-emerald-700">Akun Aktif</span>
-                        </div>
-                        <p class="mt-2 text-sm text-emerald-600">Akun Anda aktif dan dapat digunakan untuk melakukan pembelian.</p>
-                    </div>
-                </div>
-
-                {{-- ADDRESS LIST --}}
-                <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <div class="flex items-center justify-between mb-4">
-                        <h2 class="font-bold text-slate-900">📍 Daftar Alamat</h2>
-                        <a href="{{ route('customer.addresses.create') }}" class="text-sm font-semibold text-blue-600 hover:text-blue-700">
-                            + Tambah
-                        </a>
-                    </div>
-
-                    @if ($addresses->isEmpty())
-                        <p class="text-sm text-slate-500">Kamu belum memiliki alamat tersimpan.</p>
-                    @else
-                        <div class="space-y-4">
-                            @foreach ($addresses as $address)
-                                <div class="rounded-xl border border-slate-100 p-4 {{ $address->is_default ? 'border-blue-200 bg-blue-50' : '' }}">
-                                    <div class="flex items-start justify-between">
-                                        <div>
-                                            <div class="flex items-center gap-2">
-                                                <span class="font-semibold text-slate-800">
-                                                    {{ $address->label ?: 'Alamat' }}
-                                                </span>
-                                                @if ($address->is_default)
-                                                    <span class="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700">Utama</span>
-                                                @endif
-                                            </div>
-                                            <p class="mt-1 text-sm text-slate-600">{{ $address->recipient_name }}</p>
-                                            <p class="text-sm text-slate-600">{{ $address->recipient_phone }}</p>
-                                            <p class="mt-1 text-sm text-slate-500">
-                                                {{ $address->address }}, {{ $address->city }}, {{ $address->province }} - {{ $address->postal_code }}
-                                            </p>
-                                        </div>
-                                        <div class="flex gap-2">
-                                            <a href="{{ route('customer.addresses.edit', $address) }}" class="text-sm text-blue-600 hover:text-blue-700">Edit</a>
-                                            <form action="{{ route('customer.addresses.destroy', $address) }}" method="POST" onsubmit="return confirm('Hapus alamat ini?')">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="text-sm text-red-500 hover:text-red-600">Hapus</button>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
-                            @endforeach
-                        </div>
-                    @endif
-                </div>
-
-            </div>
-
+        <div class="info_item">
+            <span class="label">Role</span>
+            <span class="value">{{ ucfirst(Auth::guard('customer')->user()->role ?? 'Customer') }}</span>
         </div>
+    </div>
 
-    </main>
+    <div class="account_menu">
+        <a href="{{ route('customer.orders') }}" class="menu_item">
+            <iconify-icon icon="mdi:package-variant"></iconify-icon>
+            <span class="menu_text">Pesanan Saya</span>
+        </a>
+        <a href="{{ route('customer.addresses.create') }}" class="menu_item">
+            <iconify-icon icon="mdi:map-marker"></iconify-icon>
+            <span class="menu_text">Alamat Pengiriman</span>
+        </a>
+        <a href="{{ route('customer.wishlist.index') }}" class="menu_item">
+            <iconify-icon icon="mdi:heart"></iconify-icon>
+            <span class="menu_text">Wishlist</span>
+        </a>
+    </div>
 
-</body>
+    <form action="{{ route('customer.logout') }}" method="POST">
+        @csrf
+        <button type="submit" class="btn_logout">
+            <iconify-icon icon="mdi:logout"></iconify-icon>
+            Logout
+        </button>
+    </form>
+</div>
 
-</html>
+@endsection

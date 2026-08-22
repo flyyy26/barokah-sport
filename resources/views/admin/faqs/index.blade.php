@@ -8,13 +8,22 @@
             <h1 class="text-2xl font-bold text-gray-900">Manajemen FAQ</h1>
             <p class="mt-1 text-sm text-gray-500">Kelola pertanyaan yang sering diajukan pelanggan.</p>
         </div>
-        <a href="{{ route('admin.faqs.create') }}" 
-           class="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
-            <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-            </svg>
-            Tambah FAQ
-        </a>
+        <div class="flex gap-3">
+            <a href="{{ route('admin.faqs.categories') }}" 
+               class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+                </svg>
+                Kelola Kategori
+            </a>
+            <a href="{{ route('admin.faqs.create') }}" 
+               class="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
+                <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Tambah FAQ
+            </a>
+        </div>
     </div>
 
     {{-- SUCCESS & ERROR --}}

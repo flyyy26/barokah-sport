@@ -758,238 +758,242 @@
     </style>
 
     <main class="cart-container">
-        <div class="katalog_top_container">
-            <div class="cart-header">
-                <h1>Keranjang Belanja</h1>
-                <p>Tinjau dan kelola item di keranjang belanja Anda.</p>
-            </div>
-
-            @if (session('success'))
-                <div class="cart-alert success">
-                    {{ session('success') }}
-                </div>
-            @endif
-
-            @if (session('error'))
-                <div class="cart-alert error">
-                    {{ session('error') }}
-                </div>
-            @endif
+    <div class="katalog_top_container">
+        <div class="cart-header">
+            <h1>Keranjang Belanja</h1>
+            <p>Tinjau dan kelola item di keranjang belanja Anda.</p>
         </div>
 
-        @if (empty($cart))
-            {{-- Empty Cart --}}
-            <div class="cart-empty">
-                <div class="empty-icon">🛒</div>
-                <h3>Keranjang Kosong</h3>
-                <p>Belum ada produk di keranjang. Yuk, mulai belanja!</p>
-                <a href="{{ route('customer.products.index') }}" class="btn-shop">
-                    Mulai Belanja
-                </a>
-            </div>
-        @else
-            <div class="cart-grid">
-
-                {{-- Cart Items --}}
-                <div class="cart-items-wrapper">
-                    <div class="cart-items">
-                        @php $subtotal = 0; @endphp
-                        @foreach ($cart as $key => $item)
-                            @php $subtotal += $item['price'] * $item['quantity']; @endphp
-                            <div class="cart-item" data-key="{{ $key }}">
-                                <div class="cart-item-left">
-                                    {{-- Image --}}
-                                    <div class="cart-item-image">
-                                        @if (!empty($item['image']) && Storage::disk('public')->exists($item['image']))
-                                            <img src="{{ Storage::url($item['image']) }}" 
-                                                 alt="{{ $item['product_name'] }}">
-                                        @else
-                                            <div class="placeholder">📦</div>
-                                        @endif
-                                    </div>
-
-                                    {{-- Info --}}
-                                    <div class="cart-item-info">
-                                        <a href="{{ route('customer.products.show', $item['slug']) }}" 
-                                           class="item-name">
-                                            {{ $item['product_name'] }}
-                                        </a>
-                                        @if (!empty($item['variant_name']))
-                                            <p class="item-variant">Varian: {{ $item['variant_name'] }}</p>
-                                        @endif
-                                        <p class="item-price">
-                                            Rp {{ number_format($item['price'], 0, ',', '.') }}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {{-- Actions --}}
-                                <div class="cart-item-actions">
-                                    {{-- Quantity --}}
-                                    <div class="qty-wrapper">
-                                        <button class="qty-btn" data-action="decrease">−</button>
-                                        <input type="number" class="qty-input" 
-                                               value="{{ $item['quantity'] }}" min="1" data-key="{{ $key }}">
-                                        <button class="qty-btn" data-action="increase">+</button>
-                                    </div>
-
-                                    {{-- Remove --}}
-                                    <button class="btn-remove" data-key="{{ $key }}">
-                                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                                        </svg>
-                                    </button>
-
-                                    {{-- Subtotal item --}}
-                                    <p class="item-subtotal">
-                                        Rp {{ number_format($item['price'] * $item['quantity'], 0, ',', '.') }}
-                                    </p>
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
-
-                    {{-- Action Buttons --}}
-                    <div class="cart-bottom-actions">
-                        <a href="{{ route('customer.products.index') }}" class="btn-continue">
-                            ← Lanjut Belanja
-                        </a>
-                        <form action="{{ route('customer.cart.clear') }}" method="POST" 
-                              onsubmit="return confirm('Kosongkan keranjang?')">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn-clear">
-                                Kosongkan Keranjang
-                            </button>
-                        </form>
-                    </div>
-                </div>
-
-                {{-- Summary --}}
-                <div class="cart-summary">
-                    <h2>Ringkasan Belanja</h2>
-
-                    <div class="summary-row">
-                        <span class="label">Subtotal</span>
-                        <span class="value">Rp {{ number_format($subtotal, 0, ',', '.') }}</span>
-                    </div>
-                    <div class="summary-row">
-                        <span class="label">Ongkir</span>
-                        <span class="value">Dihitung di checkout</span>
-                    </div>
-
-                    <div class="summary-divider"></div>
-
-                    <div class="summary-total">
-                        <span>Total</span>
-                        <span>Rp {{ number_format($subtotal, 0, ',', '.') }}</span>
-                    </div>
-
-                    <a href="{{ route('customer.checkout.index') }}" class="btn-checkout">
-                        Checkout →
-                    </a>
-                </div>
-
+        @if (session('success'))
+            <div class="cart-alert success">
+                {{ session('success') }}
             </div>
         @endif
 
-    </main>
+        @if (session('error'))
+            <div class="cart-alert error">
+                {{ session('error') }}
+            </div>
+        @endif
+    </div>
 
-    @include('customer.partials.footer')
+    @if (empty($cart) || count($cart) == 0)
+        {{-- Empty Cart --}}
+        <div class="cart-empty">
+            <div class="empty-icon">🛒</div>
+            <h3>Keranjang Kosong</h3>
+            <p>Belum ada produk di keranjang. Yuk, mulai belanja!</p>
+            <a href="{{ route('customer.products.index') }}" class="btn-shop">
+                Mulai Belanja
+            </a>
+        </div>
+    @else
+        <div class="cart-grid">
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+            {{-- Cart Items --}}
+            <div class="cart-items-wrapper">
+                <div class="cart-items">
+                    @php $subtotal = 0; @endphp
+                    @foreach ($cart as $key => $item)
+                        @php 
+                            $itemPrice = isset($item['price']) ? $item['price'] : 0;
+                            $itemQuantity = isset($item['quantity']) ? $item['quantity'] : 1;
+                            $subtotal += $itemPrice * $itemQuantity; 
+                        @endphp
+                        <div class="cart-item" data-key="{{ $key }}">
+                            <div class="cart-item-left">
+                                {{-- Image --}}
+                                <div class="cart-item-image">
+                                    @if (!empty($item['image']) && Storage::disk('public')->exists($item['image']))
+                                        <img src="{{ Storage::url($item['image']) }}" 
+                                             alt="{{ $item['product_name'] ?? 'Produk' }}">
+                                    @else
+                                        <div class="placeholder">📦</div>
+                                    @endif
+                                </div>
 
-            // ============================================
-            // UPDATE QUANTITY
-            // ============================================
+                                {{-- Info --}}
+                                <div class="cart-item-info">
+                                    <a href="{{ route('customer.products.show', $item['slug'] ?? '#') }}" 
+                                       class="item-name">
+                                        {{ $item['product_name'] ?? 'Produk' }}
+                                    </a>
+                                    @if (!empty($item['variant_name']))
+                                        <p class="item-variant">Varian: {{ $item['variant_name'] }}</p>
+                                    @endif
+                                    <p class="item-price">
+                                        Rp {{ number_format($itemPrice, 0, ',', '.') }}
+                                    </p>
+                                </div>
+                            </div>
 
-            document.querySelectorAll('.qty-btn').forEach(button => {
-                button.addEventListener('click', function() {
-                    const input = this.closest('.qty-wrapper').querySelector('.qty-input');
-                    let value = parseInt(input.value) || 1;
-                    const action = this.dataset.action;
+                            {{-- Actions --}}
+                            <div class="cart-item-actions">
+                                {{-- Quantity --}}
+                                <div class="qty-wrapper">
+                                    <button class="qty-btn" data-action="decrease">−</button>
+                                    <input type="number" class="qty-input" 
+                                           value="{{ $itemQuantity }}" min="1" data-key="{{ $key }}">
+                                    <button class="qty-btn" data-action="increase">+</button>
+                                </div>
 
-                    if (action === 'increase') {
-                        value += 1;
-                    } else if (action === 'decrease' && value > 1) {
-                        value -= 1;
-                    }
+                                {{-- Remove --}}
+                                <button class="btn-remove" data-key="{{ $key }}">
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                    </svg>
+                                </button>
 
-                    if (value < 1) return;
+                                {{-- Subtotal item --}}
+                                <p class="item-subtotal">
+                                    Rp {{ number_format($itemPrice * $itemQuantity, 0, ',', '.') }}
+                                </p>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
 
-                    input.value = value;
-                    updateCart(input.dataset.key, value);
-                });
-            });
+                {{-- Action Buttons --}}
+                <div class="cart-bottom-actions">
+                    <a href="{{ route('customer.products.index') }}" class="btn-continue">
+                        ← Lanjut Belanja
+                    </a>
+                    <form action="{{ route('customer.cart.clear') }}" method="POST" 
+                          onsubmit="return confirm('Kosongkan keranjang?')">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn-clear">
+                            Kosongkan Keranjang
+                        </button>
+                    </form>
+                </div>
+            </div>
 
-            document.querySelectorAll('.qty-input').forEach(input => {
-                input.addEventListener('change', function() {
-                    let value = parseInt(this.value) || 1;
-                    if (value < 1) {
-                        value = 1;
-                        this.value = 1;
-                    }
-                    updateCart(this.dataset.key, value);
-                });
-            });
+            {{-- Summary --}}
+            <div class="cart-summary">
+                <h2>Ringkasan Belanja</h2>
 
-            function updateCart(key, quantity) {
-                fetch('{{ route("customer.cart.update") }}', {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken,
-                    },
-                    body: JSON.stringify({ key, quantity })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        window.location.reload();
-                    } else {
-                        alert(data.message || 'Gagal memperbarui keranjang');
-                        window.location.reload();
-                    }
-                })
-                .catch(() => {
-                    window.location.reload();
-                });
+                <div class="summary-row">
+                    <span class="label">Subtotal</span>
+                    <span class="value">Rp {{ number_format($subtotal, 0, ',', '.') }}</span>
+                </div>
+                <div class="summary-row">
+                    <span class="label">Ongkir</span>
+                    <span class="value">Dihitung di checkout</span>
+                </div>
+
+                <div class="summary-divider"></div>
+
+                <div class="summary-total">
+                    <span>Total</span>
+                    <span>Rp {{ number_format($subtotal, 0, ',', '.') }}</span>
+                </div>
+
+                <a href="{{ route('customer.checkout.index') }}" class="btn-checkout">
+                    Checkout →
+                </a>
+            </div>
+
+        </div>
+    @endif
+
+</main>
+
+@include('customer.partials.footer')
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+    // ============================================
+    // UPDATE QUANTITY
+    // ============================================
+
+    document.querySelectorAll('.qty-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const input = this.closest('.qty-wrapper').querySelector('.qty-input');
+            let value = parseInt(input.value) || 1;
+            const action = this.dataset.action;
+
+            if (action === 'increase') {
+                value += 1;
+            } else if (action === 'decrease' && value > 1) {
+                value -= 1;
             }
 
-            // ============================================
-            // REMOVE ITEM
-            // ============================================
+            if (value < 1) return;
 
-            document.querySelectorAll('.btn-remove').forEach(button => {
-                button.addEventListener('click', function() {
-                    if (!confirm('Hapus item ini dari keranjang?')) return;
+            input.value = value;
+            updateCart(input.dataset.key, value);
+        });
+    });
 
-                    const key = this.dataset.key;
+    document.querySelectorAll('.qty-input').forEach(input => {
+        input.addEventListener('change', function() {
+            let value = parseInt(this.value) || 1;
+            if (value < 1) {
+                value = 1;
+                this.value = 1;
+            }
+            updateCart(this.dataset.key, value);
+        });
+    });
 
-                    fetch('{{ route("customer.cart.remove") }}', {
-                        method: 'DELETE',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': csrfToken,
-                        },
-                        body: JSON.stringify({ key })
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            window.location.reload();
-                        } else {
-                            alert(data.message || 'Gagal menghapus item');
-                        }
-                    })
-                    .catch(() => {
-                        alert('Terjadi kesalahan. Silakan coba lagi.');
-                    });
-                });
+    function updateCart(key, quantity) {
+        fetch('{{ route("customer.cart.update") }}', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+            },
+            body: JSON.stringify({ key, quantity })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert(data.message || 'Gagal memperbarui keranjang');
+                window.location.reload();
+            }
+        })
+        .catch(() => {
+            window.location.reload();
+        });
+    }
+
+    // ============================================
+    // REMOVE ITEM
+    // ============================================
+
+    document.querySelectorAll('.btn-remove').forEach(button => {
+        button.addEventListener('click', function() {
+            if (!confirm('Hapus item ini dari keranjang?')) return;
+
+            const key = this.dataset.key;
+
+            fetch('{{ route("customer.cart.remove") }}', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                body: JSON.stringify({ key })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert(data.message || 'Gagal menghapus item');
+                }
+            })
+            .catch(() => {
+                alert('Terjadi kesalahan. Silakan coba lagi.');
             });
         });
-    </script>
+    });
+});
+</script>
 
 @endsection

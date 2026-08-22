@@ -3,10 +3,11 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
+use App\Models\Cart;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
 class CartController extends Controller
@@ -17,19 +18,104 @@ class CartController extends Controller
 
     public function index()
     {
-        $cart = session()->get('cart', []);
-        
-        // Hitung total
-        $subtotal = 0;
-        foreach ($cart as $item) {
-            $subtotal += $item['price'] * $item['quantity'];
+        // 🔥 PERBAIKI: Gunakan guard('customer')
+        $user = Auth::guard('customer')->user();
+
+        if (!$user) {
+            return redirect()->route('customer.login');
         }
 
-        return view('customer.cart.index', compact('cart', 'subtotal'));
+        $cartItems = Cart::with(['product.images', 'variant'])
+            ->where('user_id', $user->id)
+            ->get();
+
+        $subtotal = 0;
+        foreach ($cartItems as $item) {
+            $price = $item->variant ? 
+                ($item->variant->discount_price ?? $item->variant->price) : 
+                $item->product->price;
+            $subtotal += $price * $item->quantity;
+        }
+
+        return view('customer.cart.index', compact('cartItems', 'subtotal'));
     }
 
     // ============================================
-    // ADD - Tambah ke Keranjang
+    // POPUP - Tampilkan Popup Keranjang (AJAX)
+    // ============================================
+
+    public function popup(Request $request)
+    {
+        // 🔥 PERBAIKI: Gunakan guard('customer')
+        $user = Auth::guard('customer')->user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => true,
+                'html' => view('customer.cart.popup', ['cart' => []])->render(),
+                'total' => 0,
+                'count' => 0,
+            ]);
+        }
+
+        $cartItems = Cart::with(['product.images', 'variant'])
+            ->where('user_id', $user->id)
+            ->get();
+
+        $cart = [];
+        $subtotal = 0;
+
+        foreach ($cartItems as $item) {
+            $variant = $item->variant;
+            $product = $item->product;
+
+            $price = $variant ? 
+                ($variant->discount_price ?? $variant->price) : 
+                $product->price;
+
+            $subtotal += $price * $item->quantity;
+
+            $variantImage = null;
+            if ($variant) {
+                $variantImage = $this->getVariantImage($variant, $product);
+            }
+            if (!$variantImage) {
+                $variantImage = $product->images->first()?->image;
+            }
+
+            $cart[] = [
+                'id' => $item->id,
+                'product_id' => $product->id,
+                'variant_id' => $variant?->id,
+                'product_name' => $product->name,
+                'variant_name' => $variant ? $variant->option_combination : null,
+                'price' => $price,
+                'original_price' => $variant?->price ?? $product->price,
+                'quantity' => $item->quantity,
+                'image' => $variantImage,
+                'slug' => $product->slug,
+                'weight' => $variant?->weight ?? $product->weight ?? 1000,
+            ];
+        }
+
+        $count = $cartItems->count();
+
+        if ($request->ajax() || $request->wantsJson()) {
+            $html = view('customer.cart.popup', compact('cart', 'subtotal'))->render();
+
+            return response()->json([
+                'success' => true,
+                'html' => $html,
+                'total' => $subtotal,
+                'count' => $count,
+            ]);
+        }
+
+        return redirect()->route('customer.cart.index');
+    }
+
+    // ============================================
+    // ADD - Tambah ke Keranjang (WAJIB LOGIN)
     // ============================================
 
     public function add(Request $request)
@@ -40,71 +126,74 @@ class CartController extends Controller
             'quantity' => 'required|integer|min:1',
         ]);
 
-        $product = Product::with(['variants', 'images', 'options.values'])->findOrFail($validated['product_id']);
-        
-        $weight = 0;
-        $variantName = null;
-        $price = 0;
-        $originalPrice = 0;
-        $variantImage = null; // 🔥 Tambahkan ini
+        // 🔥 PERBAIKI: Gunakan guard('customer')
+        $user = Auth::guard('customer')->user();
 
-        if (!empty($validated['variant_id'])) {
-            $variant = ProductVariant::with('values')->find($validated['variant_id']);
-            if ($variant) {
-                $weight = $variant->weight ?? 1000;
-                $price = $variant->discount_price ?? $variant->price;
-                $originalPrice = $variant->price;
-                $variantName = $variant->option_combination ?? $variant->values->pluck('value')->implode(' / ');
-                
-                // 🔥 CARI GAMBAR VARIAN DARI OPTION VALUES (WARNA)
-                $variantImage = $this->getVariantImage($variant, $product);
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Silakan login terlebih dahulu',
+                'redirect' => route('customer.login')
+            ], 401);
+        }
+
+        $userExists = \App\Models\User::where('id', $user->id)->exists();
+        if (!$userExists) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User tidak ditemukan. Silakan login ulang.',
+                'redirect' => route('customer.login')
+            ], 401);
+        }
+
+        $product = Product::with(['variants', 'images', 'options.values'])->findOrFail($validated['product_id']);
+        $variantId = $validated['variant_id'];
+        $quantity = $validated['quantity'];
+
+        // Cek stok
+        if ($variantId) {
+            $variant = ProductVariant::find($variantId);
+            if ($variant && $variant->stock < $quantity) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Stok tidak mencukupi. Tersedia: ' . $variant->stock,
+                ], 400);
             }
         } else {
             $firstVariant = $product->variants->first();
-            if ($firstVariant) {
-                $weight = $firstVariant->weight ?? 1000;
-                $price = $firstVariant->discount_price ?? $firstVariant->price ?? 0;
-                $originalPrice = $firstVariant->price ?? 0;
-                $variantImage = $this->getVariantImage($firstVariant, $product);
+            if ($firstVariant && $firstVariant->stock < $quantity) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Stok tidak mencukupi. Tersedia: ' . $firstVariant->stock,
+                ], 400);
             }
         }
 
-        // Jika tidak ada gambar varian, gunakan gambar produk pertama
-        if (!$variantImage) {
-            $variantImage = $product->images->first()?->image;
-        }
+        // Cek apakah item sudah ada di cart
+        $cartItem = Cart::where('user_id', $user->id)
+            ->where('product_id', $validated['product_id'])
+            ->where('variant_id', $variantId)
+            ->first();
 
-        $cart = session()->get('cart', []);
-        $key = $validated['product_id'] . '-' . ($validated['variant_id'] ?? '0');
-
-        if (isset($cart[$key])) {
-            $cart[$key]['quantity'] += $validated['quantity'];
+        if ($cartItem) {
+            $cartItem->quantity += $quantity;
+            $cartItem->save();
         } else {
-            $cart[$key] = [
-                'product_id' => $product->id,
-                'product_name' => $product->name,
-                'variant_id' => $validated['variant_id'] ?? null,
-                'variant_name' => $variantName,
-                'price' => $price,
-                'original_price' => $originalPrice,
-                'quantity' => $validated['quantity'],
-                'image' => $variantImage, // 🔥 Gunakan gambar varian
-                'slug' => $product->slug,
-                'weight' => $weight,
-            ];
+            Cart::create([
+                'user_id' => $user->id,
+                'product_id' => $validated['product_id'],
+                'variant_id' => $variantId,
+                'quantity' => $quantity,
+            ]);
         }
 
-        session()->put('cart', $cart);
-        session()->save();
-        
-        $cart = session()->get('cart', []);
-        $cartCount = array_sum(array_column($cart, 'quantity'));
+        $count = Cart::where('user_id', $user->id)->count();
 
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
                 'success' => true,
                 'message' => 'Produk berhasil ditambahkan ke keranjang.',
-                'count' => $cartCount,
+                'count' => $count,
             ]);
         }
 
@@ -113,31 +202,101 @@ class CartController extends Controller
             ->with('success', 'Produk berhasil ditambahkan ke keranjang.');
     }
 
-    /**
-     * 🔥 GET VARIANT IMAGE FROM OPTION VALUES (WARNA)
-     */
-    private function getVariantImage($variant, $product)
+    // ============================================
+    // BUY NOW - Langsung ke Checkout (TIDAK PERLU LOGIN)
+    // ============================================
+
+    public function buyNow(Request $request)
     {
-        // Ambil semua option value IDs dari varian
-        $variantValueIds = $variant->variantValues->pluck('product_option_value_id')->toArray();
-        
-        // Cari opsi yang bernama "Warna" atau "Color"
-        foreach ($product->options as $option) {
-            if (strtolower($option->name) === 'warna' || strtolower($option->name) === 'color') {
-                foreach ($option->values as $value) {
-                    if (in_array($value->id, $variantValueIds) && $value->image) {
-                        return $value->image;
-                    }
-                }
+        $request->validate([
+            'product_id' => 'required|exists:products,id',
+            'variant_id' => 'nullable|exists:product_variants,id',
+            'quantity' => 'required|integer|min:1',
+        ]);
+
+        $product = Product::with(['images', 'variants', 'options.values'])->findOrFail($request->product_id);
+        $variantId = $request->variant_id;
+        $quantity = $request->quantity;
+
+        // Cek stok
+        if ($variantId) {
+            $variant = ProductVariant::find($variantId);
+            if ($variant && $variant->stock < $quantity) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Stok tidak mencukupi. Tersedia: ' . $variant->stock,
+                ], 400);
+            }
+        } else {
+            $firstVariant = $product->variants->first();
+            if ($firstVariant && $firstVariant->stock < $quantity) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Stok tidak mencukupi. Tersedia: ' . $firstVariant->stock,
+                ], 400);
             }
         }
-        
-        // Jika ada gambar di variant langsung
-        if ($variant->image) {
-            return $variant->image;
+
+        // SIMPAN CART LAMA (jika ada)
+        $oldCart = session()->get('cart', []);
+        if (!empty($oldCart)) {
+            session()->put('old_cart_backup', $oldCart);
         }
-        
-        return null;
+
+        // KOSONGKAN CART SESSION
+        session()->forget('cart');
+
+        // BUAT DATA BUY NOW
+        $variant = null;
+        $price = 0;
+        $variantName = null;
+        $weight = 1000;
+        $variantImage = null;
+
+        if ($variantId) {
+            $variant = ProductVariant::with('values')->find($variantId);
+            if ($variant) {
+                $price = $variant->discount_price ?? $variant->price;
+                $variantName = $variant->values->pluck('value')->implode(' / ');
+                $weight = $variant->weight ?? 1000;
+                $variantImage = $this->getVariantImage($variant, $product);
+            }
+        } else {
+            $firstVariant = $product->variants->first();
+            if ($firstVariant) {
+                $price = $firstVariant->discount_price ?? $firstVariant->price;
+                $weight = $firstVariant->weight ?? 1000;
+                $variantImage = $this->getVariantImage($firstVariant, $product);
+            }
+        }
+
+        if (!$variantImage) {
+            $variantImage = $product->images->first()?->image;
+        }
+
+        $buyNowItems = [
+            [
+                'product_id' => $product->id,
+                'variant_id' => $variantId,
+                'product_name' => $product->name,
+                'variant_name' => $variantName,
+                'price' => $price,
+                'original_price' => $variant?->price ?? $product->price,
+                'quantity' => $quantity,
+                'weight' => $weight,
+                'image' => $variantImage,
+                'slug' => $product->slug,
+            ]
+        ];
+
+        // SIMPAN BUY NOW KE SESSION
+        session()->put('cart', $buyNowItems);
+        session()->put('is_buy_now', true);
+
+        return response()->json([
+            'success' => true,
+            'redirect' => route('customer.checkout.index'),
+        ]);
     }
 
     // ============================================
@@ -147,38 +306,49 @@ class CartController extends Controller
     public function update(Request $request)
     {
         $validated = $request->validate([
-            'key' => 'required|string',
+            'key' => 'required|integer|exists:carts,id',
             'quantity' => 'required|integer|min:1',
         ]);
 
-        $cart = session()->get('cart', []);
+        // 🔥 PERBAIKI: Gunakan guard('customer')
+        $user = Auth::guard('customer')->user();
 
-        if (isset($cart[$validated['key']])) {
-            // Cek stok
-            $variantId = $cart[$validated['key']]['variant_id'];
-            if ($variantId) {
-                $variant = ProductVariant::find($variantId);
-                if ($variant && $variant->stock < $validated['quantity']) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Stok tidak mencukupi.',
-                    ], 400);
-                }
-            }
-
-            $cart[$validated['key']]['quantity'] = $validated['quantity'];
-            session()->put('cart', $cart);
-
+        if (!$user) {
             return response()->json([
-                'success' => true,
-                'message' => 'Keranjang berhasil diperbarui.',
-            ]);
+                'success' => false,
+                'message' => 'Silakan login terlebih dahulu',
+            ], 401);
         }
 
+        $cartItem = Cart::where('id', $validated['key'])
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (!$cartItem) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Item tidak ditemukan.',
+            ], 404);
+        }
+
+        // Cek stok
+        if ($cartItem->variant_id) {
+            $variant = ProductVariant::find($cartItem->variant_id);
+            if ($variant && $variant->stock < $validated['quantity']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Stok tidak mencukupi. Tersedia: ' . $variant->stock,
+                ], 400);
+            }
+        }
+
+        $cartItem->quantity = $validated['quantity'];
+        $cartItem->save();
+
         return response()->json([
-            'success' => false,
-            'message' => 'Item tidak ditemukan.',
-        ], 404);
+            'success' => true,
+            'message' => 'Keranjang berhasil diperbarui.',
+        ]);
     }
 
     // ============================================
@@ -188,25 +358,39 @@ class CartController extends Controller
     public function remove(Request $request)
     {
         $validated = $request->validate([
-            'key' => 'required|string',
+            'key' => 'required|integer|exists:carts,id',
         ]);
 
-        $cart = session()->get('cart', []);
+        // 🔥 PERBAIKI: Gunakan guard('customer')
+        $user = Auth::guard('customer')->user();
 
-        if (isset($cart[$validated['key']])) {
-            unset($cart[$validated['key']]);
-            session()->put('cart', $cart);
-
+        if (!$user) {
             return response()->json([
-                'success' => true,
-                'message' => 'Item berhasil dihapus.',
-            ]);
+                'success' => false,
+                'message' => 'Silakan login terlebih dahulu',
+            ], 401);
         }
 
+        $cartItem = Cart::where('id', $validated['key'])
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (!$cartItem) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Item tidak ditemukan.',
+            ], 404);
+        }
+
+        $cartItem->delete();
+
+        $count = Cart::where('user_id', $user->id)->count();
+
         return response()->json([
-            'success' => false,
-            'message' => 'Item tidak ditemukan.',
-        ], 404);
+            'success' => true,
+            'message' => 'Item berhasil dihapus.',
+            'count' => $count,
+        ]);
     }
 
     // ============================================
@@ -215,57 +399,72 @@ class CartController extends Controller
 
     public function clear(Request $request)
     {
-        session()->forget('cart');
-        
+        // 🔥 PERBAIKI: Gunakan guard('customer')
+        $user = Auth::guard('customer')->user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Silakan login terlebih dahulu',
+            ], 401);
+        }
+
+        Cart::where('user_id', $user->id)->delete();
+
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Keranjang berhasil dikosongkan',
+                'message' => 'Keranjang berhasil dikosongkan.',
                 'count' => 0,
             ]);
         }
-        
+
         return redirect()
             ->route('customer.cart.index')
             ->with('success', 'Keranjang berhasil dikosongkan.');
     }
 
     // ============================================
-    // COUNT - Jumlah Item di Keranjang (untuk navbar)
+    // COUNT - Jumlah Item di Keranjang
     // ============================================
 
     public function count()
     {
-        $cart = session()->get('cart', []);
-        $total = 0;
-        foreach ($cart as $item) {
-            $total += $item['quantity'];
+        // 🔥 PERBAIKI: Gunakan guard('customer')
+        $user = Auth::guard('customer')->user();
+
+        if (!$user) {
+            return response()->json(['count' => 0]);
         }
-        return response()->json(['count' => $total]);
+
+        $count = Cart::where('user_id', $user->id)->count();
+
+        return response()->json(['count' => $count]);
     }
 
-    public function popup(Request $request)
+    // ============================================
+    // HELPER - Get Variant Image
+    // ============================================
+
+    private function getVariantImage($variant, $product)
     {
-        $cart = session()->get('cart', []);
-        $subtotal = 0;
-        $count = 0;
+        if (!$variant) return null;
 
-        foreach ($cart as $item) {
-            $subtotal += $item['price'] * $item['quantity'];
-            $count += $item['quantity'];
+        if ($variant->image) {
+            return $variant->image;
         }
 
-        if ($request->ajax() || $request->wantsJson()) {
-            $html = view('customer.cart.popup', compact('cart', 'subtotal'))->render();
-            
-            return response()->json([
-                'success' => true,
-                'html' => $html,
-                'total' => $subtotal,
-                'count' => $count,
-            ]);
+        $variantValueIds = $variant->variantValues->pluck('product_option_value_id')->toArray();
+        foreach ($product->options as $option) {
+            if (strtolower($option->name) === 'warna' || strtolower($option->name) === 'color') {
+                foreach ($option->values as $value) {
+                    if (in_array($value->id, $variantValueIds) && $value->image) {
+                        return $value->image;
+                    }
+                }
+            }
         }
 
-        return redirect()->route('customer.cart.index');
+        return $product->images->first()?->image;
     }
 }

@@ -4,169 +4,224 @@ namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
 use App\Models\Product;
+use App\Models\Wishlist;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
 class WishlistController extends Controller
 {
-    /**
-     * Get wishlist items
-     */
+    // ============================================
+    // INDEX - Tampilkan Wishlist
+    // ============================================
+
     public function index()
     {
-        $wishlist = session()->get('wishlist', []);
-        
-        // Get product details from wishlist
-        $products = [];
-        if (!empty($wishlist)) {
-            $productIds = array_keys($wishlist);
-            $products = Product::with(['images', 'variants'])
-                ->whereIn('id', $productIds)
-                ->where('is_active', true)
-                ->get();
+        // 🔥 PERBAIKI: Gunakan guard('customer')
+        $user = Auth::guard('customer')->user();
+
+        if (!$user) {
+            return redirect()->route('customer.login');
         }
-        
-        return view('customer.wishlist.index', compact('products', 'wishlist'));
+
+        $wishlist = Wishlist::with(['product.images', 'product.variants', 'product.category'])
+            ->where('user_id', $user->id)
+            ->get();
+
+        $products = $wishlist->pluck('product');
+
+        return view('customer.wishlist.index', compact('products'));
     }
 
-    /**
-     * Get wishlist popup (AJAX)
-     */
+    // ============================================
+    // POPUP - Tampilkan Popup Wishlist (AJAX)
+    // ============================================
+
     public function popup(Request $request)
     {
-        $wishlist = session()->get('wishlist', []);
-        $count = count($wishlist);
-        
-        // Get product details
-        $products = [];
-        if (!empty($wishlist)) {
-            $productIds = array_keys($wishlist);
-            $products = Product::with(['images', 'variants'])
-                ->whereIn('id', $productIds)
-                ->where('is_active', true)
-                ->get();
+        // 🔥 PERBAIKI: Gunakan guard('customer')
+        $user = Auth::guard('customer')->user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => true,
+                'html' => view('customer.wishlist.popup', ['products' => collect()])->render(),
+                'count' => 0,
+                'wishlist_ids' => [],
+            ]);
         }
-        
+
+        $wishlist = Wishlist::with(['product.images', 'product.variants', 'product.category'])
+            ->where('user_id', $user->id)
+            ->get();
+
+        $products = $wishlist->pluck('product');
+        $count = $products->count();
+        $wishlistIds = $wishlist->pluck('product_id')->toArray();
+
         if ($request->ajax() || $request->wantsJson()) {
-            $html = view('customer.wishlist.popup', compact('products', 'wishlist', 'count'))->render();
-            
+            $html = view('customer.wishlist.popup', compact('products'))->render();
+
             return response()->json([
                 'success' => true,
                 'html' => $html,
                 'count' => $count,
-                'wishlist_ids' => array_keys($wishlist), // 🔥 Kirim daftar ID wishlist
+                'wishlist_ids' => $wishlistIds,
             ]);
         }
-        
+
         return redirect()->route('customer.wishlist.index');
     }
 
-    /**
-     * Add to wishlist
-     */
+    // ============================================
+    // ADD - Tambah ke Wishlist (WAJIB LOGIN)
+    // ============================================
+
     public function add(Request $request)
     {
         $request->validate([
             'product_id' => 'required|exists:products,id',
         ]);
 
-        $wishlist = session()->get('wishlist', []);
-        
-        $inWishlist = false;
-        $message = '';
+        // 🔥 PERBAIKI: Gunakan guard('customer')
+        $user = Auth::guard('customer')->user();
 
-        if (!isset($wishlist[$request->product_id])) {
-            $wishlist[$request->product_id] = [
-                'added_at' => now(),
-            ];
-            session()->put('wishlist', $wishlist);
-            $inWishlist = true;
-            $message = 'Produk ditambahkan ke wishlist!';
-        } else {
-            // Jika sudah ada, hapus dari wishlist (toggle)
-            unset($wishlist[$request->product_id]);
-            session()->put('wishlist', $wishlist);
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Silakan login terlebih dahulu',
+                'redirect' => route('customer.login')
+            ], 401);
+        }
+
+        $productId = $request->product_id;
+
+        // Cek apakah sudah ada
+        $exists = Wishlist::where('user_id', $user->id)
+            ->where('product_id', $productId)
+            ->exists();
+
+        if ($exists) {
+            Wishlist::where('user_id', $user->id)
+                ->where('product_id', $productId)
+                ->delete();
+
             $inWishlist = false;
             $message = 'Produk dihapus dari wishlist.';
+        } else {
+            Wishlist::create([
+                'user_id' => $user->id,
+                'product_id' => $productId,
+            ]);
+
+            $inWishlist = true;
+            $message = 'Produk ditambahkan ke wishlist!';
         }
-        
-        $count = count($wishlist);
-        
+
+        $count = Wishlist::where('user_id', $user->id)->count();
+
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
                 'success' => true,
                 'message' => $message,
                 'count' => $count,
                 'in_wishlist' => $inWishlist,
-                'product_id' => (int) $request->product_id,
+                'product_id' => (int) $productId,
             ]);
         }
-        
+
         return back()->with('success', $message);
     }
 
-    /**
-     * Remove from wishlist
-     */
+    // ============================================
+    // REMOVE - Hapus dari Wishlist
+    // ============================================
+
     public function remove(Request $request)
     {
         $request->validate([
             'product_id' => 'required|exists:products,id',
         ]);
 
-        $wishlist = session()->get('wishlist', []);
-        
-        if (isset($wishlist[$request->product_id])) {
-            unset($wishlist[$request->product_id]);
-            session()->put('wishlist', $wishlist);
-            $message = 'Produk dihapus dari wishlist.';
-        } else {
-            $message = 'Produk tidak ditemukan di wishlist.';
+        // 🔥 PERBAIKI: Gunakan guard('customer')
+        $user = Auth::guard('customer')->user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Silakan login terlebih dahulu',
+            ], 401);
         }
-        
-        $count = count($wishlist);
-        
+
+        $deleted = Wishlist::where('user_id', $user->id)
+            ->where('product_id', $request->product_id)
+            ->delete();
+
+        $count = Wishlist::where('user_id', $user->id)->count();
+
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => $message,
+                'message' => $deleted ? 'Produk dihapus dari wishlist.' : 'Produk tidak ditemukan.',
                 'count' => $count,
                 'product_id' => (int) $request->product_id,
             ]);
         }
-        
-        return back()->with('success', $message);
+
+        return back()->with('success', 'Produk dihapus dari wishlist.');
     }
 
-    /**
-     * Clear all wishlist
-     */
+    // ============================================
+    // CLEAR - Kosongkan Wishlist
+    // ============================================
+
     public function clear(Request $request)
     {
-        session()->forget('wishlist');
-        
+        // 🔥 PERBAIKI: Gunakan guard('customer')
+        $user = Auth::guard('customer')->user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Silakan login terlebih dahulu',
+            ], 401);
+        }
+
+        Wishlist::where('user_id', $user->id)->delete();
+
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Wishlist berhasil dikosongkan',
+                'message' => 'Wishlist berhasil dikosongkan.',
                 'count' => 0,
             ]);
         }
-        
+
         return redirect()
             ->route('customer.wishlist.index')
             ->with('success', 'Wishlist berhasil dikosongkan.');
     }
 
-    /**
-     * Get wishlist status for multiple products
-     */
+    // ============================================
+    // STATUS - Cek Status Wishlist
+    // ============================================
+
     public function status(Request $request)
     {
-        $wishlist = session()->get('wishlist', []);
-        $wishlistIds = array_keys($wishlist);
-        
+        // 🔥 PERBAIKI: Gunakan guard('customer')
+        $user = Auth::guard('customer')->user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => true,
+                'wishlist_ids' => [],
+            ]);
+        }
+
+        $wishlistIds = Wishlist::where('user_id', $user->id)
+            ->pluck('product_id')
+            ->toArray();
+
         return response()->json([
             'success' => true,
             'wishlist_ids' => $wishlistIds,

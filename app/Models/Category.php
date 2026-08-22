@@ -62,4 +62,15 @@ class Category extends Model
             ];
         })->toArray();
     }
+
+    public function setDimensionLabelsAttribute($value)
+    {
+        $this->attributes['dimension_labels'] = is_array($value) ? json_encode($value) : $value;
+    }
+
+    // Scope untuk kategori aktif
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
 }

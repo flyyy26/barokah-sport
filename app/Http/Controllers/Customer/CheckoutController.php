@@ -34,7 +34,6 @@ class CheckoutController extends Controller
         $isBuyNow = session()->get('is_buy_now', false);
 
         if (empty($cart)) {
-            // 🔥 KEMBALIKAN CART LAMA JIKA ADA
             if (session()->has('old_cart_backup') && !empty(session()->get('old_cart_backup'))) {
                 session()->put('cart', session()->get('old_cart_backup'));
                 session()->forget('old_cart_backup');
@@ -57,7 +56,6 @@ class CheckoutController extends Controller
             if ($item['variant_id']) {
                 $variant = ProductVariant::find($item['variant_id']);
                 if (!$variant || $variant->stock < $item['quantity']) {
-                    // 🔥 KEMBALIKAN CART LAMA JIKA ADA
                     if (session()->has('old_cart_backup') && !empty(session()->get('old_cart_backup'))) {
                         session()->put('cart', session()->get('old_cart_backup'));
                         session()->forget('old_cart_backup');
@@ -73,6 +71,8 @@ class CheckoutController extends Controller
         $addresses = [];
         $customer = null;
         $defaultAddress = null;
+        
+        // 🔥 PERBAIKI: Gunakan guard('customer')
         if (Auth::guard('customer')->check()) {
             $customer = Auth::guard('customer')->user();
             $addresses = $customer->addresses()->orderBy('is_default', 'desc')->get();
@@ -140,9 +140,13 @@ class CheckoutController extends Controller
         $isBuyNow = session()->get('is_buy_now', false);
 
         if (empty($cart)) {
-            return redirect()
-                ->route('customer.cart.index')
-                ->with('error', 'Keranjang belanja kosong.');
+            if (session()->has('old_cart_backup') && !empty(session()->get('old_cart_backup'))) {
+                session()->put('cart', session()->get('old_cart_backup'));
+                session()->forget('old_cart_backup');
+                session()->forget('is_buy_now');
+                return redirect()->route('customer.cart.index');
+            }
+            return redirect()->route('customer.cart.index')->with('error', 'Keranjang belanja kosong.');
         }
 
         // Cek stok
@@ -307,9 +311,6 @@ class CheckoutController extends Controller
                 // Kosongkan cart
                 session()->forget('cart');
             }
-
-            // Kosongkan cart
-            session()->forget('cart');
 
             return redirect()
                 ->route('customer.checkout.success', $order)

@@ -1,432 +1,448 @@
-<!DOCTYPE html>
-<html lang="id">
+@extends('layouts.customer')
 
-<head>
-    <meta charset="UTF-8">
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+@section('title', 'Daftar - Barokah Sport')
 
-    <title>Daftar - {{ config('app.name') }}</title>
+@section('content')
 
-    <script src="https://cdn.tailwindcss.com"></script>
+<style>
+    .auth_container {
+        width: 100%;
+        max-width: 28vw;
+        margin: 4vw auto;
+        padding: 2.5vw;
+        background: #ffffff;
+        border-radius: 1vw;
+        border: 0.1vw solid #e2e8f0;
+        box-shadow: 0 0.5vw 2vw rgba(0, 0, 0, 0.05);
+    }
 
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: [
-                            'Inter',
-                            'ui-sans-serif',
-                            'system-ui',
-                            'sans-serif'
-                        ],
-                    },
-                },
-            },
+    .auth_container .auth_logo {
+        text-align: center;
+        margin-bottom: 1.5vw;
+    }
+
+    .auth_container .auth_logo img {
+        height: 3.5vw;
+    }
+
+    .auth_container .auth_title {
+        font-size: 2.1vw;
+        font-weight: 700;
+        color: #0f172a;
+        text-align: center;
+        margin-bottom: 0.3vw;
+        font-family: heading, sans-serif;
+        text-transform: uppercase;
+    }
+
+    .auth_container .auth_subtitle {
+        font-size: 0.85vw;
+        color: #94a3b8;
+        text-align: center;
+        margin-bottom: 2vw;
+    }
+
+    .auth_container .form_group {
+        margin-bottom: 1.2vw;
+    }
+
+    .auth_container .form_group label {
+        display: block;
+        font-size: 0.8vw;
+        font-weight: 600;
+        color: #0f172a;
+        margin-bottom: 0.3vw;
+    }
+
+    .auth_container .form_group input {
+        width: 100%;
+        padding: 0.7vw 1vw;
+        border: 0.1vw solid #e2e8f0;
+        border-radius: 0.5vw;
+        font-size: 0.85vw;
+        color: #0f172a;
+        transition: all 0.3s ease;
+        background: #f8fafc;
+    }
+
+    .auth_container .form_group input:focus {
+        outline: none;
+        border-color: #076694;
+        background: #ffffff;
+        box-shadow: 0 0 0 0.2vw rgba(7, 102, 148, 0.1);
+    }
+
+    .auth_container .form_group .input_error {
+        font-size: 0.7vw;
+        color: #ef4444;
+        margin-top: 0.3vw;
+    }
+
+    .auth_container .form_group .password_hint {
+        font-size: 0.65vw;
+        color: #94a3b8;
+        margin-top: 0.3vw;
+    }
+
+    .auth_container .form_terms {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.5vw;
+        margin-bottom: 1.5vw;
+        font-size: 0.75vw;
+        color: #475569;
+    }
+
+    .auth_container .form_terms input[type="checkbox"] {
+        width: 0.9vw;
+        height: 0.9vw;
+        margin-top: 0.1vw;
+        accent-color: #076694;
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+
+    .auth_container .form_terms a {
+        color: #076694;
+        text-decoration: none;
+    }
+
+    .auth_container .form_terms a:hover {
+        text-decoration: underline;
+    }
+
+    .auth_container .btn_register {
+        width: 100%;
+        padding: 0.8vw;
+        background: #076694;
+        color: #ffffff;
+        border: none;
+        border-radius: 0.5vw;
+        font-size: 0.9vw;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.05vw;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.8vw;
+        position: relative;
+    }
+
+    .auth_container .btn_register:hover {
+        background: #055a7a;
+    }
+
+    .auth_container .btn_register:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
+
+    .auth_container .btn_register .spinner {
+        display: none;
+        width: 1.2vw;
+        height: 1.2vw;
+        border: 0.15vw solid rgba(255, 255, 255, 0.3);
+        border-top-color: #ffffff;
+        border-radius: 50%;
+        animation: spin 0.6s linear infinite;
+        flex-shrink: 0;
+    }
+
+    .auth_container .btn_register.loading .spinner {
+        display: block;
+    }
+
+    .auth_container .btn_register.loading .btn-text {
+        opacity: 0.8;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    .auth_container .auth_footer {
+        text-align: center;
+        margin-top: 1.5vw;
+        font-size: 0.8vw;
+        color: #94a3b8;
+    }
+
+    .auth_container .auth_footer a {
+        color: #076694;
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    .auth_container .auth_footer a:hover {
+        text-decoration: underline;
+    }
+
+    .auth_container .alert {
+        padding: 0.8vw 1vw;
+        border-radius: 0.5vw;
+        font-size: 0.8vw;
+        margin-bottom: 1.2vw;
+    }
+
+    .auth_container .alert_error {
+        background: #fef2f2;
+        border: 0.1vw solid #fecaca;
+        color: #dc2626;
+    }
+
+    .auth_container .alert_success {
+        background: #f0fdf4;
+        border: 0.1vw solid #bbf7d0;
+        color: #16a34a;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .auth_container {
+            max-width: 80vw;
+            padding: 5vw 6vw;
+            margin: 8vw auto;
+            border-radius: 3vw;
         }
-    </script>
-</head>
 
-<body class="min-h-screen bg-slate-50 font-sans text-slate-900">
+        .auth_container .auth_logo img {
+            height: 8vw;
+        }
 
-    <div class="flex min-h-screen">
+        .auth_container .auth_title {
+            font-size: 4.5vw;
+        }
 
-        {{-- LEFT SIDE --}}
-        <div
-            class="relative hidden overflow-hidden bg-slate-900 lg:flex lg:w-1/2"
-        >
+        .auth_container .auth_subtitle {
+            font-size: 2.5vw;
+        }
 
-            {{-- Decorative Background --}}
-            <div
-                class="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-blue-600/20 blur-3xl"
-            ></div>
+        .auth_container .form_group label {
+            font-size: 2.2vw;
+        }
 
-            <div
-                class="absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-indigo-600/20 blur-3xl"
-            ></div>
+        .auth_container .form_group input {
+            padding: 2vw 3vw;
+            font-size: 2.5vw;
+            border-radius: 1.5vw;
+        }
 
-            <div
-                class="relative z-10 flex w-full flex-col justify-between p-12 xl:p-16"
-            >
+        .auth_container .form_group .input_error {
+            font-size: 2vw;
+        }
 
-                {{-- Logo --}}
-                <div>
+        .auth_container .form_group .password_hint {
+            font-size: 1.8vw;
+        }
 
-                    <a
-                        href="{{ route('customer.home') }}"
-                        class="inline-flex items-center gap-3"
-                    >
+        .auth_container .form_terms {
+            font-size: 2vw;
+            gap: 1.5vw;
+        }
 
-                        <div
-                            class="flex h-11 w-11 items-center justify-center rounded-xl bg-white text-xl font-bold text-slate-900 shadow-lg"
-                        >
-                            {{ strtoupper(substr(config('app.name'), 0, 1)) }}
-                        </div>
+        .auth_container .form_terms input[type="checkbox"] {
+            width: 2.5vw;
+            height: 2.5vw;
+        }
 
-                        <span class="text-xl font-bold text-white">
-                            {{ config('app.name') }}
-                        </span>
+        .auth_container .btn_register {
+            padding: 2.2vw;
+            font-size: 2.8vw;
+            border-radius: 1.5vw;
+        }
 
-                    </a>
+        .auth_container .btn_register .spinner {
+            width: 3vw;
+            height: 3vw;
+            border-width: 0.3vw;
+        }
 
-                </div>
+        .auth_container .auth_footer {
+            font-size: 2.2vw;
+            margin-top: 3vw;
+        }
 
+        .auth_container .alert {
+            padding: 2vw 3vw;
+            font-size: 2.2vw;
+            border-radius: 1.5vw;
+        }
+    }
 
-                {{-- Content --}}
-                <div class="max-w-lg">
+    @media (max-width: 480px) {
+        .auth_container {
+            max-width: 92vw;
+            padding: 6vw 5vw;
+            margin: 5vw auto;
+        }
 
-                    <span
-                        class="mb-5 inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-slate-300"
-                    >
-                        Bergabung bersama kami
-                    </span>
+        .auth_container .auth_logo img {
+            height: 10vw;
+        }
 
-                    <h1
-                        class="text-4xl font-bold leading-tight text-white xl:text-5xl"
-                    >
-                        Buat akun dan
-                        <span class="text-blue-400">
-                            mulai berbelanja.
-                        </span>
-                    </h1>
+        .auth_container .auth_title {
+            font-size: 5.5vw;
+        }
 
-                    <p
-                        class="mt-6 max-w-md text-base leading-7 text-slate-400"
-                    >
-                        Daftarkan akun Anda dan nikmati pengalaman berbelanja
-                        yang praktis, cepat, dan nyaman.
-                    </p>
+        .auth_container .auth_subtitle {
+            font-size: 3vw;
+        }
 
-                </div>
+        .auth_container .form_group label {
+            font-size: 2.8vw;
+        }
 
+        .auth_container .form_group input {
+            padding: 2.5vw 3.5vw;
+            font-size: 3vw;
+            border-radius: 2vw;
+        }
 
-                {{-- Footer --}}
-                <div class="text-sm text-slate-500">
-                    &copy; {{ date('Y') }}
-                    {{ config('app.name') }}.
-                    Semua hak dilindungi.
-                </div>
+        .auth_container .form_group .input_error {
+            font-size: 2.5vw;
+        }
 
-            </div>
+        .auth_container .form_group .password_hint {
+            font-size: 2.2vw;
+        }
 
+        .auth_container .form_terms {
+            font-size: 2.5vw;
+            gap: 2vw;
+        }
+
+        .auth_container .form_terms input[type="checkbox"] {
+            width: 3.5vw;
+            height: 3.5vw;
+        }
+
+        .auth_container .btn_register {
+            padding: 3vw;
+            font-size: 3.5vw;
+            border-radius: 2vw;
+        }
+
+        .auth_container .btn_register .spinner {
+            width: 4vw;
+            height: 4vw;
+            border-width: 0.4vw;
+        }
+
+        .auth_container .auth_footer {
+            font-size: 2.8vw;
+            margin-top: 4vw;
+        }
+
+        .auth_container .alert {
+            padding: 2.5vw 4vw;
+            font-size: 2.8vw;
+            border-radius: 2vw;
+        }
+    }
+</style>
+
+<div class="auth_container">
+
+    <h1 class="auth_title">Daftar Akun</h1>
+    <p class="auth_subtitle">Mulai berbelanja dengan membuat akun baru</p>
+
+    {{-- Alert Error --}}
+    @if(session('error'))
+        <div class="alert alert_error">
+            {{ session('error') }}
+        </div>
+    @endif
+
+    {{-- Alert Success --}}
+    @if(session('success'))
+        <div class="alert alert_success">
+            {{ session('success') }}
+        </div>
+    @endif
+
+    {{-- Form Register --}}
+    <form action="{{ route('customer.register.process') }}" method="POST" id="register-form">
+        @csrf
+
+        <div class="form_group">
+            <label for="name">Nama Lengkap</label>
+            <input type="text" name="name" id="name" 
+                   value="{{ old('name') }}" 
+                   placeholder="Nama lengkap Anda" 
+                   required>
+            @error('name')
+                <p class="input_error">{{ $message }}</p>
+            @enderror
         </div>
 
-
-        {{-- RIGHT SIDE --}}
-        <div
-            class="flex w-full items-center justify-center px-6 py-12 lg:w-1/2 lg:px-12"
-        >
-
-            <div class="w-full max-w-md">
-
-                {{-- Mobile Logo --}}
-                <div class="mb-10 text-center lg:hidden">
-
-                    <a
-                        href="{{ route('customer.home') }}"
-                        class="inline-flex items-center gap-3"
-                    >
-
-                        <div
-                            class="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-900 text-xl font-bold text-white"
-                        >
-                            {{ strtoupper(substr(config('app.name'), 0, 1)) }}
-                        </div>
-
-                        <span class="text-xl font-bold text-slate-900">
-                            {{ config('app.name') }}
-                        </span>
-
-                    </a>
-
-                </div>
-
-
-                {{-- Header --}}
-                <div class="mb-8">
-
-                    <h2
-                        class="text-3xl font-bold tracking-tight text-slate-900"
-                    >
-                        Buat akun baru
-                    </h2>
-
-                    <p class="mt-2 text-sm text-slate-500">
-                        Lengkapi data berikut untuk membuat akun customer.
-                    </p>
-
-                </div>
-
-
-                {{-- Validation Errors --}}
-                @if ($errors->any())
-
-                    <div
-                        class="mb-6 rounded-xl border border-red-200 bg-red-50 p-4"
-                    >
-
-                        <div class="flex items-start gap-3">
-
-                            <svg
-                                class="mt-0.5 h-5 w-5 shrink-0 text-red-500"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="2"
-                                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                                />
-                            </svg>
-
-                            <div class="text-sm text-red-700">
-
-                                @foreach ($errors->all() as $error)
-
-                                    <p>
-                                        {{ $error }}
-                                    </p>
-
-                                @endforeach
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                @endif
-
-
-                {{-- Register Form --}}
-                <form
-                    action="{{ route('customer.register.process') }}"
-                    method="POST"
-                    class="space-y-5"
-                >
-
-                    @csrf
-
-
-                    {{-- Name --}}
-                    <div>
-
-                        <label
-                            for="name"
-                            class="mb-2 block text-sm font-medium text-slate-700"
-                        >
-                            Nama Lengkap
-                        </label>
-
-                        <input
-                            id="name"
-                            type="text"
-                            name="name"
-                            value="{{ old('name') }}"
-                            placeholder="Masukkan nama lengkap Anda"
-                            autocomplete="name"
-                            required
-                            autofocus
-                            class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                        >
-
-                        @error('name')
-
-                            <p class="mt-2 text-sm text-red-500">
-                                {{ $message }}
-                            </p>
-
-                        @enderror
-
-                    </div>
-
-
-                    {{-- Email --}}
-                    <div>
-
-                        <label
-                            for="email"
-                            class="mb-2 block text-sm font-medium text-slate-700"
-                        >
-                            Email
-                        </label>
-
-                        <input
-                            id="email"
-                            type="email"
-                            name="email"
-                            value="{{ old('email') }}"
-                            placeholder="contoh@email.com"
-                            autocomplete="email"
-                            required
-                            class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                        >
-
-                        @error('email')
-
-                            <p class="mt-2 text-sm text-red-500">
-                                {{ $message }}
-                            </p>
-
-                        @enderror
-
-                    </div>
-
-
-                    {{-- Phone --}}
-                    <div>
-
-                        <label
-                            for="phone"
-                            class="mb-2 block text-sm font-medium text-slate-700"
-                        >
-                            Nomor Telepon
-                            <span class="font-normal text-slate-400">
-                                (Opsional)
-                            </span>
-                        </label>
-
-                        <input
-                            id="phone"
-                            type="tel"
-                            name="phone"
-                            value="{{ old('phone') }}"
-                            placeholder="08xxxxxxxxxx"
-                            autocomplete="tel"
-                            class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                        >
-
-                        @error('phone')
-
-                            <p class="mt-2 text-sm text-red-500">
-                                {{ $message }}
-                            </p>
-
-                        @enderror
-
-                    </div>
-
-
-                    {{-- Password --}}
-                    <div>
-
-                        <label
-                            for="password"
-                            class="mb-2 block text-sm font-medium text-slate-700"
-                        >
-                            Password
-                        </label>
-
-                        <input
-                            id="password"
-                            type="password"
-                            name="password"
-                            placeholder="Minimal 8 karakter"
-                            autocomplete="new-password"
-                            required
-                            class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                        >
-
-                        @error('password')
-
-                            <p class="mt-2 text-sm text-red-500">
-                                {{ $message }}
-                            </p>
-
-                        @enderror
-
-                    </div>
-
-
-                    {{-- Confirm Password --}}
-                    <div>
-
-                        <label
-                            for="password_confirmation"
-                            class="mb-2 block text-sm font-medium text-slate-700"
-                        >
-                            Konfirmasi Password
-                        </label>
-
-                        <input
-                            id="password_confirmation"
-                            type="password"
-                            name="password_confirmation"
-                            placeholder="Ulangi password Anda"
-                            autocomplete="new-password"
-                            required
-                            class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                        >
-
-                    </div>
-
-
-                    {{-- Submit --}}
-                    <button
-                        type="submit"
-                        class="w-full rounded-xl bg-slate-900 px-5 py-3.5 text-sm font-semibold text-white shadow-lg shadow-slate-900/10 transition hover:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-slate-900/10 active:scale-[0.99]"
-                    >
-                        Buat Akun
-                    </button>
-
-                </form>
-
-
-                {{-- Login --}}
-                <p class="mt-8 text-center text-sm text-slate-500">
-
-                    Sudah memiliki akun?
-
-                    <a
-                        href="{{ route('customer.login') }}"
-                        class="font-semibold text-blue-600 transition hover:text-blue-700"
-                    >
-                        Masuk sekarang
-                    </a>
-
-                </p>
-
-
-                {{-- Back Home --}}
-                <div class="mt-6 text-center">
-
-                    <a
-                        href="{{ route('customer.home') }}"
-                        class="inline-flex items-center gap-2 text-sm font-medium text-slate-500 transition hover:text-slate-900"
-                    >
-
-                        <svg
-                            class="h-4 w-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M10 19l-7-7m0 0l7-7m-7 7h18"
-                            />
-                        </svg>
-
-                        Kembali ke halaman utama
-
-                    </a>
-
-                </div>
-
-            </div>
-
+        <div class="form_group">
+            <label for="email">Alamat Email</label>
+            <input type="email" name="email" id="email" 
+                   value="{{ old('email') }}" 
+                   placeholder="contoh@email.com" 
+                   required>
+            @error('email')
+                <p class="input_error">{{ $message }}</p>
+            @enderror
         </div>
 
+        <div class="form_group">
+            <label for="password">Kata Sandi</label>
+            <input type="password" name="password" id="password" 
+                   placeholder="Minimal 8 karakter" required>
+            <p class="password_hint">Gunakan minimal 8 karakter dengan kombinasi huruf dan angka.</p>
+            @error('password')
+                <p class="input_error">{{ $message }}</p>
+            @enderror
+        </div>
+
+        <div class="form_group">
+            <label for="password_confirmation">Konfirmasi Kata Sandi</label>
+            <input type="password" name="password_confirmation" id="password_confirmation" 
+                   placeholder="Ketik ulang kata sandi" required>
+        </div>
+
+        <div class="form_terms">
+            <input type="checkbox" name="terms" id="terms" value="1" {{ old('terms') ? 'checked' : '' }} required>
+            <label for="terms">
+                Saya menyetujui 
+                <a href="{{ route('customer.terms') }}" target="_blank">Syarat & Ketentuan</a> 
+                dan 
+                <a href="{{ route('customer.privacy') }}" target="_blank">Kebijakan Privasi</a>
+            </label>
+        </div>
+        @error('terms')
+            <p style="color:#ef4444;font-size:0.7vw;margin-top:-0.5vw;margin-bottom:1vw;">{{ $message }}</p>
+        @enderror
+
+        <button type="submit" class="btn_register" id="register-btn">
+            <span class="spinner"></span>
+            <span class="btn-text">Daftar Sekarang</span>
+        </button>
+    </form>
+
+    <div class="auth_footer">
+        Sudah punya akun? <a href="{{ route('customer.login') }}">Masuk</a>
     </div>
+</div>
 
-</body>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const registerForm = document.getElementById('register-form');
+    const registerBtn = document.getElementById('register-btn');
 
-</html>
-```
+    if (registerForm) {
+        registerForm.addEventListener('submit', function() {
+            // Disable button dan tampilkan loading
+            registerBtn.disabled = true;
+            registerBtn.classList.add('loading');
+            registerBtn.querySelector('.btn-text').textContent = 'Memproses...';
+        });
+    }
+});
+</script>
+
+@endsection

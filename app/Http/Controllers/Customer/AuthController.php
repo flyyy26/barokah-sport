@@ -3,134 +3,129 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
-use App\Models\Customer;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
-    // ============================================
-    // REGISTER PAGE
-    // ============================================
-
-    public function showRegister()
-    {
-        return view('customer.auth.register');
-    }
-
-    // ============================================
-    // REGISTER
-    // ============================================
-
-    public function register(Request $request)
-    {
-        $validated = $request->validate([
-            'name' => 'required|string|max:100',
-            'email' => 'required|email|max:255|unique:customers,email',
-            'phone' => 'nullable|string|max:20|unique:customers,phone',
-            'password' => 'required|string|min:8|confirmed',
-        ]);
-
-        $customer = Customer::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'phone' => $validated['phone'] ?? null,
-            'password' => $validated['password'],
-        ]);
-
-        Auth::guard('customer')->login($customer);
-        $request->session()->regenerate();
-
-        return redirect()
-            ->route('customer.home')
-            ->with('success', 'Registrasi berhasil. Selamat berbelanja!');
-    }
-
-    // ============================================
-    // LOGIN PAGE
-    // ============================================
-
+    /**
+     * Menampilkan halaman login customer
+     */
     public function showLogin()
     {
+        // 🔥 CEK JIKA SUDAH LOGIN SEBAGAI CUSTOMER
+        if (Auth::guard('customer')->check()) {
+            return redirect()->route('customer.account');
+        }
+        
+        // 🔥 CEK JIKA SUDAH LOGIN SEBAGAI ADMIN (GUARD DEFAULT)
+        if (Auth::check() && Auth::user()->role === 'admin') {
+            return redirect()->route('admin.dashboard');
+        }
+
         return view('customer.auth.login');
     }
 
-    // ============================================
-    // LOGIN - Support Email OR Phone
-    // ============================================
-
+    /**
+     * Proses login customer
+     */
     public function login(Request $request)
     {
-        $validated = $request->validate([
-            'login' => 'required|string', // bisa email atau phone
-            'password' => 'required|string',
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required',
         ]);
 
-        $remember = $request->boolean('remember');
-
-        // Cari user berdasarkan email atau phone
-        $customer = Customer::where('email', $validated['login'])
-            ->orWhere('phone', $validated['login'])
-            ->first();
-
-        if ($customer && Hash::check($validated['password'], $customer->password)) {
-            Auth::guard('customer')->login($customer, $remember);
+        // 🔥 GUNAKAN guard('customer') UNTUK LOGIN
+        if (Auth::guard('customer')->attempt($request->only('email', 'password'), $request->boolean('remember'))) {
             $request->session()->regenerate();
 
+            $user = Auth::guard('customer')->user();
+
+            // 🔥 HAPUS SESSION CART & WISHLIST
+            session()->forget('cart');
+            session()->forget('wishlist');
+            session()->forget('is_buy_now');
+            session()->forget('old_cart_backup');
+
             return redirect()
-                ->intended(route('customer.home'))
-                ->with('success', 'Selamat datang kembali!');
+                ->route('customer.account')
+                ->with('success', 'Selamat datang, ' . $user->name . '!');
         }
 
         return back()
-            ->withErrors([
-                'login' => 'Email/Phone atau password salah.',
-            ])
-            ->onlyInput('login');
+            ->withInput($request->only('email', 'remember'))
+            ->with('error', 'Email atau password salah.');
     }
 
-    // ============================================
-    // LOGOUT
-    // ============================================
+    /**
+     * Menampilkan halaman registrasi customer
+     */
+    public function showRegister()
+    {
+        // 🔥 CEK JIKA SUDAH LOGIN SEBAGAI CUSTOMER
+        if (Auth::guard('customer')->check()) {
+            return redirect()->route('customer.account');
+        }
 
+        return view('customer.auth.register');
+    }
+
+    /**
+     * Proses registrasi customer
+     */
+    public function register(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'terms' => ['required', 'accepted'],
+        ]);
+
+        if ($validator->fails()) {
+            return back()
+                ->withErrors($validator)
+                ->withInput();
+        }
+
+        try {
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'role' => 'customer',
+            ]);
+
+            // 🔥 GUNAKAN guard('customer') UNTUK LOGIN
+            Auth::guard('customer')->login($user);
+
+            return redirect()
+                ->route('customer.account')
+                ->with('success', 'Selamat datang, ' . $user->name . '! Akun Anda berhasil dibuat.');
+
+        } catch (\Exception $e) {
+            return back()
+                ->withInput()
+                ->with('error', 'Registrasi gagal: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Proses logout customer
+     */
     public function logout(Request $request)
     {
         Auth::guard('customer')->logout();
+
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
         return redirect()
             ->route('customer.login')
-            ->with('success', 'Anda berhasil logout.');
-    }
-
-    // ============================================
-    // GUEST REGISTER - Auto register dari checkout
-    // ============================================
-
-    public function guestRegister(Request $request)
-    {
-        $validated = $request->validate([
-            'name' => 'required|string|max:100',
-            'phone' => 'required|string|max:20|unique:customers,phone',
-            'email' => 'nullable|email|max:255|unique:customers,email',
-        ]);
-
-        // Generate password default (phone number)
-        $defaultPassword = substr(preg_replace('/[^0-9]/', '', $validated['phone']), -6);
-
-        $customer = Customer::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'] ?? null,
-            'phone' => $validated['phone'],
-            'password' => $defaultPassword,
-            'is_active' => true,
-        ]);
-
-        Auth::guard('customer')->login($customer);
-        $request->session()->regenerate();
-
-        return $customer;
+            ->with('success', 'Berhasil keluar.');
     }
 }

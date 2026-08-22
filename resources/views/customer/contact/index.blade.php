@@ -9,7 +9,7 @@
         scroll-behavior: smooth;
     }
     /* ============================================
-       CATALOG CONTAINER
+       CONTACT CONTAINER
        ============================================ */
     .contact_container {
         width: 100%;
@@ -33,12 +33,12 @@
     }
 
     /* ============================================
-       FILTER ROW
+       CONTACT LAYOUT
        ============================================ */
     .contact_top_container {
         width: 100%;
-        padding: 1.3vw 7.54vw;
-        padding-bottom: 1.8vw;
+        padding: 1.6vw 7.54vw;
+        padding-bottom: 1.9vw;
         background: #f9fafb;
     }
 
@@ -48,7 +48,7 @@
         display: grid;
         grid-template-columns: repeat(2, 1fr);
         grid-gap: 2vw;
-        align-items: start;
+        align-items: center;
     }
 
     .contact_maps {
@@ -132,7 +132,7 @@
        FAQ SECTION
        ============================================ */
     #faq-section {
-        scroll-margin-top: 5.7vw; /* Sesuaikan dengan tinggi navbar Anda */
+        scroll-margin-top: 5.7vw;
     }
     .faq_section {
         width: 100%;
@@ -258,14 +258,19 @@
     }
 
     .faq_answer_content {
-        padding: 0 1.5vw 1.2vw 1.5vw;
+        padding:1.2vw 1.5vw 1.2vw 1.5vw;
         font-size: 0.85vw;
         color: #475569;
         line-height: 1.6;
         border-top: 0.1vw solid #e2e8f0;
     }
 
-    /* Category Badge */
+    .faq_answer_content ul, .faq_answer_content ol{
+        margin-left:1vw;
+        margin-bottom:1vw;
+    }
+
+    /* Category Badge - Dynamic dari database */
     .faq_category_badge {
         display: inline-block;
         padding: 0.2vw 0.8vw;
@@ -274,6 +279,12 @@
         font-weight: 600;
         margin-right: 0.5vw;
         flex-shrink: 0;
+    }
+
+    /* Warna default untuk kategori */
+    .faq_category_badge.default {
+        background: #e2e8f0;
+        color: #475569;
     }
 
     .faq_category_badge.umum {
@@ -459,11 +470,13 @@
         <p>Temukan jawaban atas pertanyaan yang sering ditanyakan pelanggan</p>
     </div>
 
-    {{-- Category Filters --}}
+    {{-- Category Filters dari Database --}}
     <div class="faq_filters">
         <button class="faq_filter_btn active" data-category="all">Semua</button>
-        @foreach ($categories as $key => $label)
-            <button class="faq_filter_btn" data-category="{{ $key }}">{{ $label }}</button>
+        @foreach ($categories as $category)
+            <button class="faq_filter_btn" data-category="{{ $category->slug }}">
+                {{ $category->name }}
+            </button>
         @endforeach
     </div>
 
@@ -471,7 +484,12 @@
     <div class="faq_list">
         @if ($faqs->count() > 0)
             @foreach ($faqs as $faq)
-                <div class="faq_item" data-category="{{ $faq->category }}">
+                @php
+                    // Ambil slug kategori dengan aman dari relasi category
+                    $categorySlug = $faq->category?->slug ?? 'umum';
+                    $categoryName = $faq->category?->name ?? 'Umum';
+                @endphp
+                <div class="faq_item" data-category="{{ $categorySlug }}">
                     <button class="faq_question" onclick="toggleFaq(this)">
                         <span>
                             {{ $faq->question }}
@@ -480,7 +498,7 @@
                     </button>
                     <div class="faq_answer">
                         <div class="faq_answer_content">
-                            {{ $faq->answer }}
+                            {!! $faq->answer !!}
                         </div>
                     </div>
                 </div>
@@ -495,6 +513,120 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // 🔥 AMBIL FILTER DARI URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const filterCategory = urlParams.get('category');
+        
+        // 🔥 CEK APAKAH ADA HASH #faq-section
+        if (window.location.hash === '#faq-section') {
+            setTimeout(function() {
+                const faqSection = document.getElementById('faq-section');
+                if (faqSection) {
+                    faqSection.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            }, 500);
+        }
+
+        // 🔥 FILTER FAQ BERDASARKAN CATEGORY DARI URL
+        if (filterCategory) {
+            setTimeout(function() {
+                // Cari tombol filter yang sesuai
+                const filterButtons = document.querySelectorAll('.faq_filter_btn');
+                let targetButton = null;
+                
+                filterButtons.forEach(function(btn) {
+                    if (btn.dataset.category === filterCategory) {
+                        targetButton = btn;
+                    }
+                });
+                
+                if (targetButton) {
+                    targetButton.click();
+                }
+                
+                // Scroll ke FAQ section
+                const faqSection = document.getElementById('faq-section');
+                if (faqSection) {
+                    faqSection.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            }, 600);
+        }
+    });
+
+    // FAQ Toggle
+    function toggleFaq(button) {
+        const answer = button.nextElementSibling;
+        const icon = button.querySelector('.faq_icon');
+        const isActive = answer.classList.contains('active');
+
+        // Close all other FAQs
+        document.querySelectorAll('.faq_answer').forEach(el => {
+            if (el !== answer) {
+                el.classList.remove('active');
+                el.previousElementSibling.querySelector('.faq_icon').classList.remove('open');
+            }
+        });
+
+        // Toggle current FAQ
+        if (isActive) {
+            answer.classList.remove('active');
+            icon.classList.remove('open');
+        } else {
+            answer.classList.add('active');
+            icon.classList.add('open');
+        }
+    }
+
+    // FAQ Filter
+    document.querySelectorAll('.faq_filter_btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const category = this.dataset.category;
+
+            // Update active button
+            document.querySelectorAll('.faq_filter_btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            this.classList.add('active');
+
+            // Filter FAQ items
+            document.querySelectorAll('.faq_item').forEach(item => {
+                if (category === 'all' || item.dataset.category === category) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+
+            // Close all open FAQs when filtering
+            document.querySelectorAll('.faq_answer').forEach(el => {
+                el.classList.remove('active');
+                el.previousElementSibling.querySelector('.faq_icon').classList.remove('open');
+            });
+        });
+    });
+
+    // Auto-open first FAQ
+    document.addEventListener('DOMContentLoaded', function() {
+        const firstFaq = document.querySelector('.faq_item');
+        if (firstFaq) {
+            const firstButton = firstFaq.querySelector('.faq_question');
+            if (firstButton) {
+                setTimeout(() => {
+                    toggleFaq(firstButton);
+                }, 500);
+            }
+        }
+    });
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
         // Cek apakah URL memiliki hash #faq-section
         if (window.location.hash === '#faq-section') {
             setTimeout(function() {
@@ -505,7 +637,7 @@
                         block: 'start'
                     });
                 }
-            }, 500); // Delay 500ms untuk memastikan halaman selesai load
+            }, 500);
         }
     });
 

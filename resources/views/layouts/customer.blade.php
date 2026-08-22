@@ -22,6 +22,7 @@
 
     @include('customer.partials.navbar')
     @include('customer.partials.variant-modal')
+    @include('customer.partials.search-popup')
 
     <main>
         @yield('content')
@@ -111,7 +112,6 @@
                         <p>Wishlist kosong</p>
                         <p>Simpan produk favoritmu di sini!</p>
                         <a href="{{ route('customer.products.index') }}" class="btn-primary">
-                            <iconify-icon icon="mdi:shopping-outline" width="18"></iconify-icon>
                             Mulai Belanja
                         </a>
                     </div>
@@ -129,7 +129,6 @@
     <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 
-    {{-- Swiper Initialization --}}
     <script>
         var swiper = new Swiper(".testimonialSwiper", {
             slidesPerView: 1,
@@ -180,28 +179,382 @@
         });
     </script>
 
-    {{-- Routes for JavaScript --}}
     <script>
         window.customerRoutes = {
             cartAdd: '{{ route("customer.cart.add") }}',
             cartPopup: '{{ route("customer.cart.popup") }}',
+            cartCount: '{{ route("customer.cart.count") }}',
             cartUpdate: '{{ route("customer.cart.update") }}',
             cartRemove: '{{ route("customer.cart.remove") }}',
             cartClear: '{{ route("customer.cart.clear") }}',
-            cartCount: '{{ route("customer.cart.count") }}',
+            buyNow: '{{ route("customer.cart.buy-now") }}',
+            wishlistAdd: '{{ route("customer.wishlist.add") }}',
             wishlistPopup: '{{ route("customer.wishlist.popup") }}',
             wishlistStatus: '{{ route("customer.wishlist.status") }}',
-            wishlistAdd: '{{ route("customer.wishlist.add") }}',
             wishlistRemove: '{{ route("customer.wishlist.remove") }}',
             wishlistClear: '{{ route("customer.wishlist.clear") }}',
             checkout: '{{ route("customer.checkout.index") }}',
+            login: '{{ route("customer.login") }}',
         };
     </script>
 
-    {{-- Popup JavaScript --}}
+    <script>
+        // ============================================
+        // SEARCH POPUP FUNCTIONS
+        // ============================================
+        function openSearchPopup() {
+            const overlay = document.getElementById('search-popup-overlay');
+            if (overlay) {
+                overlay.classList.remove('fade-out');
+                overlay.style.display = 'flex';
+                // Force reflow for animation
+                void overlay.offsetWidth;
+                overlay.classList.add('active');
+                document.body.style.overflow = 'hidden';
+                
+                // 🔥 FOCUS INPUT
+                setTimeout(function() {
+                    const input = document.getElementById('search-popup-input');
+                    if (input) {
+                        input.focus();
+                        input.select();
+                    }
+                }, 200);
+            }
+        }
+
+        function closeSearchPopup() {
+            const overlay = document.getElementById('search-popup-overlay');
+            if (overlay) {
+                overlay.classList.add('fade-out');
+                overlay.classList.remove('active');
+                setTimeout(function() {
+                    overlay.style.display = 'none';
+                    overlay.classList.remove('fade-out');
+                }, 300);
+                document.body.style.overflow = '';
+            }
+        }
+
+        // 🔥 SEARCH FORM SUBMIT HANDLER
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchForm = document.getElementById('search-popup-form');
+            if (searchForm) {
+                searchForm.addEventListener('submit', function(e) {
+                    const input = document.getElementById('search-popup-input');
+                    const searchValue = input ? input.value.trim() : '';
+                    
+                    if (!searchValue || searchValue === '') {
+                        e.preventDefault();
+                        // Tampilkan notifikasi jika search kosong
+                        showToast('Silakan masukkan kata kunci pencarian', 'warning');
+                        return;
+                    }
+                    
+                    // 🔥 TUTUP POPUP SEBELUM SUBMIT
+                    closeSearchPopup();
+                    
+                    // 🔥 TAMBAHKAN DELAY AGAR POPUP TUTUP DULU
+                    setTimeout(function() {
+                        searchForm.submit();
+                    }, 300);
+                });
+            }
+
+            // 🔥 TRENDING SEARCH CLICK
+            document.querySelectorAll('.search-popup-trending-item').forEach(function(item) {
+                item.addEventListener('click', function(e) {
+                    // Tutup popup sebelum navigasi
+                    closeSearchPopup();
+                });
+            });
+
+            // 🔥 NAV LINKS CLICK
+            document.querySelectorAll('.search-popup-nav-link').forEach(function(link) {
+                link.addEventListener('click', function(e) {
+                    // Tutup popup sebelum navigasi
+                    closeSearchPopup();
+                });
+            });
+        });
+
+        // 🔥 TUTUP POPUP DENGAN TOMBOL ESC
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeSearchPopup();
+            }
+            // 🔥 Ctrl+K atau Cmd+K untuk membuka popup
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                openSearchPopup();
+            }
+        });
+
+        // 🔥 CLOSE ON OVERLAY CLICK
+        document.addEventListener('click', function(e) {
+            const overlay = document.getElementById('search-popup-overlay');
+            if (e.target === overlay) {
+                closeSearchPopup();
+            }
+        });
+
+        // 🔥 TOAST NOTIFICATION
+        function showToast(message, type) {
+            // Cek apakah toast sudah ada
+            let toast = document.getElementById('custom-toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'custom-toast';
+                toast.style.cssText = `
+                    position: fixed;
+                    bottom: 30px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    padding: 12px 24px;
+                    border-radius: 8px;
+                    font-size: 14px;
+                    z-index: 99999;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                    animation: slideUp 0.3s ease;
+                    max-width: 90%;
+                    text-align: center;
+                    font-weight: 500;
+                `;
+                document.body.appendChild(toast);
+                
+                // Tambahkan style animasi jika belum ada
+                if (!document.getElementById('toast-animations')) {
+                    const style = document.createElement('style');
+                    style.id = 'toast-animations';
+                    style.textContent = `
+                        @keyframes slideUp {
+                            from { transform: translateX(-50%) translateY(20px); opacity: 0; }
+                            to { transform: translateX(-50%) translateY(0); opacity: 1; }
+                        }
+                        @keyframes slideDown {
+                            from { transform: translateX(-50%) translateY(0); opacity: 1; }
+                            to { transform: translateX(-50%) translateY(20px); opacity: 0; }
+                        }
+                    `;
+                    document.head.appendChild(style);
+                }
+            }
+            
+            // Set warna berdasarkan type
+            const colors = {
+                success: '#10b981',
+                error: '#ef4444',
+                warning: '#f59e0b',
+                info: '#3b82f6'
+            };
+            toast.style.background = colors[type] || colors.info;
+            toast.style.color = '#ffffff';
+            toast.textContent = message;
+            toast.style.display = 'block';
+            toast.style.animation = 'slideUp 0.3s ease forwards';
+            
+            // Hapus setelah 3 detik
+            clearTimeout(toast._timeout);
+            toast._timeout = setTimeout(function() {
+                toast.style.animation = 'slideDown 0.3s ease forwards';
+                setTimeout(function() {
+                    toast.style.display = 'none';
+                }, 300);
+            }, 3000);
+        }
+
+        // 🔥 MAKE showToast GLOBAL
+        window.showToast = showToast;
+
+        console.log('🔍 Search popup siap digunakan!');
+    </script>
+
+    <style>
+        /* ============================================
+        SEARCH POPUP NAVBAR CUSTOM
+        ============================================ */
+        .header_section .btn_header_bottom .search-btn {
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0.3vw;
+            font-size: 1.2vw;
+            color: #0f172a;
+            transition: color 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .header_section .btn_header_bottom .search-btn:hover {
+            color: #076694;
+        }
+
+        @media (max-width: 768px) {
+            .header_section .btn_header_bottom .search-btn {
+                font-size: 3vw;
+            }
+        }
+    </style>
+
     <script src="{{ asset('js/cart.js') }}"></script>
     <script src="{{ asset('js/popup.js') }}"></script>
     <script src="{{ asset('js/variant-modal.js') }}"></script>
+
+    <script>
+        if (typeof window.addToWishlist === 'function') {
+            const originalAddToWishlist = window.addToWishlist;
+            
+            window.addToWishlist = function(productId) {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+                
+                const allButtons = document.querySelectorAll(`.add_to_wishlist_btn[data-product-id="${productId}"]`);
+                allButtons.forEach(function(btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = '⏳';
+                });
+                
+                fetch(window.customerRoutes.wishlistAdd, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ product_id: productId })
+                })
+                .then(response => {
+                    if (response.status === 401) {
+                        // 🔥 REDIRECT KE LOGIN
+                        showToast('Silakan login terlebih dahulu', 'warning');
+                        setTimeout(() => {
+                            window.location.href = window.customerRoutes.login;
+                        }, 1500);
+                        throw new Error('Unauthorized');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        const count = data.count || 0;
+                        const inWishlist = data.in_wishlist || false;
+                        
+                        updateWishlistIcon(productId, inWishlist);
+                        
+                        if (typeof window.updateNavbarWishlistCount === 'function') {
+                            window.updateNavbarWishlistCount(count);
+                        }
+                        
+                        document.dispatchEvent(new CustomEvent('wishlist-updated', {
+                            detail: { count, product_id: productId, in_wishlist: inWishlist }
+                        }));
+                        
+                        showToast(data.message || (inWishlist ? 'Produk ditambahkan ke wishlist!' : 'Produk dihapus dari wishlist!'), 'success');
+                        
+                        if (typeof loadWishlistPopup === 'function') {
+                            loadWishlistPopup();
+                        }
+                    } else {
+                        showToast(data.message || 'Gagal menambahkan ke wishlist', 'error');
+                    }
+                })
+                .catch(function(error) {
+                    if (error.message !== 'Unauthorized') {
+                        showToast('Terjadi kesalahan', 'error');
+                    }
+                })
+                .finally(() => {
+                    allButtons.forEach(function(btn) {
+                        if (!btn.disabled) return;
+                        const currentState = btn.dataset.inWishlist === 'true';
+                        if (currentState) {
+                            btn.innerHTML = '<iconify-icon icon="solar:heart-bold" style="color: #ef4444;"></iconify-icon>';
+                            btn.classList.add('active');
+                        } else {
+                            btn.innerHTML = '<iconify-icon icon="solar:heart-linear"></iconify-icon>';
+                            btn.classList.remove('active');
+                        }
+                        btn.disabled = false;
+                    });
+                });
+            };
+        }
+
+        // Override addToCart untuk handle redirect login
+        if (typeof window.addToCartDirect === 'function') {
+            const originalAddToCartDirect = window.addToCartDirect;
+            
+            window.addToCartDirect = function(productId, variantId = null, quantity = 1) {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+                
+                const btn = document.querySelector(`.product_layout_box[data-product-id="${productId}"] .add_to_cart_btn`);
+                if (btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = '⏳';
+                }
+                
+                fetch(window.customerRoutes.cartAdd, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        product_id: productId,
+                        variant_id: variantId,
+                        quantity: quantity
+                    })
+                })
+                .then(response => {
+                    if (response.status === 401) {
+                        showToast('Silakan login terlebih dahulu', 'warning');
+                        setTimeout(() => {
+                            window.location.href = window.customerRoutes.login;
+                        }, 1500);
+                        throw new Error('Unauthorized');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        const count = data.count || 0;
+                        updateNavbarCartCount(count);
+                        
+                        document.dispatchEvent(new CustomEvent('cart-updated', {
+                            detail: { count, message: data.message }
+                        }));
+                        
+                        showToast(data.message || 'Produk ditambahkan ke keranjang!', 'success');
+                        
+                        if (typeof loadCartPopup === 'function') {
+                            loadCartPopup();
+                        }
+                        
+                        if (window._buyNowMode) {
+                            window._buyNowMode = false;
+                            setTimeout(() => {
+                                window.location.href = window.customerRoutes.checkout;
+                            }, 500);
+                        }
+                    } else {
+                        showToast(data.message || 'Gagal menambahkan produk', 'error');
+                    }
+                })
+                .catch(function(error) {
+                    if (error.message !== 'Unauthorized') {
+                        showToast('Terjadi kesalahan', 'error');
+                    }
+                })
+                .finally(() => {
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerHTML = '<iconify-icon icon="solar:cart-linear"></iconify-icon>';
+                    }
+                });
+            };
+        }
+    </script>
     
 
 </body>

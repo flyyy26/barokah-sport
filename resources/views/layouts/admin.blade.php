@@ -18,6 +18,8 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
+
+    <script src="https://cdn.tiny.cloud/1/f0qff2j87jgv24lrb8m0hd4yuglweewk56pa79tykafgtc6g/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
 </head>
 
 
@@ -163,6 +165,15 @@
                     <span>
                         Kebijakan Privasi
                     </span>
+                </a>
+
+                <a href="{{ route('admin.about.index') }}"
+                    class="flex items-center gap-3 px-4 py-3
+                        rounded-lg text-sm font-medium
+                        text-gray-700 hover:bg-blue-50
+                        hover:text-blue-600">
+                    <span>🏢</span>
+                    <span>Tentang Kami</span>
                 </a>
 
                 <a
@@ -357,52 +368,7 @@
 
     </div>
 
-    <script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            if (typeof ClassicEditor !== 'undefined') {
-                ClassicEditor
-                    .create(document.querySelector('#description'), {
-                        toolbar: [
-                            'heading', '|',
-                            'bold', 'italic', 'underline', 'strikethrough', '|',
-                            'bulletedList', 'numberedList', '|',
-                            'blockQuote', 'insertTable', '|',
-                            'undo', 'redo'
-                        ],
-                        heading: {
-                            options: [
-                                { model: 'paragraph', title: 'Paragraph', class: 'ck-heading_paragraph' },
-                                { model: 'heading1', view: 'h1', title: 'Heading 1', class: 'ck-heading_heading1' },
-                                { model: 'heading2', view: 'h2', title: 'Heading 2', class: 'ck-heading_heading2' },
-                                { model: 'heading3', view: 'h3', title: 'Heading 3', class: 'ck-heading_heading3' }
-                            ]
-                        },
-                        placeholder: 'Masukkan deskripsi produk...',
-                        height: 400,
-                    })
-                    .then(editor => {
-                        console.log('CKEditor initialized');
-                    })
-                    .catch(error => {
-                        console.error(error);
-                    });
-            }
-        });
-
-        // Save content before submit
-        document.addEventListener('submit', function(e) {
-            if (e.target.id === 'product-form') {
-                if (typeof ClassicEditor !== 'undefined') {
-                    const editor = ClassicEditor.instances[0];
-                    if (editor) {
-                        document.querySelector('#description').value = editor.getData();
-                    }
-                }
-            }
-        });
-        </script>
+    @stack('scripts')
 
 
     {{-- Vanilla JavaScript --}}

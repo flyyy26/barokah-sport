@@ -12,15 +12,22 @@ class Faq extends Model
     protected $fillable = [
         'question',
         'answer',
-        'category',
+        'category_id',
         'order',
         'is_active'
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
-        'order' => 'integer'
+        'order' => 'integer',
+        'category_id' => 'integer'
     ];
+
+    // Relasi ke kategori
+    public function category()
+    {
+        return $this->belongsTo(FaqCategory::class, 'category_id');
+    }
 
     // Scope untuk FAQ aktif
     public function scopeActive($query)
@@ -34,21 +41,19 @@ class Faq extends Model
         return $query->orderBy('order', 'asc');
     }
 
-    // Accessor untuk kategori yang lebih rapi
+    // Accessor untuk kategori label
     public function getCategoryLabelAttribute()
     {
-        $labels = [
-            'umum' => 'Umum',
-            'produk' => 'Produk',
-            'pengiriman' => 'Pengiriman',
-            'pembayaran' => 'Pembayaran',
-            'garansi' => 'Garansi & Retur',
-        ];
-
-        return $labels[$this->category] ?? $this->category;
+        return $this->category?->name ?? 'Umum';
     }
 
-    // Badge warna untuk kategori
+    // Accessor untuk slug kategori
+    public function getCategorySlugAttribute()
+    {
+        return $this->category?->slug ?? 'umum';
+    }
+
+    // Accessor untuk badge warna kategori
     public function getCategoryBadgeAttribute()
     {
         $colors = [
@@ -59,6 +64,6 @@ class Faq extends Model
             'garansi' => 'bg-red-100 text-red-800',
         ];
 
-        return $colors[$this->category] ?? 'bg-gray-100 text-gray-800';
+        return $colors[$this->category?->slug ?? 'umum'] ?? 'bg-gray-100 text-gray-800';
     }
 }

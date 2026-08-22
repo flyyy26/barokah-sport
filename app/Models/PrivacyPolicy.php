@@ -21,4 +21,16 @@ class PrivacyPolicy extends Model
         'is_active' => 'boolean',
         'effective_date' => 'date',
     ];
+
+    // Scope untuk data aktif
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
+
+    // Scope untuk yang terbaru
+    public function scopeLatest($query)
+    {
+        return $query->orderBy('created_at', 'desc');
+    }
 }

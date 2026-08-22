@@ -33,12 +33,8 @@ function updateNavbarCartCount(count) {
     
     const finalCount = parseInt(count) || 0;
     
-    // Update semua elemen dengan id cart-count
     const cartCountElements = document.querySelectorAll('#cart-count');
-    console.log('📦 Found cart-count elements:', cartCountElements.length);
-    
-    cartCountElements.forEach(function(element, index) {
-        console.log(`📦 Updating element ${index}:`, element);
+    cartCountElements.forEach(function(element) {
         element.textContent = finalCount;
         
         if (finalCount > 0) {
@@ -52,7 +48,6 @@ function updateNavbarCartCount(count) {
         }
     });
     
-    // Update elemen dengan class .cart-count atau .cart-badge
     document.querySelectorAll('.cart-count, .cart-badge, .cart-counter').forEach(function(el) {
         el.textContent = finalCount;
         if (finalCount > 0) {
@@ -64,6 +59,7 @@ function updateNavbarCartCount(count) {
         }
     });
 }
+
 
 document.addEventListener('cart-updated', function(e) {
     console.log('🛒 Cart updated event received:', e.detail);
@@ -140,16 +136,24 @@ function addToCartDirect(productId, variantId = null, quantity = 1) {
             quantity: quantity
         })
     })
-    .then(response => response.json())
+    .then(response => {
+        // 🔥 CEK 401 UNAUTHORIZED
+        if (response.status === 401) {
+            showToast('Silakan login terlebih dahulu', 'warning');
+            setTimeout(() => {
+                window.location.href = window.customerRoutes.login;
+            }, 1500);
+            throw new Error('Unauthorized');
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
-            const count = data.count || data.cart_count || 0;
+            const count = data.count || 0;
             console.log('✅ Cart add success, count:', count);
             
-            // 🔥 UPDATE CART COUNT
             updateNavbarCartCount(count);
             
-            // 🔥 TRIGGER EVENT
             document.dispatchEvent(new CustomEvent('cart-updated', {
                 detail: { count: count, message: data.message }
             }));
@@ -159,20 +163,15 @@ function addToCartDirect(productId, variantId = null, quantity = 1) {
             if (typeof loadCartPopup === 'function') {
                 loadCartPopup();
             }
-            
-            if (window._buyNowMode) {
-                window._buyNowMode = false;
-                setTimeout(() => {
-                    window.location.href = window.customerRoutes.checkout;
-                }, 500);
-            }
         } else {
             showToast(data.message || 'Gagal menambahkan produk', 'error');
         }
     })
     .catch(error => {
-        console.error('Error:', error);
-        showToast('Terjadi kesalahan', 'error');
+        if (error.message !== 'Unauthorized') {
+            console.error('Error:', error);
+            showToast('Terjadi kesalahan', 'error');
+        }
     })
     .finally(() => {
         if (btn) {
@@ -187,28 +186,69 @@ function addToCartDirect(productId, variantId = null, quantity = 1) {
  * Beli Sekarang
  */
 function buyNow(productId) {
-    // Cek varian produk
     fetch(`/api/products/${productId}/variants`, {
         headers: { 'Accept': 'application/json' }
     })
     .then(response => response.json())
     .then(data => {
         if (data.success && data.variants && data.variants.length > 0) {
-            // Ada varian → buka modal mode buy_now
             if (typeof openVariantModal === 'function') {
                 window._buyNowMode = true;
                 openVariantModal(productId, 'buy_now');
+            } else {
+                buyNowDirect(productId);
             }
         } else {
-            // Tidak ada varian → langsung checkout
-            window._buyNowMode = true;
-            addToCartDirect(productId);
+            buyNowDirect(productId);
         }
     })
     .catch(() => {
-        // Jika error, langsung checkout
-        window._buyNowMode = true;
-        addToCartDirect(productId);
+        buyNowDirect(productId);
+    });
+}
+
+function buyNowDirect(productId, variantId = null, quantity = 1) {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    
+    const btn = document.querySelector(`.product_layout_box[data-product-id="${productId}"] .buy_now_btn`);
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = '⏳';
+    }
+    
+    fetch(window.customerRoutes.buyNow, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrfToken,
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+            product_id: productId,
+            variant_id: variantId,
+            quantity: quantity
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('Mengarahkan ke checkout...', 'success');
+            setTimeout(() => {
+                window.location.href = data.redirect;
+            }, 500);
+        } else {
+            showToast(data.message || 'Gagal memproses', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Terjadi kesalahan', 'error');
+    })
+    .finally(() => {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'BELI SEKARANG';
+        }
     });
 }
 
@@ -218,11 +258,11 @@ function buyNow(productId) {
 function addToWishlist(productId) {
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
     
-    const btn = document.querySelector(`.product_layout_box[data-product-id="${productId}"] .add_to_wishlist_btn`);
-    if (btn) {
+    const allButtons = document.querySelectorAll(`.add_to_wishlist_btn[data-product-id="${productId}"]`);
+    allButtons.forEach(function(btn) {
         btn.disabled = true;
         btn.innerHTML = '⏳';
-    }
+    });
     
     fetch(window.customerRoutes.wishlistAdd, {
         method: 'POST',
@@ -235,28 +275,33 @@ function addToWishlist(productId) {
             product_id: productId
         })
     })
-    .then(response => response.json())
+    .then(response => {
+        // 🔥 CEK 401 UNAUTHORIZED
+        if (response.status === 401) {
+            showToast('Silakan login terlebih dahulu', 'warning');
+            setTimeout(() => {
+                window.location.href = window.customerRoutes.login;
+            }, 1500);
+            throw new Error('Unauthorized');
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
-            // 🔥 UPDATE WISHLIST COUNT
+            const count = data.count || 0;
+            const inWishlist = data.in_wishlist || false;
+            
+            updateWishlistIcon(productId, inWishlist);
+            
             if (typeof window.updateNavbarWishlistCount === 'function') {
-                window.updateNavbarWishlistCount(data.count || 0);
+                window.updateNavbarWishlistCount(count);
             }
             
-            // 🔥 UPDATE ICON HEART
-            updateWishlistIcon(productId, data.in_wishlist);
-            
-            // 🔥 TRIGGER EVENT - TANPA TOAST DI SINI
             document.dispatchEvent(new CustomEvent('wishlist-updated', {
-                detail: { 
-                    count: data.count, 
-                    product_id: productId,
-                    in_wishlist: data.in_wishlist
-                }
+                detail: { count, product_id: productId, in_wishlist: inWishlist }
             }));
             
-            // 🔥 TAMPILKAN TOAST HANYA DI SINI
-            showToast(data.message || 'Produk ditambahkan ke wishlist!', 'success');
+            showToast(data.message || (inWishlist ? 'Produk ditambahkan ke wishlist!' : 'Produk dihapus dari wishlist!'), 'success');
             
             if (typeof loadWishlistPopup === 'function') {
                 loadWishlistPopup();
@@ -265,15 +310,24 @@ function addToWishlist(productId) {
             showToast(data.message || 'Gagal menambahkan ke wishlist', 'error');
         }
     })
-    .catch(() => {
-        showToast('Terjadi kesalahan', 'error');
+    .catch(error => {
+        if (error.message !== 'Unauthorized') {
+            console.error('Error:', error);
+            showToast('Terjadi kesalahan', 'error');
+        }
     })
     .finally(() => {
-        if (btn) {
+        allButtons.forEach(function(btn) {
+            const currentState = btn.dataset.inWishlist === 'true';
+            if (currentState) {
+                btn.innerHTML = '<iconify-icon icon="solar:heart-bold" style="color: #ef4444;"></iconify-icon>';
+                btn.classList.add('active');
+            } else {
+                btn.innerHTML = '<iconify-icon icon="solar:heart-linear"></iconify-icon>';
+                btn.classList.remove('active');
+            }
             btn.disabled = false;
-            // Icon akan diupdate oleh updateWishlistIcon
-            updateWishlistIcon(productId);
-        }
+        });
     });
 }
 
@@ -311,31 +365,34 @@ function updateCartCount(count) {
 }
 
 function updateWishlistIcon(productId, inWishlist = null) {
-    const btn = document.querySelector(`.product_layout_box[data-product-id="${productId}"] .add_to_wishlist_btn`);
-    if (!btn) return;
+    // Cari SEMUA tombol wishlist untuk produk ini
+    const allButtons = document.querySelectorAll(`.add_to_wishlist_btn[data-product-id="${productId}"]`);
     
-    // Jika inWishlist tidak diberikan, cek dari data attribute
-    if (inWishlist === null) {
-        inWishlist = btn.dataset.inWishlist === 'true';
-    }
+    console.log(`❤️ Updating ${allButtons.length} wishlist buttons for product ${productId}`);
     
-    if (inWishlist) {
-        btn.innerHTML = '<iconify-icon icon="solar:heart-bold" style="color: #ef4444;"></iconify-icon>';
-        btn.classList.add('active');
-        btn.dataset.inWishlist = 'true';
-    } else {
-        btn.innerHTML = '<iconify-icon icon="solar:heart-linear"></iconify-icon>';
-        btn.classList.remove('active');
-        btn.dataset.inWishlist = 'false';
-    }
+    allButtons.forEach(function(btn) {
+        // Jika inWishlist tidak diberikan, cek dari data attribute
+        let isInWishlist = inWishlist;
+        if (isInWishlist === null) {
+            isInWishlist = btn.dataset.inWishlist === 'true';
+        }
+        
+        if (isInWishlist) {
+            btn.innerHTML = '<iconify-icon icon="solar:heart-bold" style="color: #ef4444;"></iconify-icon>';
+            btn.classList.add('active');
+            btn.dataset.inWishlist = 'true';
+        } else {
+            btn.innerHTML = '<iconify-icon icon="solar:heart-linear"></iconify-icon>';
+            btn.classList.remove('active');
+            btn.dataset.inWishlist = 'false';
+        }
+        
+        btn.disabled = false;
+    });
 }
 
 function loadWishlistStatus() {
-    if (!window.customerRoutes.wishlistStatus) {
-        console.warn('Wishlist status route not configured');
-        return;
-    }
-    
+    // Cek status wishlist dari server (termasuk guest)
     fetch(window.customerRoutes.wishlistStatus, {
         headers: { 'Accept': 'application/json' }
     })
@@ -344,16 +401,24 @@ function loadWishlistStatus() {
         if (data.success && data.wishlist_ids) {
             const wishlistIds = data.wishlist_ids.map(id => parseInt(id));
             
-            // Update semua tombol wishlist
             document.querySelectorAll('.add_to_wishlist_btn').forEach(function(btn) {
-                const productId = parseInt(btn.closest('.product_layout_box')?.dataset?.productId);
+                const productId = parseInt(btn.dataset.productId);
                 if (productId) {
                     const inWishlist = wishlistIds.includes(productId);
-                    updateWishlistIcon(productId, inWishlist);
+                    
+                    if (inWishlist) {
+                        btn.innerHTML = '<iconify-icon icon="solar:heart-bold" style="color: #ef4444;"></iconify-icon>';
+                        btn.classList.add('active');
+                        btn.dataset.inWishlist = 'true';
+                    } else {
+                        btn.innerHTML = '<iconify-icon icon="solar:heart-linear"></iconify-icon>';
+                        btn.classList.remove('active');
+                        btn.dataset.inWishlist = 'false';
+                    }
                 }
             });
             
-            console.log('❤️ Wishlist status loaded:', wishlistIds);
+            updateNavbarWishlistCount(wishlistIds.length);
         }
     })
     .catch(error => {
@@ -525,6 +590,8 @@ window.loadCartCount = loadCartCount;
 window.loadWishlistCount = loadWishlistCount;
 window.showToast = showToast;
 window.updateCartCount = updateNavbarCartCount;
+window.updateWishlistIcon = updateWishlistIcon;
+window.updateAllWishlistButtons = updateWishlistIcon;
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, loading counts...');

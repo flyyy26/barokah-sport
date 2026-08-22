@@ -661,8 +661,31 @@
 <div class="catalog-container">
     <div class="katalog_top_container">
         <div class="catalog-header">
-            <h1>Katalog Produk</h1>
-            <p>Temukan produk terbaik dari Barokah Sport</p>
+            <h1>
+                @if(request('search'))
+                    Hasil Pencarian: "{{ request('search') }}"
+                @else
+                    Katalog Produk
+                @endif
+            </h1>
+            <p>
+                @if(request('search'))
+                    Menampilkan {{ $products->total() }} produk untuk "{{ request('search') }}"
+                @else
+                    Temukan produk terbaik dari Barokah Sport
+                @endif
+            </p>
+            
+            @if(request('search') && $products->total() > 0)
+                <div style="margin-top: 0.5vw;">
+                    <a href="{{ route('customer.products.index') }}" 
+                    style="font-size:0.7vw;color:#ef4444;text-decoration:none;"
+                    onmouseover="this.style.textDecoration='underline'"
+                    onmouseout="this.style.textDecoration='none'">
+                        ✕ Hapus pencarian
+                    </a>
+                </div>
+            @endif
         </div>
 
         {{-- ============================================ --}}

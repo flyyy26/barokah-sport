@@ -557,6 +557,137 @@
     </div>
 @endif
 
+<script>
+    // ============================================
+    // OVERRIDE FUNGSI WISHLIST UNTUK HOME PAGE
+    // ============================================
+    
+    /**
+     * 🔥 UPDATE ALL WISHLIST BUTTONS FOR SAME PRODUCT
+     */
+    function updateAllWishlistButtons(productId, inWishlist) {
+        // Cari semua tombol wishlist untuk produk ini di seluruh halaman
+        const allButtons = document.querySelectorAll(`.add_to_wishlist_btn[data-product-id="${productId}"]`);
+        
+        console.log(`❤️ Updating ${allButtons.length} wishlist buttons for product ${productId}`);
+        
+        allButtons.forEach(function(btn) {
+            if (inWishlist) {
+                btn.innerHTML = '<iconify-icon icon="solar:heart-bold" style="color: #ef4444;"></iconify-icon>';
+                btn.classList.add('active');
+                btn.dataset.inWishlist = 'true';
+            } else {
+                btn.innerHTML = '<iconify-icon icon="solar:heart-linear"></iconify-icon>';
+                btn.classList.remove('active');
+                btn.dataset.inWishlist = 'false';
+            }
+            btn.disabled = false;
+        });
+    }
+
+    /**
+     * 🔥 OVERRIDE addToWishlist UNTUK HOME PAGE
+     */
+    if (typeof window.addToWishlist === 'function') {
+        const originalAddToWishlist = window.addToWishlist;
+        
+        window.addToWishlist = function(productId) {
+            console.log('❤️ addToWishlist called from home page for product:', productId);
+            
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+            
+            // Disable semua tombol untuk produk ini
+            const allButtons = document.querySelectorAll(`.add_to_wishlist_btn[data-product-id="${productId}"]`);
+            allButtons.forEach(function(btn) {
+                btn.disabled = true;
+                btn.innerHTML = '⏳';
+            });
+            
+            fetch(window.customerRoutes.wishlistAdd, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    product_id: productId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const count = data.count || 0;
+                    const inWishlist = data.in_wishlist || false;
+                    
+                    console.log('❤️ Wishlist response:', { count, inWishlist });
+                    
+                    // 🔥 UPDATE SEMUA TOMBOL UNTUK PRODUK INI
+                    updateAllWishlistButtons(productId, inWishlist);
+                    
+                    // 🔥 UPDATE WISHLIST COUNT
+                    if (typeof window.updateNavbarWishlistCount === 'function') {
+                        window.updateNavbarWishlistCount(count);
+                    } else {
+                        const wishlistCountEl = document.getElementById('wishlist-count');
+                        if (wishlistCountEl) {
+                            wishlistCountEl.textContent = count;
+                            wishlistCountEl.style.display = count > 0 ? 'inline-flex' : 'none';
+                        }
+                    }
+                    
+                    // 🔥 TRIGGER EVENT
+                    document.dispatchEvent(new CustomEvent('wishlist-updated', {
+                        detail: { 
+                            count: count, 
+                            product_id: productId,
+                            in_wishlist: inWishlist
+                        }
+                    }));
+                    
+                    showToast(data.message || (inWishlist ? 'Produk ditambahkan ke wishlist!' : 'Produk dihapus dari wishlist!'), 'success');
+                    
+                    if (typeof loadWishlistPopup === 'function') {
+                        loadWishlistPopup();
+                    }
+                } else {
+                    showToast(data.message || 'Gagal menambahkan ke wishlist', 'error');
+                    // Reset tombol
+                    allButtons.forEach(function(btn) {
+                        const currentState = btn.dataset.inWishlist === 'true';
+                        if (currentState) {
+                            btn.innerHTML = '<iconify-icon icon="solar:heart-bold" style="color: #ef4444;"></iconify-icon>';
+                            btn.classList.add('active');
+                        } else {
+                            btn.innerHTML = '<iconify-icon icon="solar:heart-linear"></iconify-icon>';
+                            btn.classList.remove('active');
+                        }
+                        btn.disabled = false;
+                    });
+                }
+            })
+            .catch(function(error) {
+                console.error('Error:', error);
+                showToast('Terjadi kesalahan', 'error');
+                // Reset tombol
+                allButtons.forEach(function(btn) {
+                    const currentState = btn.dataset.inWishlist === 'true';
+                    if (currentState) {
+                        btn.innerHTML = '<iconify-icon icon="solar:heart-bold" style="color: #ef4444;"></iconify-icon>';
+                        btn.classList.add('active');
+                    } else {
+                        btn.innerHTML = '<iconify-icon icon="solar:heart-linear"></iconify-icon>';
+                        btn.classList.remove('active');
+                    }
+                    btn.disabled = false;
+                });
+            });
+        };
+    }
+    
+    console.log('✅ Home page wishlist functions initialized');
+</script>
+
 {{-- GANTI DENGAN INI --}}
 <script>
     // ============================================

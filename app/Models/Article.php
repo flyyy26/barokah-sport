@@ -141,4 +141,35 @@ class Article extends Model
     {
         return $query->orderBy('views', 'desc')->limit($limit);
     }
+
+    public function likes()
+    {
+        return $this->hasMany(ArticleLike::class);
+    }
+
+    public function comments()
+    {
+        return $this->hasMany(ArticleComment::class)->whereNull('parent_id')->where('is_active', true);
+    }
+
+    public function allComments()
+    {
+        return $this->hasMany(ArticleComment::class)->where('is_active', true);
+    }
+
+    public function getLikesCountAttribute()
+    {
+        return $this->likes()->count();
+    }
+
+    public function getCommentsCountAttribute()
+    {
+        return $this->allComments()->count();
+    }
+
+    public function isLikedByUser($userId)
+    {
+        if (!$userId) return false;
+        return $this->likes()->where('user_id', $userId)->exists();
+    }
 }

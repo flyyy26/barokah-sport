@@ -97,6 +97,7 @@
     outline:none;
     border:none;
     position:relative;
+    cursor: pointer;
 }
 .btn_header_bottom button iconify-icon{
     font-size:1.45vw;

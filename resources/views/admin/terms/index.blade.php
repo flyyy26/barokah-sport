@@ -21,7 +21,7 @@
     @endif
 
     {{-- FORM --}}
-    <form action="{{ route('admin.terms.update') }}" method="POST" class="space-y-6">
+    <form action="{{ route('admin.terms.update') }}" method="POST" class="space-y-6" id="terms-form">
         @csrf
         @method('PUT')
 
@@ -34,7 +34,16 @@
                         {{ $term && $term->is_active ? '✅ Aktif' : '❌ Nonaktif' }}
                     </span>
                 </div>
-                {{-- HAPUS TOMBOL TOGGLE DI SINI --}}
+                @if($term)
+                    <form action="{{ route('admin.terms.toggle') }}" method="POST" class="inline">
+                        @csrf
+                        @method('PATCH')
+                        <button type="submit" 
+                                class="rounded-lg px-4 py-2 text-sm font-medium {{ $term->is_active ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' : 'bg-green-100 text-green-800 hover:bg-green-200' }}">
+                            {{ $term->is_active ? 'Nonaktifkan' : 'Aktifkan' }}
+                        </button>
+                    </form>
+                @endif
             </div>
 
             {{-- JUDUL --}}
@@ -49,12 +58,12 @@
                 @enderror
             </div>
 
-            {{-- KONTEN DENGAN CKEDITOR --}}
+            {{-- KONTEN DENGAN TINYMCE --}}
             <div class="mb-5">
                 <label class="block text-sm font-medium text-gray-700">Konten</label>
-                <textarea name="content" id="content" rows="15" 
+                <textarea name="content" id="terms_content" rows="15" 
                           class="mt-2 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                          placeholder="Tuliskan syarat dan ketentuan..." required>{{ old('content', $term?->content ?? '') }}</textarea>
+                          placeholder="Tuliskan syarat dan ketentuan...">{{ old('content', $term?->content ?? '') }}</textarea>
                 @error('content')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror
@@ -105,75 +114,39 @@
             </button>
         </div>
     </form>
-
-    {{-- PREVIEW --}}
-    @if($term && $term->content)
-        <div class="mt-6 rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
-            <h2 class="text-lg font-semibold text-gray-900 mb-4">📄 Preview</h2>
-            <div id="preview-content" class="prose prose-blue max-w-none border-t border-gray-200 pt-4">
-                {!! $term->content !!}
-            </div>
-        </div>
-    @endif
 </div>
+@endsection
 
-{{-- CKEDITOR SCRIPT --}}
-<script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
+@push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        ClassicEditor
-            .create(document.querySelector('#content'), {
-                toolbar: {
-                    items: [
-                        'heading',
-                        '|',
-                        'bold',
-                        'italic',
-                        'underline',
-                        'strikethrough',
-                        '|',
-                        'bulletedList',
-                        'numberedList',
-                        '|',
-                        'alignment',
-                        '|',
-                        'fontSize',
-                        'fontColor',
-                        '|',
-                        'link',
-                        'blockQuote',
-                        '|',
-                        'undo',
-                        'redo'
-                    ]
-                },
-                heading: {
-                    options: [
-                        { model: 'paragraph', title: 'Paragraph', class: 'ck-heading_paragraph' },
-                        { model: 'heading1', view: 'h1', title: 'Heading 1', class: 'ck-heading_heading1' },
-                        { model: 'heading2', view: 'h2', title: 'Heading 2', class: 'ck-heading_heading2' },
-                        { model: 'heading3', view: 'h3', title: 'Heading 3', class: 'ck-heading_heading3' }
-                    ]
-                },
-                fontSize: {
-                    options: [
-                        9, 11, 13, 'default', 17, 19, 21
-                    ]
-                }
-            })
-            .then(editor => {
-                // Auto update preview
-                editor.model.document.on('change:data', () => {
-                    const content = editor.getData();
-                    const preview = document.getElementById('preview-content');
-                    if (preview) {
-                        preview.innerHTML = content;
-                    }
+        tinymce.init({
+            selector: '#terms_content',
+            height: 400,
+            menubar: false,
+            plugins: [
+                'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
+                'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+                'insertdatetime', 'media', 'table', 'help', 'wordcount'
+            ],
+            toolbar: 'undo redo | blocks | ' +
+                'bold italic backcolor | alignleft aligncenter ' +
+                'alignright alignjustify | bullist numlist outdent indent | ' +
+                'removeformat | help',
+            content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
+            setup: function(editor) {
+                editor.on('change', function() {
+                    editor.save();
                 });
-            })
-            .catch(error => {
-                console.error(error);
+            }
+        });
+        
+        const form = document.getElementById('terms-form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                tinymce.triggerSave();
             });
+        }
     });
 </script>
-@endsection
+@endpush

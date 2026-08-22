@@ -5,7 +5,6 @@
         <p>Wishlist kosong</p>
         <p>Simpan produk favoritmu di sini!</p>
         <a href="{{ route('customer.products.index') }}" class="btn-primary" style="margin-top: 16px; display: inline-flex;">
-            <iconify-icon icon="mdi:shopping-outline" width="18"></iconify-icon>
             Mulai Belanja
         </a>
     </div>

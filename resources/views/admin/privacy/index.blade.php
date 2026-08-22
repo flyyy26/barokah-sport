@@ -21,7 +21,7 @@
     @endif
 
     {{-- FORM --}}
-    <form action="{{ route('admin.privacy.update') }}" method="POST" class="space-y-6">
+    <form action="{{ route('admin.privacy.update') }}" method="POST" class="space-y-6" id="privacy-form">
         @csrf
         @method('PUT')
 
@@ -35,14 +35,12 @@
                     </span>
                 </div>
                 @if($privacy)
-                    <form action="{{ route('admin.privacy.toggle') }}" method="POST" class="inline">
-                        @csrf
-                        @method('PATCH')
-                        <button type="submit" 
-                                class="rounded-lg px-4 py-2 text-sm font-medium {{ $privacy->is_active ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' : 'bg-green-100 text-green-800 hover:bg-green-200' }}">
-                            {{ $privacy->is_active ? 'Nonaktifkan' : 'Aktifkan' }}
-                        </button>
-                    </form>
+                    {{-- HAPUS FORM TOGGLE DI SINI --}}
+                    <button type="button" 
+                            onclick="togglePrivacy()"
+                            class="rounded-lg px-4 py-2 text-sm font-medium {{ $privacy->is_active ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' : 'bg-green-100 text-green-800 hover:bg-green-200' }}">
+                        {{ $privacy->is_active ? 'Nonaktifkan' : 'Aktifkan' }}
+                    </button>
                 @endif
             </div>
 
@@ -58,12 +56,12 @@
                 @enderror
             </div>
 
-            {{-- KONTEN TANPA CKEDITOR --}}
+            {{-- KONTEN DENGAN TINYMCE --}}
             <div class="mb-5">
                 <label class="block text-sm font-medium text-gray-700">Konten</label>
-                <textarea name="content" rows="15" 
-                          class="mt-2 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 font-mono text-sm"
-                          placeholder="Tuliskan kebijakan privasi..." required>{{ old('content', $privacy?->content ?? '') }}</textarea>
+                <textarea name="content" id="privacy_content" rows="15" 
+                          class="mt-2 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                          placeholder="Tuliskan kebijakan privasi...">{{ old('content', $privacy?->content ?? '') }}</textarea>
                 @error('content')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror
@@ -115,14 +113,57 @@
         </div>
     </form>
 
-    {{-- PREVIEW --}}
-    @if($privacy && $privacy->content)
-        <div class="mt-6 rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
-            <h2 class="text-lg font-semibold text-gray-900 mb-4">📄 Preview</h2>
-            <div class="prose prose-blue max-w-none border-t border-gray-200 pt-4">
-                {!! nl2br(e($privacy->content)) !!}
-            </div>
-        </div>
+    {{-- FORM TOGGLE TERPISAH --}}
+    @if($privacy)
+        <form action="{{ route('admin.privacy.toggle') }}" method="POST" id="toggle-form" style="display: none;">
+            @csrf
+            @method('PATCH')
+        </form>
     @endif
 </div>
 @endsection
+
+@push('scripts')
+<script src="https://cdn.tiny.cloud/1/f0qff2j87jgv24lrb8m0hd4yuglweewk56pa79tykafgtc6g/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inisialisasi TinyMCE
+        tinymce.init({
+            selector: '#privacy_content',
+            height: 400,
+            menubar: false,
+            plugins: [
+                'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
+                'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+                'insertdatetime', 'media', 'table', 'help', 'wordcount'
+            ],
+            toolbar: 'undo redo | blocks | ' +
+                'bold italic backcolor | alignleft aligncenter ' +
+                'alignright alignjustify | bullist numlist outdent indent | ' +
+                'removeformat | help',
+            content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
+            setup: function(editor) {
+                editor.on('change', function() {
+                    editor.save();
+                });
+            }
+        });
+        
+        // Pastikan content tersimpan sebelum submit
+        const form = document.getElementById('privacy-form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                tinymce.triggerSave();
+                console.log('Form submitted, content saved');
+            });
+        }
+    });
+
+    // Function untuk toggle status
+    function togglePrivacy() {
+        if (confirm('Apakah Anda yakin ingin mengubah status Kebijakan Privasi?')) {
+            document.getElementById('toggle-form').submit();
+        }
+    }
+</script>
+@endpush

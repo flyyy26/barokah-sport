@@ -5,7 +5,10 @@ namespace App\Http\Controllers\Customer;
 use App\Http\Controllers\Controller;
 use App\Models\Article;
 use App\Models\ArticleCategory;
+use App\Models\ArticleLike;
+use App\Models\ArticleComment;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class CustomerArticleController extends Controller
 {
@@ -182,6 +185,225 @@ class CustomerArticleController extends Controller
             'success' => true,
             'message' => 'View recorded',
             'views' => $article->views
+        ]);
+    }
+
+    public function toggleLike(Request $request)
+    {
+        $request->validate([
+            'article_id' => 'required|exists:articles,id',
+        ]);
+
+        $user = Auth::user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Silakan login terlebih dahulu',
+                'redirect' => route('customer.login')
+            ], 401);
+        }
+
+        $articleId = $request->article_id;
+        $existingLike = ArticleLike::where('article_id', $articleId)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if ($existingLike) {
+            // Unlike
+            $existingLike->delete();
+            $liked = false;
+            $message = 'Anda membatalkan like';
+        } else {
+            // Like
+            ArticleLike::create([
+                'article_id' => $articleId,
+                'user_id' => $user->id,
+            ]);
+            $liked = true;
+            $message = 'Anda menyukai artikel ini';
+        }
+
+        $likesCount = ArticleLike::where('article_id', $articleId)->count();
+
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+            'liked' => $liked,
+            'likes_count' => $likesCount,
+        ]);
+    }
+
+    /**
+     * 🔥 GET LIKES COUNT
+     */
+    public function getLikes(Request $request)
+    {
+        $request->validate([
+            'article_id' => 'required|exists:articles,id',
+        ]);
+
+        $articleId = $request->article_id;
+        $likesCount = ArticleLike::where('article_id', $articleId)->count();
+        $isLiked = false;
+
+        if (Auth::check()) {
+            $isLiked = ArticleLike::where('article_id', $articleId)
+                ->where('user_id', Auth::id())
+                ->exists();
+        }
+
+        return response()->json([
+            'success' => true,
+            'likes_count' => $likesCount,
+            'is_liked' => $isLiked,
+        ]);
+    }
+
+    /**
+     * 🔥 GET COMMENTS
+     */
+    public function getComments(Request $request)
+    {
+        $request->validate([
+            'article_id' => 'required|exists:articles,id',
+        ]);
+
+        $comments = ArticleComment::with(['user', 'replies.user'])
+            ->where('article_id', $request->article_id)
+            ->whereNull('parent_id')
+            ->where('is_active', true)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'comments' => $comments->map(function($comment) {
+                return [
+                    'id' => $comment->id,
+                    'user_name' => $comment->user->name,
+                    'user_avatar' => strtoupper(substr($comment->user->name, 0, 1)),
+                    'content' => $comment->content,
+                    'created_at' => $comment->formatted_date,
+                    'replies' => $comment->replies->map(function($reply) {
+                        return [
+                            'id' => $reply->id,
+                            'user_name' => $reply->user->name,
+                            'user_avatar' => strtoupper(substr($reply->user->name, 0, 1)),
+                            'content' => $reply->content,
+                            'created_at' => $reply->formatted_date,
+                        ];
+                    }),
+                ];
+            }),
+        ]);
+    }
+
+    /**
+     * 🔥 POST COMMENT
+     */
+    public function postComment(Request $request)
+    {
+        $request->validate([
+            'article_id' => 'required|exists:articles,id',
+            'content' => 'required|string|min:1|max:1000',
+            'parent_id' => 'nullable|exists:article_comments,id',
+        ]);
+
+        $user = Auth::user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Silakan login terlebih dahulu',
+                'redirect' => route('customer.login')
+            ], 401);
+        }
+
+        $comment = ArticleComment::create([
+            'article_id' => $request->article_id,
+            'user_id' => $user->id,
+            'parent_id' => $request->parent_id,
+            'content' => $request->content,
+            'is_active' => true,
+        ]);
+
+        // Load user data
+        $comment->load('user');
+
+        $commentsCount = ArticleComment::where('article_id', $request->article_id)
+            ->where('is_active', true)
+            ->count();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Komentar berhasil ditambahkan',
+            'comment' => [
+                'id' => $comment->id,
+                'user_name' => $comment->user->name,
+                'user_avatar' => strtoupper(substr($comment->user->name, 0, 1)),
+                'content' => $comment->content,
+                'created_at' => $comment->formatted_date,
+                'parent_id' => $comment->parent_id,
+                'replies' => [],
+            ],
+            'comments_count' => $commentsCount,
+        ]);
+    }
+
+    /**
+     * 🔥 DELETE COMMENT (hanya owner atau admin)
+     */
+    public function deleteComment(Request $request)
+    {
+        $request->validate([
+            'comment_id' => 'required|exists:article_comments,id',
+        ]);
+
+        $user = Auth::user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Silakan login terlebih dahulu',
+            ], 401);
+        }
+
+        $comment = ArticleComment::with('replies')->find($request->comment_id);
+
+        if (!$comment) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Komentar tidak ditemukan',
+            ], 404);
+        }
+
+        // Cek apakah user adalah pemilik komentar atau admin
+        if ($comment->user_id != $user->id && $user->role !== 'admin') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki izin untuk menghapus komentar ini',
+            ], 403);
+        }
+
+        // Hapus semua reply jika ada
+        if ($comment->replies->isNotEmpty()) {
+            foreach ($comment->replies as $reply) {
+                $reply->update(['is_active' => false]);
+            }
+        }
+
+        $comment->update(['is_active' => false]);
+
+        $commentsCount = ArticleComment::where('article_id', $comment->article_id)
+            ->where('is_active', true)
+            ->count();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Komentar berhasil dihapus',
+            'comments_count' => $commentsCount,
+            'comment_id' => $comment->id,
         ]);
     }
 }

@@ -29,6 +29,12 @@ use App\Http\Controllers\Admin\TermController;
 use App\Http\Controllers\Customer\CustomerTermController;
 use App\Http\Controllers\Admin\PrivacyPolicyController;
 use App\Http\Controllers\Customer\CustomerPrivacyController;
+use App\Http\Controllers\Admin\AboutUsController;
+use App\Http\Controllers\Customer\CustomerAboutController;
+use App\Http\Controllers\Customer\CustomerSizeGuideController;
+use App\Http\Controllers\Customer\HelpController;
+use App\Http\Controllers\Customer\CaraPesanController;
+use App\Http\Controllers\Admin\FaqCategoryController;
 
 // ============================================
 // CUSTOMER FRONTEND
@@ -38,6 +44,36 @@ Route::get('/', [CustomerHomeController::class, 'index'])->name('customer.home')
 Route::get('/kontak', [ContactController::class, 'index'])->name('customer.contact');
 Route::get('/syarat-dan-ketentuan', [CustomerTermController::class, 'index'])->name('customer.terms');
 Route::get('/kebijakan-privasi', [CustomerPrivacyController::class, 'index'])->name('customer.privacy');
+Route::get('/tentang-kami', [CustomerAboutController::class, 'index'])->name('customer.about');
+Route::get('/panduan-ukuran', [CustomerSizeGuideController::class, 'index'])->name('customer.size-guide');
+Route::get('/panduan-ukuran/{category:slug}', [CustomerSizeGuideController::class, 'show'])->name('customer.size-guide.show');
+Route::get('/api/size-guide/{category}', [CustomerSizeGuideController::class, 'getSizeGuideData'])->name('api.size-guide');
+Route::get('/bantuan', [HelpController::class, 'index'])->name('customer.help');
+Route::post('/api/articles/toggle-like', [CustomerArticleController::class, 'toggleLike'])->name('customer.articles.toggle-like');
+Route::get('/api/articles/get-likes', [CustomerArticleController::class, 'getLikes'])->name('customer.articles.get-likes');
+Route::get('/api/articles/get-comments', [CustomerArticleController::class, 'getComments'])->name('customer.articles.get-comments');
+Route::post('/api/articles/post-comment', [CustomerArticleController::class, 'postComment'])->name('customer.articles.post-comment');
+Route::delete('/api/articles/delete-comment', [CustomerArticleController::class, 'deleteComment'])->name('customer.articles.delete-comment');
+Route::get('/cara-pesan', [CaraPesanController::class, 'index'])->name('customer.cara-pesan');
+
+Route::get('/api/trending-search', function() {
+    // Contoh trending search dari data populer
+    $trends = [
+        'Sepatu Futsal',
+        'Jersey Bola', 
+        'Kaos Olahraga',
+        'Sepatu Lari',
+        'Raket Badminton'
+    ];
+    
+    // Bisa juga ambil dari search history atau produk terpopuler
+    // $trends = \App\Models\SearchLog::orderBy('count', 'desc')->limit(8)->pluck('keyword')->toArray();
+    
+    return response()->json([
+        'success' => true,
+        'trends' => $trends
+    ]);
+})->name('api.trending-search');
 
 // ============================================
 // API PRODUCT VARIANTS (untuk modal)
@@ -137,11 +173,10 @@ Route::get('/kategori/{category:slug}', [CustomerCategoryController::class, 'sho
 // CUSTOMER AUTH
 // ============================================
 
-Route::get('/register', [CustomerAuthController::class, 'showRegister'])->name('customer.register');
-Route::post('/register', [CustomerAuthController::class, 'register'])->name('customer.register.process');
-
 Route::get('/login', [CustomerAuthController::class, 'showLogin'])->name('customer.login');
 Route::post('/login', [CustomerAuthController::class, 'login'])->name('customer.login.process');
+Route::get('/register', [CustomerAuthController::class, 'showRegister'])->name('customer.register');
+Route::post('/register', [CustomerAuthController::class, 'register'])->name('customer.register.process');
 Route::post('/logout', [CustomerAuthController::class, 'logout'])->name('customer.logout');
 
 // ============================================
@@ -166,6 +201,7 @@ Route::put('/cart/update', [CartController::class, 'update'])->name('customer.ca
 Route::delete('/cart/remove', [CartController::class, 'remove'])->name('customer.cart.remove');
 Route::delete('/cart/clear', [CartController::class, 'clear'])->name('customer.cart.clear');
 Route::get('/cart/count', [CartController::class, 'count'])->name('customer.cart.count');
+Route::post('/cart/buy-now', [CartController::class, 'buyNow'])->name('customer.cart.buy-now');
 
 // ============================================
 // BUY NOW
@@ -322,6 +358,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::put('/faqs/{faq}', [FaqController::class, 'update'])->name('admin.faqs.update');
     Route::delete('/faqs/{faq}', [FaqController::class, 'destroy'])->name('admin.faqs.destroy');
 
+    Route::get('/faqs/categories', [FaqCategoryController::class, 'index'])->name('admin.faqs.categories');
+    Route::post('/faqs/categories', [FaqCategoryController::class, 'store'])->name('admin.faqs.categories.store');
+    Route::delete('/faqs/categories/{category}', [FaqCategoryController::class, 'destroy'])->name('admin.faqs.categories.destroy');
+
     Route::get('/terms', [TermController::class, 'index'])->name('admin.terms.index');
     Route::put('/terms', [TermController::class, 'update'])->name('admin.terms.update');
     Route::patch('/terms/toggle', [TermController::class, 'toggle'])->name('admin.terms.toggle');
@@ -329,4 +369,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::get('/privacy', [PrivacyPolicyController::class, 'index'])->name('admin.privacy.index');
     Route::put('/privacy', [PrivacyPolicyController::class, 'update'])->name('admin.privacy.update');
     Route::patch('/privacy/toggle', [PrivacyPolicyController::class, 'toggle'])->name('admin.privacy.toggle');
+
+    Route::get('/about', [AboutUsController::class, 'index'])->name('admin.about.index');
+    Route::put('/about', [AboutUsController::class, 'update'])->name('admin.about.update');
+    Route::patch('/about/toggle', [AboutUsController::class, 'toggle'])->name('admin.about.toggle');
 });

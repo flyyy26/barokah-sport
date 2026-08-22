@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Faq;
+use App\Models\FaqCategory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Throwable;
@@ -12,15 +13,15 @@ class FaqController extends Controller
 {
     public function index()
     {
-        $faqs = Faq::ordered()->get();
-        $categories = $this->getCategories();
+        $faqs = Faq::with('category')->ordered()->get();
+        $categories = FaqCategory::ordered()->get();
         return view('admin.faqs.index', compact('faqs', 'categories'));
     }
 
     public function create()
     {
-        $categories = $this->getCategories();
-        $faqs = Faq::all(); // Tambahkan ini untuk mendapatkan total FAQ
+        $categories = FaqCategory::ordered()->get();
+        $faqs = Faq::all();
         return view('admin.faqs.create', compact('categories', 'faqs'));
     }
 
@@ -29,7 +30,7 @@ class FaqController extends Controller
         $validated = $request->validate([
             'question' => ['required', 'string', 'max:255'],
             'answer' => ['required', 'string'],
-            'category' => ['nullable', 'string', 'in:umum,produk,pengiriman,pembayaran,garansi'],
+            'category_id' => ['required', 'exists:faq_categories,id'],
             'order' => ['nullable', 'integer', 'min:0'],
             'is_active' => ['nullable', 'boolean'],
         ]);
@@ -38,9 +39,9 @@ class FaqController extends Controller
             Faq::create([
                 'question' => $validated['question'],
                 'answer' => $validated['answer'],
-                'category' => $validated['category'] ?? 'umum',
+                'category_id' => $validated['category_id'],
                 'order' => $validated['order'] ?? Faq::count() + 1,
-                'is_active' => $validated['is_active'] ?? true,
+                'is_active' => $request->has('is_active'),
             ]);
 
             return redirect()
@@ -56,7 +57,7 @@ class FaqController extends Controller
 
     public function edit(Faq $faq)
     {
-        $categories = $this->getCategories();
+        $categories = FaqCategory::ordered()->get();
         return view('admin.faqs.edit', compact('faq', 'categories'));
     }
 
@@ -65,7 +66,7 @@ class FaqController extends Controller
         $validated = $request->validate([
             'question' => ['required', 'string', 'max:255'],
             'answer' => ['required', 'string'],
-            'category' => ['nullable', 'string', 'in:umum,produk,pengiriman,pembayaran,garansi'],
+            'category_id' => ['required', 'exists:faq_categories,id'],
             'order' => ['nullable', 'integer', 'min:0'],
             'is_active' => ['nullable', 'boolean'],
         ]);
@@ -74,9 +75,9 @@ class FaqController extends Controller
             $faq->update([
                 'question' => $validated['question'],
                 'answer' => $validated['answer'],
-                'category' => $validated['category'] ?? 'umum',
+                'category_id' => $validated['category_id'],
                 'order' => $validated['order'] ?? $faq->order,
-                'is_active' => $validated['is_active'] ?? true,
+                'is_active' => $request->has('is_active'),
             ]);
 
             return redirect()
@@ -94,44 +95,24 @@ class FaqController extends Controller
     {
         try {
             $faq->delete();
-
             return redirect()
                 ->route('admin.faqs.index')
                 ->with('success', 'FAQ berhasil dihapus.');
-
         } catch (Throwable $e) {
-            return back()
-                ->with('error', 'FAQ gagal dihapus: ' . $e->getMessage());
+            return back()->with('error', 'FAQ gagal dihapus: ' . $e->getMessage());
         }
     }
 
-    // Toggle status aktif/nonaktif
     public function toggle(Faq $faq)
     {
         try {
-            $faq->update([
-                'is_active' => !$faq->is_active
-            ]);
-
+            $faq->update(['is_active' => !$faq->is_active]);
             $status = $faq->is_active ? 'diaktifkan' : 'dinonaktifkan';
             return redirect()
                 ->route('admin.faqs.index')
                 ->with('success', "FAQ berhasil {$status}.");
-
         } catch (Throwable $e) {
-            return back()
-                ->with('error', 'Gagal mengubah status FAQ.');
+            return back()->with('error', 'Gagal mengubah status FAQ.');
         }
-    }
-
-    private function getCategories()
-    {
-        return [
-            'umum' => 'Umum',
-            'produk' => 'Produk',
-            'pengiriman' => 'Pengiriman',
-            'pembayaran' => 'Pembayaran',
-            'garansi' => 'Garansi & Retur',
-        ];
     }
 }

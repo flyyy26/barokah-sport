@@ -12,11 +12,10 @@ class AccountController extends Controller
 {
     public function index()
     {
-        $customer = Auth::guard('customer')->user();
-        $addresses = $customer->addresses()->orderBy('is_default', 'desc')->get();
-
-        return view('customer.account.index', compact('customer', 'addresses'));
+        $user = Auth::user();
+        return view('customer.account.index', compact('user'));
     }
+
 
     // ============================================
     // RIWAYAT PESANAN
