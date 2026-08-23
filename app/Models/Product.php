@@ -20,12 +20,16 @@ class Product extends Model
         'is_featured',
         'is_best_seller', 
         'is_active',
+        'minimum_stock',
+        'restock_threshold',
     ];
 
     protected $casts = [
         'is_featured' => 'boolean',
         'is_best_seller' => 'boolean',
         'is_active' => 'boolean',
+        'minimum_stock' => 'integer',
+        'restock_threshold' => 'integer',
     ];
 
     public function category(): BelongsTo
@@ -56,6 +60,17 @@ class Product extends Model
     // ============================================
     // 🔥 ACCESSORS UNTUK HARGA
     // ============================================
+
+    public function stockHistories(): HasMany
+    {
+        return $this->hasMany(StockHistory::class);
+    }
+
+    // 🔥 GET LATEST STOCK HISTORY
+    public function getLatestStockHistoryAttribute()
+    {
+        return $this->stockHistories()->latest()->first();
+    }
 
     /**
      * Mendapatkan harga termurah dari semua varian
@@ -211,6 +226,18 @@ class Product extends Model
         return (float) $this->variants->min('price') ?: 0;
     }
 
+    public function getHasDiscountAttribute(): bool
+    {
+        return $this->variants->contains(function($variant) {
+            return $variant->discount_price && $variant->discount_price < $variant->price;
+        });
+    }
+
+    public function getMaxDiscountPercentAttribute(): float
+    {
+        return (float) $this->variants->max('discount_percent') ?: 0;
+    }
+
     public function getOriginalMaxPriceAttribute()
     {
         return (float) $this->variants->max('price') ?: 0;
@@ -229,5 +256,70 @@ class Product extends Model
     public function getTotalStockAttribute(): int
     {
         return (int) $this->variants->sum('stock');
+    }
+
+    public function getStockStatusAttribute()
+    {
+        $totalStock = $this->total_stock;
+        $minStock = $this->minimum_stock ?? 5;
+        $restockThreshold = $this->restock_threshold ?? 10;
+
+        if ($totalStock <= 0) {
+            return 'out_of_stock';
+        }
+
+        if ($totalStock <= $minStock) {
+            return 'critical';
+        }
+
+        if ($totalStock <= $restockThreshold) {
+            return 'low';
+        }
+
+        return 'in_stock';
+    }
+
+    public function getStockStatusLabelAttribute()
+    {
+        return [
+            'out_of_stock' => 'Habis',
+            'critical' => 'Kritis 🚨',
+            'low' => 'Menipis ⚠️',
+            'in_stock' => 'Aman ✅',
+        ][$this->stock_status] ?? 'Aman';
+    }
+
+    public function getStockStatusColorAttribute()
+    {
+        return [
+            'out_of_stock' => 'red',
+            'critical' => 'red',
+            'low' => 'yellow',
+            'in_stock' => 'green',
+        ][$this->stock_status] ?? 'green';
+    }
+
+    public function scopeCriticalStock($query)
+    {
+        return $query->whereHas('variants', function($q) {
+            $q->selectRaw('SUM(stock) as total_stock')
+            ->havingRaw('SUM(stock) <= COALESCE(products.minimum_stock, 5)'); // 🔥 PERBAIKI: gunakan default 5
+        });
+    }
+
+    public function scopeLowStock($query)
+    {
+        return $query->whereHas('variants', function($q) {
+            $q->selectRaw('SUM(stock) as total_stock')
+            ->havingRaw('SUM(stock) <= COALESCE(products.restock_threshold, 10) AND SUM(stock) > COALESCE(products.minimum_stock, 5)'); // 🔥 PERBAIKI
+        });
+    }
+
+    public function scopeInStock($query)
+    {
+        return $query->whereHas('variants', function($q) {
+            $q->selectRaw('SUM(stock) as total_stock')
+            ->havingRaw('SUM(stock) > COALESCE(products.restock_threshold, 10)'); // 🔥 PERBAIKI
+        });
     }
 }

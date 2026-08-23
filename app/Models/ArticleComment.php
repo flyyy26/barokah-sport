@@ -38,10 +38,16 @@ class ArticleComment extends Model
 
     public function replies()
     {
+        return $this->hasMany(ArticleComment::class, 'parent_id')
+                    ->where('is_active', true)
+                    ->orderBy('created_at', 'asc');
+    }
+
+    public function allReplies()
+    {
         return $this->hasMany(ArticleComment::class, 'parent_id')->where('is_active', true);
     }
 
-    // 🔥 ACCESSOR UNTUK FORMAT TANGGAL
     public function getFormattedDateAttribute()
     {
         return $this->created_at->diffForHumans();

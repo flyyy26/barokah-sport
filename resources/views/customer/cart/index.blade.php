@@ -757,7 +757,7 @@
         }
     </style>
 
-    <main class="cart-container">
+<main class="cart-container">
     <div class="katalog_top_container">
         <div class="cart-header">
             <h1>Keranjang Belanja</h1>
@@ -889,9 +889,11 @@
                     <span>Rp {{ number_format($subtotal, 0, ',', '.') }}</span>
                 </div>
 
-                <a href="{{ route('customer.checkout.index') }}" class="btn-checkout">
-                    Checkout →
-                </a>
+                <form action="{{ route('customer.checkout.index') }}" method="GET" id="checkout-form">
+                    <button type="submit" class="btn-checkout" id="checkout-btn">
+                        Checkout →
+                    </button>
+                </form>
             </div>
 
         </div>

@@ -215,6 +215,7 @@ class WishlistController extends Controller
             return response()->json([
                 'success' => true,
                 'wishlist_ids' => [],
+                'is_logged_in' => false,
             ]);
         }
 
@@ -225,6 +226,7 @@ class WishlistController extends Controller
         return response()->json([
             'success' => true,
             'wishlist_ids' => $wishlistIds,
+            'is_logged_in' => true,
         ]);
     }
 }

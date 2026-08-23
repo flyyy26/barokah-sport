@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 22, 2026 at 04:52 AM
+-- Generation Time: Aug 23, 2026 at 05:35 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -126,9 +126,11 @@ CREATE TABLE `article_comments` (
 --
 
 INSERT INTO `article_comments` (`id`, `article_id`, `user_id`, `parent_id`, `content`, `is_active`, `created_at`, `updated_at`) VALUES
-(1, 5, 4, NULL, 'Keren banget', 0, '2026-08-22 01:07:20', '2026-08-22 01:15:26'),
-(2, 5, 4, NULL, 'kerenn', 0, '2026-08-22 01:07:30', '2026-08-22 01:15:24'),
-(3, 5, 3, NULL, 'tes', 0, '2026-08-22 01:12:34', '2026-08-22 01:15:17');
+(6, 5, 5, NULL, 'Keren bangett...', 1, '2026-08-23 01:42:21', '2026-08-23 01:42:21'),
+(7, 5, 4, 6, 'Setujuuu', 0, '2026-08-23 01:42:41', '2026-08-23 01:52:08'),
+(8, 5, 6, 7, 'Ah biasa aja', 0, '2026-08-23 01:46:32', '2026-08-23 01:52:08'),
+(9, 5, 6, 6, 'Iyaa setujuu', 1, '2026-08-23 01:46:52', '2026-08-23 01:46:52'),
+(10, 5, 6, 7, 'eh iya deh bagus', 0, '2026-08-23 01:50:19', '2026-08-23 01:52:08');
 
 -- --------------------------------------------------------
 
@@ -149,7 +151,9 @@ CREATE TABLE `article_likes` (
 --
 
 INSERT INTO `article_likes` (`id`, `article_id`, `user_id`, `created_at`, `updated_at`) VALUES
-(2, 5, 4, '2026-08-22 01:07:09', '2026-08-22 01:07:09');
+(3, 5, 3, '2026-08-23 01:15:32', '2026-08-23 01:15:32'),
+(4, 5, 4, '2026-08-23 01:38:30', '2026-08-23 01:38:30'),
+(5, 4, 3, '2026-08-23 03:33:17', '2026-08-23 03:33:17');
 
 -- --------------------------------------------------------
 
@@ -219,14 +223,6 @@ CREATE TABLE `carts` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Dumping data for table `carts`
---
-
-INSERT INTO `carts` (`id`, `user_id`, `product_id`, `variant_id`, `quantity`, `created_at`, `updated_at`) VALUES
-(15, 4, 28, 728, 1, '2026-08-22 02:45:48', '2026-08-22 02:45:48'),
-(16, 4, 28, 741, 1, '2026-08-22 02:46:07', '2026-08-22 02:46:07');
 
 -- --------------------------------------------------------
 
@@ -91952,7 +91948,11 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (54, '2026_08_22_075420_create_article_likes_table', 39),
 (55, '2026_08_22_075434_create_article_comments_table', 39),
 (56, '2026_08_22_093458_update_carts_foreign_key_to_users', 40),
-(57, '2026_08_22_093917_fix_carts_foreign_key', 41);
+(57, '2026_08_22_093917_fix_carts_foreign_key', 41),
+(58, '2026_08_22_234712_create_user_addresses_table', 42),
+(59, '2026_08_23_060242_add_minimum_stock_to_products_table', 43),
+(60, '2026_08_23_061632_create_stock_histories_table', 44),
+(61, '2026_08_23_091311_add_discount_fields_to_products_table', 45);
 
 -- --------------------------------------------------------
 
@@ -92070,6 +92070,8 @@ CREATE TABLE `products` (
   `is_featured` tinyint(1) NOT NULL DEFAULT 0,
   `is_best_seller` tinyint(1) NOT NULL DEFAULT 0,
   `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `minimum_stock` int(11) NOT NULL DEFAULT 5,
+  `restock_threshold` int(11) NOT NULL DEFAULT 10,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -92078,9 +92080,9 @@ CREATE TABLE `products` (
 -- Dumping data for table `products`
 --
 
-INSERT INTO `products` (`id`, `category_id`, `name`, `slug`, `description`, `gender`, `material`, `is_featured`, `is_best_seller`, `is_active`, `created_at`, `updated_at`) VALUES
-(28, 7, 'HM Barokah - Celana Olahraga Panjang Laki Laki Perempuan Celana Training Unisex Untuk Olahraga Senam Jogging Running Gym Cycling', 'hm-barokah-celana-olahraga-panjang-laki-laki-perempuan-celana-training-unisex-untuk-olahraga-senam-jogging-running-gym-cycling', '<p>Celana Olahraga : Nyaman, Hangat, dan Tampilan Sporty</p><p>&nbsp;</p><p>Isi Paket : Celana Training Olahraga</p><p>Material Celana : Ddora</p><p>&nbsp;</p><p>Fitur dan Keunggulan Produk</p><p>Kehangatan Optimal: Bahan Diadora cenderung tebal dengan permukaan dalam yang berbulu halus</p><p>(fleece-like). Ini menjebak panas tubuh, menjadikannya pilihan ideal untuk pemanasan (warming up)</p><p>olahraga di pagi hari, atau saat cuaca dingin.</p><p>&nbsp;</p><p>Tampilan Sporty: Permukaan luar kain sedikit mengkilap (glossy) dan rapat, memberikan kesan sporty</p><p>yang rapi dan elegan, tidak terlihat lusuh.</p><p>&nbsp;</p><p>Kekuatan dan Keawetan: Serat kain yang kuat memastikan celana tahan lama</p><p>dan tidak mudah melar atau sobek, cocok untuk gerakan kaki yang dinamis.</p><p>&nbsp;</p><p>Tabel ukuran berdasarkan BB dan TB</p><p>M : 50 kg / 165 cm</p><p>L : 55 kg / 170 cm</p><p>XL : 60 kg / 175 cm</p><p>XXL : 70 kg / 180 cm</p><p>3XL : 80 kg / 190 cm</p><p>&nbsp;</p><p>Produk ini dirancang untuk memberikan kenyamanan.Terbuat</p><p>dari bahan berkualitas tinggi dan menawarkan keunggulan dalam hal ketahanan dan</p><p>keleluasaan bergerak.</p><p>&nbsp;</p><p>Fitur tambahan seperti saku dengan resleting memudahkan Anda</p><p>menyimpan barang-barang kecil dengan aman. Setiap detail, mulai dari jahitan</p><p>mencerminkan kualitas adalah pilihan sempurna untuk Anda yang mengutamakan</p><p>gaya, kenyamanan, dan performa dalam setiap aktivitas.</p><p>&nbsp;</p><p>Cocok Digunakan Untuk</p><p>&nbsp;</p><p>Olahraga harian</p><p>Gym dan fitness</p><p>Jogging dan running</p><p>Bersepeda cycling</p><p>Seragam tim atau komunitas</p><p>Tampilan casual sporty</p><p>&nbsp;</p><p>Dapatkan kenyamanan dan kualitas terbaik untuk menunjang</p><p>aktivitas olahraga Anda. Jangan lewatkan kesempatan memiliki setelan olahraga</p><p>yang stylish dan fungsional ini.</p><p>&nbsp;</p><p>Pesan sekarang dan rasakan bedanya ketika berolahraga dengan</p><p>perlengkapan yang tepat!</p>', 'unisex', 'Poliester, Diadora', 1, 1, 1, '2026-08-17 09:44:30', '2026-08-19 11:50:54'),
-(29, 14, 'Jaket Olahraga Pria Wanita Unisex', 'jaket-olahraga-pria-wanita-unisex', '<p>Jaket olahraga dengan bahan berkualitas tinggi yang nyaman dipakai untuk berbagai aktivitas. Didesain dengan gaya modern dan sporty, cocok untuk pria dan wanita.</p><ul><li>Bahan: Poliester, Diadora</li><li>Desain simpel dan elegan</li><li>Nyaman dipakai sehari-hari</li><li>Cocok untuk olahraga dan aktivitas santai</li></ul>', 'unisex', 'Poliester, Diadora', 0, 0, 1, '2026-08-19 20:09:17', '2026-08-19 13:26:12');
+INSERT INTO `products` (`id`, `category_id`, `name`, `slug`, `description`, `gender`, `material`, `is_featured`, `is_best_seller`, `is_active`, `minimum_stock`, `restock_threshold`, `created_at`, `updated_at`) VALUES
+(42, 14, 'tes', 'tes', '<p>tes</p>', 'unisex', 'Poliester, Diadora', 0, 0, 1, 5, 10, '2026-08-23 03:28:22', '2026-08-23 03:28:22'),
+(43, 14, 'HM Barokah - Celana Olahraga Panjang Laki Laki Perempuan Celana Training Unisex Untuk Olahraga Senam Jogging Running Gym Cycling', 'hm-barokah-celana-olahraga-panjang-laki-laki-perempuan-celana-training-unisex-untuk-olahraga-senam-jogging-running-gym-cycling', '<p>tess</p>', 'unisex', 'Poliester, Diadora', 0, 0, 1, 5, 10, '2026-08-23 03:31:52', '2026-08-23 03:31:52');
 
 -- --------------------------------------------------------
 
@@ -92101,17 +92103,12 @@ CREATE TABLE `product_features` (
 --
 
 INSERT INTO `product_features` (`id`, `product_id`, `feature_id`, `created_at`, `updated_at`) VALUES
-(1, 28, 3, '2026-08-17 21:17:37', '2026-08-17 21:17:37'),
-(2, 28, 4, '2026-08-17 21:17:37', '2026-08-17 21:17:37'),
-(3, 28, 5, '2026-08-17 21:17:37', '2026-08-17 21:17:37'),
-(4, 28, 6, '2026-08-17 21:17:37', '2026-08-17 21:17:37'),
-(5, 28, 7, '2026-08-17 21:17:37', '2026-08-17 21:17:37'),
-(6, 28, 8, '2026-08-17 21:17:37', '2026-08-17 21:17:37'),
-(7, 29, 7, '2026-08-19 13:16:40', '2026-08-19 13:16:40'),
-(8, 29, 8, '2026-08-19 13:16:40', '2026-08-19 13:16:40'),
-(9, 29, 3, '2026-08-19 13:16:40', '2026-08-19 13:16:40'),
-(10, 29, 4, '2026-08-19 13:16:40', '2026-08-19 13:16:40'),
-(11, 29, 6, '2026-08-19 13:16:40', '2026-08-19 13:16:40');
+(32, 42, 7, '2026-08-23 03:28:22', '2026-08-23 03:28:22'),
+(33, 42, 8, '2026-08-23 03:28:22', '2026-08-23 03:28:22'),
+(34, 42, 3, '2026-08-23 03:28:22', '2026-08-23 03:28:22'),
+(35, 43, 7, '2026-08-23 03:31:52', '2026-08-23 03:31:52'),
+(36, 43, 8, '2026-08-23 03:31:52', '2026-08-23 03:31:52'),
+(37, 43, 3, '2026-08-23 03:31:52', '2026-08-23 03:31:52');
 
 -- --------------------------------------------------------
 
@@ -92133,8 +92130,8 @@ CREATE TABLE `product_images` (
 --
 
 INSERT INTO `product_images` (`id`, `product_id`, `image`, `sort_order`, `created_at`, `updated_at`) VALUES
-(48, 28, 'products/ymzCCdVGIiGP95yrNHh5d21uM9zBeXTFPQHXBmrx.webp', 0, '2026-08-17 09:44:30', '2026-08-17 09:44:30'),
-(49, 29, 'products/Ab5EGbKOZfuUq44ziDBtjxnSb008sd5OhWW55VAG.jpg', 0, '2026-08-19 13:15:58', '2026-08-19 13:15:58');
+(63, 42, 'products/gHn1jI77ablJPQqSKwxZscRAS0BTjeIrFLK8BQwD.jpg', 0, '2026-08-23 03:28:22', '2026-08-23 03:28:22'),
+(64, 43, 'products/iWKGJRVTmRgBMxASqzXrFGz2SWzOEluCnKVKGYiU.png', 0, '2026-08-23 03:31:52', '2026-08-23 03:31:52');
 
 -- --------------------------------------------------------
 
@@ -92156,10 +92153,10 @@ CREATE TABLE `product_options` (
 --
 
 INSERT INTO `product_options` (`id`, `product_id`, `name`, `sort_order`, `created_at`, `updated_at`) VALUES
-(102, 28, 'Ukuran', 0, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(103, 28, 'Warna', 1, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(114, 29, 'Ukuran', 0, '2026-08-19 13:26:12', '2026-08-19 13:26:12'),
-(115, 29, 'Warna', 1, '2026-08-19 13:26:12', '2026-08-19 13:26:12');
+(168, 42, 'Warna', 0, '2026-08-23 03:28:22', '2026-08-23 03:28:22'),
+(169, 42, 'Ukuran', 1, '2026-08-23 03:28:22', '2026-08-23 03:28:22'),
+(172, 43, 'Ukuran', 0, '2026-08-23 03:32:46', '2026-08-23 03:32:46'),
+(173, 43, 'Warna', 1, '2026-08-23 03:32:46', '2026-08-23 03:32:46');
 
 -- --------------------------------------------------------
 
@@ -92182,22 +92179,15 @@ CREATE TABLE `product_option_values` (
 --
 
 INSERT INTO `product_option_values` (`id`, `product_option_id`, `value`, `image`, `sort_order`, `created_at`, `updated_at`) VALUES
-(387, 102, 'M', NULL, 0, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(388, 102, 'L', NULL, 1, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(389, 102, 'XL', NULL, 2, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(390, 102, 'XXL', NULL, 3, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(391, 102, '3XL', NULL, 4, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(392, 103, 'Merah Hitam', 'products/option-values/yuEoEtuYuSj3hN0IO1qShEI5IWR1RKOxLoQhmcla.webp', 0, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(393, 103, 'Biru Hitam', 'products/option-values/jeMTd6a8ogkzU5NtrVU9cMgezopY6zIwd6YR238U.webp', 1, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(394, 103, 'Tosca Hitam', 'products/option-values/6hipBF7Nky6Ac5gEEmYwT3y15QXKBUzyouOyiKFN.webp', 2, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(395, 103, 'Orange Hitam', 'products/option-values/TOlLVQwQOpKtNeijsvRWyTF7f92M0pIP9bG4XgCO.webp', 3, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(431, 114, 'S', NULL, 0, '2026-08-19 13:26:12', '2026-08-19 13:26:12'),
-(432, 114, 'M', NULL, 1, '2026-08-19 13:26:12', '2026-08-19 13:26:12'),
-(433, 114, 'L', NULL, 2, '2026-08-19 13:26:12', '2026-08-19 13:26:12'),
-(434, 114, 'XL', NULL, 3, '2026-08-19 13:26:12', '2026-08-19 13:26:12'),
-(435, 114, 'XXL', NULL, 4, '2026-08-19 13:26:12', '2026-08-19 13:26:12'),
-(436, 114, '3XL', NULL, 5, '2026-08-19 13:26:12', '2026-08-19 13:26:12'),
-(437, 115, 'Putih', NULL, 0, '2026-08-19 13:26:12', '2026-08-19 13:26:12');
+(595, 168, 'Hitam', NULL, 0, '2026-08-23 03:28:22', '2026-08-23 03:28:22'),
+(596, 169, 'S', NULL, 0, '2026-08-23 03:28:22', '2026-08-23 03:28:22'),
+(597, 169, 'M', NULL, 1, '2026-08-23 03:28:22', '2026-08-23 03:28:22'),
+(598, 169, 'L', NULL, 2, '2026-08-23 03:28:22', '2026-08-23 03:28:22'),
+(604, 172, 'S', NULL, 0, '2026-08-23 03:32:46', '2026-08-23 03:32:46'),
+(605, 172, 'M', NULL, 1, '2026-08-23 03:32:46', '2026-08-23 03:32:46'),
+(606, 172, 'L', NULL, 2, '2026-08-23 03:32:46', '2026-08-23 03:32:46'),
+(607, 172, 'XL', NULL, 3, '2026-08-23 03:32:46', '2026-08-23 03:32:46'),
+(608, 173, 'Hitam', NULL, 0, '2026-08-23 03:32:46', '2026-08-23 03:32:46');
 
 -- --------------------------------------------------------
 
@@ -92243,32 +92233,13 @@ CREATE TABLE `product_variants` (
 --
 
 INSERT INTO `product_variants` (`id`, `product_id`, `sku`, `price`, `discount_price`, `stock`, `weight`, `is_active`, `created_at`, `updated_at`) VALUES
-(728, 28, '132665', 80000.00, 58400.00, 240, 350, 1, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(729, 28, '116544', 80000.00, 58400.00, 239, 350, 1, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(730, 28, '127535', 80000.00, 58400.00, 240, 350, 1, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(731, 28, '111534', 80000.00, 58400.00, 240, 350, 1, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(732, 28, '453543', 80000.00, 58400.00, 239, 380, 1, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(733, 28, '186453', 80000.00, 58400.00, 240, 380, 1, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(734, 28, '905677', 80000.00, 58400.00, 239, 380, 1, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(735, 28, '996489', 80000.00, 58400.00, 0, 380, 1, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(736, 28, '354323', 80000.00, 64800.00, 240, 400, 1, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(737, 28, '545555', 80000.00, 64800.00, 239, 400, 1, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(738, 28, '333238', 80000.00, 64800.00, 240, 400, 1, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(739, 28, '777543', 80000.00, 64800.00, 240, 400, 1, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(740, 28, '994362', 90000.00, 64800.00, 240, 450, 1, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(741, 28, '665378', 90000.00, 64800.00, 239, 450, 1, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(742, 28, '339786', 90000.00, 64800.00, 240, 450, 1, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(743, 28, '222675', 90000.00, 64800.00, 0, 450, 1, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(744, 28, '118547', 90000.00, 64800.00, 240, 480, 1, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(745, 28, '889543', 90000.00, 64800.00, 239, 480, 1, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(746, 28, '346776', 90000.00, 64800.00, 240, 480, 1, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(747, 28, '777754', 90000.00, 64800.00, 0, 480, 1, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(778, 29, 'JKTPTH-S', 70000.00, NULL, 0, 350, 1, '2026-08-19 13:26:12', '2026-08-19 13:26:12'),
-(779, 29, 'JKTPTH-M', 70000.00, NULL, 0, 350, 1, '2026-08-19 13:26:12', '2026-08-19 13:26:12'),
-(780, 29, 'JKTPTH-L', 70000.00, NULL, 0, 350, 1, '2026-08-19 13:26:12', '2026-08-19 13:26:12'),
-(781, 29, 'JKTPTH-XL', 70000.00, NULL, 0, 350, 1, '2026-08-19 13:26:12', '2026-08-19 13:26:12'),
-(782, 29, 'JKTPTH-XXL', 70000.00, NULL, 0, 350, 1, '2026-08-19 13:26:12', '2026-08-19 13:26:12'),
-(783, 29, 'JKTPTH-3XL', 70000.00, NULL, 0, 350, 1, '2026-08-19 13:26:12', '2026-08-19 13:26:12');
+(978, 42, '457457', 90000.00, NULL, 100, 500, 1, '2026-08-23 03:28:22', '2026-08-23 03:28:22'),
+(979, 42, '768768', 90000.00, NULL, 100, 500, 1, '2026-08-23 03:28:22', '2026-08-23 03:28:22'),
+(980, 42, '868543', 90000.00, NULL, 100, 500, 1, '2026-08-23 03:28:22', '2026-08-23 03:28:22'),
+(985, 43, '2352626', 90000.00, 54000.00, 50, 500, 1, '2026-08-23 03:32:46', '2026-08-23 03:32:46'),
+(986, 43, '4574578', 90000.00, NULL, 50, 500, 1, '2026-08-23 03:32:46', '2026-08-23 03:32:46'),
+(987, 43, '2363737', 90000.00, NULL, 50, 500, 1, '2026-08-23 03:32:46', '2026-08-23 03:32:46'),
+(988, 43, '6346373', 90000.00, NULL, 50, 500, 1, '2026-08-23 03:32:46', '2026-08-23 03:32:46');
 
 -- --------------------------------------------------------
 
@@ -92289,58 +92260,20 @@ CREATE TABLE `product_variant_values` (
 --
 
 INSERT INTO `product_variant_values` (`id`, `product_variant_id`, `product_option_value_id`, `created_at`, `updated_at`) VALUES
-(1301, 728, 387, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(1302, 728, 392, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(1303, 729, 387, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(1304, 729, 393, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(1305, 730, 387, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(1306, 730, 394, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(1307, 731, 387, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(1308, 731, 395, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(1309, 732, 388, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(1310, 732, 392, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(1311, 733, 388, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(1312, 733, 393, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(1313, 734, 388, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(1314, 734, 394, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(1315, 735, 388, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(1316, 735, 395, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(1317, 736, 389, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(1318, 736, 392, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(1319, 737, 389, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(1320, 737, 393, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(1321, 738, 389, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(1322, 738, 394, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(1323, 739, 389, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(1324, 739, 395, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(1325, 740, 390, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(1326, 740, 392, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(1327, 741, 390, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(1328, 741, 393, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(1329, 742, 390, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(1330, 742, 394, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(1331, 743, 390, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(1332, 743, 395, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(1333, 744, 391, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(1334, 744, 392, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(1335, 745, 391, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(1336, 745, 393, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(1337, 746, 391, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(1338, 746, 394, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(1339, 747, 391, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(1340, 747, 395, '2026-08-19 11:50:54', '2026-08-19 11:50:54'),
-(1401, 778, 431, '2026-08-19 13:26:12', '2026-08-19 13:26:12'),
-(1402, 778, 437, '2026-08-19 13:26:12', '2026-08-19 13:26:12'),
-(1403, 779, 432, '2026-08-19 13:26:12', '2026-08-19 13:26:12'),
-(1404, 779, 437, '2026-08-19 13:26:12', '2026-08-19 13:26:12'),
-(1405, 780, 433, '2026-08-19 13:26:12', '2026-08-19 13:26:12'),
-(1406, 780, 437, '2026-08-19 13:26:12', '2026-08-19 13:26:12'),
-(1407, 781, 434, '2026-08-19 13:26:12', '2026-08-19 13:26:12'),
-(1408, 781, 437, '2026-08-19 13:26:12', '2026-08-19 13:26:12'),
-(1409, 782, 435, '2026-08-19 13:26:12', '2026-08-19 13:26:12'),
-(1410, 782, 437, '2026-08-19 13:26:12', '2026-08-19 13:26:12'),
-(1411, 783, 436, '2026-08-19 13:26:12', '2026-08-19 13:26:12'),
-(1412, 783, 437, '2026-08-19 13:26:12', '2026-08-19 13:26:12');
+(1791, 978, 595, '2026-08-23 03:28:22', '2026-08-23 03:28:22'),
+(1792, 978, 596, '2026-08-23 03:28:22', '2026-08-23 03:28:22'),
+(1793, 979, 595, '2026-08-23 03:28:22', '2026-08-23 03:28:22'),
+(1794, 979, 597, '2026-08-23 03:28:22', '2026-08-23 03:28:22'),
+(1795, 980, 595, '2026-08-23 03:28:22', '2026-08-23 03:28:22'),
+(1796, 980, 598, '2026-08-23 03:28:22', '2026-08-23 03:28:22'),
+(1805, 985, 604, '2026-08-23 03:32:46', '2026-08-23 03:32:46'),
+(1806, 985, 608, '2026-08-23 03:32:46', '2026-08-23 03:32:46'),
+(1807, 986, 605, '2026-08-23 03:32:46', '2026-08-23 03:32:46'),
+(1808, 986, 608, '2026-08-23 03:32:46', '2026-08-23 03:32:46'),
+(1809, 987, 606, '2026-08-23 03:32:46', '2026-08-23 03:32:46'),
+(1810, 987, 608, '2026-08-23 03:32:46', '2026-08-23 03:32:46'),
+(1811, 988, 607, '2026-08-23 03:32:46', '2026-08-23 03:32:46'),
+(1812, 988, 608, '2026-08-23 03:32:46', '2026-08-23 03:32:46');
 
 -- --------------------------------------------------------
 
@@ -92362,11 +92295,10 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('8TAU3JuqXZeAsIKQNI3ugoETEAnCXKKmig767nRv', 4, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoibHNESkhXVlZ6dzJhWVhFazN3dlpyeUQyNXhiclJKbUJoZGVQSFgzRSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzY6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC93aXNobGlzdC9wb3B1cCI7czo1OiJyb3V0ZSI7czoyMzoiY3VzdG9tZXIud2lzaGxpc3QucG9wdXAiO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aTo0O30=', 1787363253),
-('agGjxqBMq73XOqQrDxQP227Oh9qcEbNmEr526FnW', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiZ2p5ZFhCMVFMS2hOUGNWaHZrbUlFNHN4NDZqR0VURnNIUUFobkptaCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzY6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC93aXNobGlzdC9wb3B1cCI7czo1OiJyb3V0ZSI7czoyMzoiY3VzdG9tZXIud2lzaGxpc3QucG9wdXAiO31zOjU1OiJsb2dpbl9jdXN0b21lcl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7fQ==', 1787366809),
-('HIySbo4DVAVbZoEj77TCsGLwR7UOAB7KfXZHF5vN', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', 'YTo2OntzOjY6Il90b2tlbiI7czo0MDoic1g1NmJSSWl5NHZBcVU2TWZOd2pzZ3dDTk9sV2NoODROVDh2ZDNMVSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzY6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC93aXNobGlzdC9wb3B1cCI7czo1OiJyb3V0ZSI7czoyMzoiY3VzdG9tZXIud2lzaGxpc3QucG9wdXAiO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjU1OiJsb2dpbl9jdXN0b21lcl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7czo0OiJjYXJ0IjthOjE6e2k6MDthOjEwOntzOjEwOiJwcm9kdWN0X2lkIjtpOjI4O3M6MTA6InZhcmlhbnRfaWQiO3M6MzoiNzI4IjtzOjEyOiJwcm9kdWN0X25hbWUiO3M6MTI4OiJITSBCYXJva2FoIC0gQ2VsYW5hIE9sYWhyYWdhIFBhbmphbmcgTGFraSBMYWtpIFBlcmVtcHVhbiBDZWxhbmEgVHJhaW5pbmcgVW5pc2V4IFVudHVrIE9sYWhyYWdhIFNlbmFtIEpvZ2dpbmcgUnVubmluZyBHeW0gQ3ljbGluZyI7czoxMjoidmFyaWFudF9uYW1lIjtzOjE1OiJNIC8gTWVyYWggSGl0YW0iO3M6NToicHJpY2UiO3M6ODoiNTg0MDAuMDAiO3M6MTQ6Im9yaWdpbmFsX3ByaWNlIjtzOjg6IjgwMDAwLjAwIjtzOjg6InF1YW50aXR5IjtpOjE7czo2OiJ3ZWlnaHQiO2k6MzUwO3M6NToiaW1hZ2UiO3M6Njg6InByb2R1Y3RzL29wdGlvbi12YWx1ZXMveXVFb0V0dVl1U2ozaE4wSU8xcVNoRUk1SVdSMVJLT3hMb1FobWNsYS53ZWJwIjtzOjQ6InNsdWciO3M6MTI2OiJobS1iYXJva2FoLWNlbGFuYS1vbGFocmFnYS1wYW5qYW5nLWxha2ktbGFraS1wZXJlbXB1YW4tY2VsYW5hLXRyYWluaW5nLXVuaXNleC11bnR1ay1vbGFocmFnYS1zZW5hbS1qb2dnaW5nLXJ1bm5pbmctZ3ltLWN5Y2xpbmciO319czoxMDoiaXNfYnV5X25vdyI7YjoxO30=', 1787366037),
-('nldatxlibDffAVQ0uiEjhb6fopdsKxLg9zySV78O', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoienFmVkFkT3RwRDhwell6WUdUNmR1NkFLMFJla1NLVDJYUU1sN0tVdCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1787366445),
-('rTJ1bUgfSOyrV5IqPpTvuPwU6YHPPRwEhsdAApKy', 4, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiNEZ4elp3Z1QwRTJvOWFSSUhpMTcwWlRybUJCVEdFQWo5NDZiYk4wNSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzY6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC93aXNobGlzdC9wb3B1cCI7czo1OiJyb3V0ZSI7czoyMzoiY3VzdG9tZXIud2lzaGxpc3QucG9wdXAiO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aTo0O30=', 1787363189);
+('2QvP2iKuLfUxcyBik95RltGqvqs4ErCk6cUAdoCU', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoieXF6b3kyckJHa0I2UUVrQnlSbUJuOUR0REN2Q1luekg2OEE1QmdWVyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1787449572),
+('6acS3M61z4jeyQOX9TWW5dDRpGSJORmRMIliq7hs', 3, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', 'YTo5OntzOjY6Il90b2tlbiI7czo0MDoiTDFSUDJXOHdzWEE4VkVFdm44ZVdDYmtvbmlYdWlvYXYyRDI2ZVNScCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Mzc6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9hZG1pbi9kYXNoYm9hcmQiO3M6NToicm91dGUiO3M6MTU6ImFkbWluLmRhc2hib2FyZCI7fXM6NTU6ImxvZ2luX2N1c3RvbWVyXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MztzOjM6InVybCI7YToxOntzOjg6ImludGVuZGVkIjtzOjM3OiJodHRwOi8vMTI3LjAuMC4xOjgwMDAvYWRtaW4vZGFzaGJvYXJkIjt9czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MztzOjE1OiJvbGRfY2FydF9iYWNrdXAiO2E6MDp7fXM6NDoiY2FydCI7YToxOntpOjA7YTo5OntzOjEwOiJwcm9kdWN0X2lkIjtpOjQyO3M6MTA6InZhcmlhbnRfaWQiO2k6OTgwO3M6MTI6InByb2R1Y3RfbmFtZSI7czozOiJ0ZXMiO3M6MTI6InZhcmlhbnRfbmFtZSI7czo5OiJIaXRhbSAvIEwiO3M6NToicHJpY2UiO3M6ODoiOTAwMDAuMDAiO3M6ODoicXVhbnRpdHkiO2k6MTtzOjY6IndlaWdodCI7aTo1MDA7czo1OiJpbWFnZSI7czo1MzoicHJvZHVjdHMvZ0huMWpJNzdhYmxKUFFxU0t3eFpzY1JBUzBCVGplSXJGTEs4QlF3RC5qcGciO3M6NDoic2x1ZyI7czozOiJ0ZXMiO319czoxMDoiaXNfYnV5X25vdyI7YjoxO30=', 1787456001),
+('glHQV337IDztbqlN4PF5Q79N9WLE3WlntoCzCaUN', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoiSXNwbWo1SG1wcHFLeHdiVU5RN1lsWFhDOFJYWTl6dUd0ME9SOEtOWiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1787449345),
+('KgLHIx1cYXpP62FqN3rGuulXBxNNai6ZArkLURwB', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoiSVNOclhhS1NGbUdMdzVTWVlaMGpxeHI3Q0xJU2pLZ0tXZFFLczNLMSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1787449155);
 
 -- --------------------------------------------------------
 
@@ -92492,6 +92424,28 @@ INSERT INTO `size_guides` (`id`, `category_id`, `size`, `dimensions`, `sort_orde
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `stock_histories`
+--
+
+CREATE TABLE `stock_histories` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `product_id` bigint(20) UNSIGNED NOT NULL,
+  `product_variant_id` bigint(20) UNSIGNED NOT NULL,
+  `user_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `old_stock` int(11) NOT NULL DEFAULT 0,
+  `new_stock` int(11) NOT NULL DEFAULT 0,
+  `quantity_change` int(11) NOT NULL DEFAULT 0,
+  `reason` enum('restock','sale','return','adjustment','damaged','transfer_in','transfer_out','order_cancelled','system_adjustment','other') NOT NULL DEFAULT 'adjustment',
+  `note` text DEFAULT NULL,
+  `ip_address` varchar(45) DEFAULT NULL,
+  `user_agent` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `terms`
 --
 
@@ -92537,7 +92491,30 @@ CREATE TABLE `users` (
 
 INSERT INTO `users` (`id`, `name`, `email`, `role`, `email_verified_at`, `password`, `remember_token`, `created_at`, `updated_at`) VALUES
 (3, 'Super Admin', 'admin@ecommerce.com', 'admin', NULL, '$2y$12$52AZlaZmHVId3rmxrkTJou7fPtVaCdE8FL9NZISQ5hrqBlcm/ySr2', NULL, '2026-08-09 18:28:08', '2026-08-09 18:28:08'),
-(4, 'Muhamad Rafli Repmihar Augst', 'mraflyyy26@gmail.com', 'customer', NULL, '$2y$12$VLfOVRL4hejEtIaGRxRskOWorjpgWhGm/yLHPuPKJ9NdGiLdBDacK', 'NkTypTmRMeHtmmYZIMpYehZfwt70v8TRBIEfoy7oqamONNM7gh4rGWoZOlDU', '2026-08-21 20:17:30', '2026-08-21 20:17:30');
+(4, 'Muhamad Rafli Repmihar Augst', 'mraflyyy26@gmail.com', 'customer', NULL, '$2y$12$VLfOVRL4hejEtIaGRxRskOWorjpgWhGm/yLHPuPKJ9NdGiLdBDacK', 'usCpHUgyP5E7cEOMssuVD3HQEchDcNRinYVfOmWpH6gO2lvHMaeP7DsLkPPG', '2026-08-21 20:17:30', '2026-08-21 20:17:30'),
+(5, 'Arum Hikmah Widi', 'arumhikmahwidi@gmail.com', 'customer', NULL, '$2y$12$bpyuEXd7osragGuukwyVGekWJcqzepbst.Ei.KJH83RDDFoScmKR2', NULL, '2026-08-22 17:58:05', '2026-08-22 17:58:05'),
+(6, 'Muhamad Abdul', 'muhamadabdul@gmail.com', 'customer', NULL, '$2y$12$bJf4yqrapImLI7eVgkWKmubMTEGkQWTh7yw58MVA8LaOYAovVKdlC', NULL, '2026-08-22 18:16:57', '2026-08-22 18:16:57');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `user_addresses`
+--
+
+CREATE TABLE `user_addresses` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `user_id` bigint(20) UNSIGNED NOT NULL,
+  `label` varchar(255) NOT NULL DEFAULT 'Alamat Utama',
+  `recipient_name` varchar(255) NOT NULL,
+  `recipient_phone` varchar(255) NOT NULL,
+  `address` text NOT NULL,
+  `city` varchar(255) DEFAULT NULL,
+  `province` varchar(255) DEFAULT NULL,
+  `postal_code` varchar(255) DEFAULT NULL,
+  `is_default` tinyint(1) NOT NULL DEFAULT 0,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -92839,6 +92816,16 @@ ALTER TABLE `size_guides`
   ADD UNIQUE KEY `size_guides_category_id_size_unique` (`category_id`,`size`);
 
 --
+-- Indexes for table `stock_histories`
+--
+ALTER TABLE `stock_histories`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `stock_histories_user_id_foreign` (`user_id`),
+  ADD KEY `stock_histories_product_id_created_at_index` (`product_id`,`created_at`),
+  ADD KEY `stock_histories_product_variant_id_created_at_index` (`product_variant_id`,`created_at`),
+  ADD KEY `stock_histories_reason_index` (`reason`);
+
+--
 -- Indexes for table `terms`
 --
 ALTER TABLE `terms`
@@ -92850,6 +92837,13 @@ ALTER TABLE `terms`
 ALTER TABLE `users`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `users_email_unique` (`email`);
+
+--
+-- Indexes for table `user_addresses`
+--
+ALTER TABLE `user_addresses`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `user_addresses_user_id_foreign` (`user_id`);
 
 --
 -- Indexes for table `wishlists`
@@ -92885,13 +92879,13 @@ ALTER TABLE `article_categories`
 -- AUTO_INCREMENT for table `article_comments`
 --
 ALTER TABLE `article_comments`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT for table `article_likes`
 --
 ALTER TABLE `article_likes`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `banners`
@@ -92903,7 +92897,7 @@ ALTER TABLE `banners`
 -- AUTO_INCREMENT for table `carts`
 --
 ALTER TABLE `carts`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=43;
 
 --
 -- AUTO_INCREMENT for table `categories`
@@ -92963,7 +92957,7 @@ ALTER TABLE `marketplaces`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=58;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=62;
 
 --
 -- AUTO_INCREMENT for table `orders`
@@ -92987,31 +92981,31 @@ ALTER TABLE `privacy_policies`
 -- AUTO_INCREMENT for table `products`
 --
 ALTER TABLE `products`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=44;
 
 --
 -- AUTO_INCREMENT for table `product_features`
 --
 ALTER TABLE `product_features`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=38;
 
 --
 -- AUTO_INCREMENT for table `product_images`
 --
 ALTER TABLE `product_images`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=50;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=65;
 
 --
 -- AUTO_INCREMENT for table `product_options`
 --
 ALTER TABLE `product_options`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=116;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=174;
 
 --
 -- AUTO_INCREMENT for table `product_option_values`
 --
 ALTER TABLE `product_option_values`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=438;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=609;
 
 --
 -- AUTO_INCREMENT for table `product_sizes`
@@ -93023,13 +93017,13 @@ ALTER TABLE `product_sizes`
 -- AUTO_INCREMENT for table `product_variants`
 --
 ALTER TABLE `product_variants`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=784;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=989;
 
 --
 -- AUTO_INCREMENT for table `product_variant_values`
 --
 ALTER TABLE `product_variant_values`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1413;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1813;
 
 --
 -- AUTO_INCREMENT for table `settings`
@@ -93050,6 +93044,12 @@ ALTER TABLE `size_guides`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=55;
 
 --
+-- AUTO_INCREMENT for table `stock_histories`
+--
+ALTER TABLE `stock_histories`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
 -- AUTO_INCREMENT for table `terms`
 --
 ALTER TABLE `terms`
@@ -93059,13 +93059,19 @@ ALTER TABLE `terms`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+
+--
+-- AUTO_INCREMENT for table `user_addresses`
+--
+ALTER TABLE `user_addresses`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `wishlists`
 --
 ALTER TABLE `wishlists`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
 
 --
 -- Constraints for dumped tables
@@ -93182,6 +93188,20 @@ ALTER TABLE `product_variant_values`
 --
 ALTER TABLE `size_guides`
   ADD CONSTRAINT `size_guides_category_id_foreign` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `stock_histories`
+--
+ALTER TABLE `stock_histories`
+  ADD CONSTRAINT `stock_histories_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `stock_histories_product_variant_id_foreign` FOREIGN KEY (`product_variant_id`) REFERENCES `product_variants` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `stock_histories_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `user_addresses`
+--
+ALTER TABLE `user_addresses`
+  ADD CONSTRAINT `user_addresses_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `wishlists`

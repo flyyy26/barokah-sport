@@ -4,6 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    @php
+        $isLoggedIn = Auth::guard('customer')->check() || Auth::check();
+        $userId = Auth::guard('customer')->id() ?? Auth::id();
+        $userName = Auth::guard('customer')->user()->name ?? Auth::user()->name ?? '';
+        $userRole = Auth::guard('customer')->user()->role ?? Auth::user()->role ?? 'customer';
+    @endphp
+
+    <!-- Customer Login Status -->
+    @if($isLoggedIn)
+        <meta name="customer-logged-in" content="true">
+        <meta name="user-id" content="{{ $userId }}">
+        <meta name="user-name" content="{{ $userName }}">
+        <meta name="user-role" content="{{ $userRole }}">
+    @else
+        <meta name="customer-logged-in" content="false">
+        <meta name="user-role" content="guest">
+    @endif
     <title>@yield('title', config('app.name'))</title>
     <link rel="icon" href="{{ asset('images/favicon.png') }}" type="image/png">
     
@@ -13,7 +30,7 @@
     <link rel="stylesheet" href="{{ asset('css/product.css') }}">
     <link rel="stylesheet" href="{{ asset('css/variant-modal.css') }}">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
-
+    
     {{-- Meta Description --}}
     @yield('meta_description')
 </head>
@@ -73,10 +90,10 @@
                             <iconify-icon icon="mdi:eye-outline" width="16"></iconify-icon>
                             Lihat
                         </a>
-                        <a href="{{ route('customer.checkout.index') }}" class="btn-primary">
+                        <button onclick="goToCheckout()" class="btn-primary" style="border:none;cursor:pointer;">
                             Checkout
                             <iconify-icon icon="mdi:arrow-right" width="16"></iconify-icon>
-                        </a>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -120,6 +137,8 @@
         </div>
     </div>
 
+    @include('customer.partials.login-popup')
+
     @include('customer.partials.footer')
 
     {{-- ============================================ --}}
@@ -128,6 +147,623 @@
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+
+    <script>
+        function goToCheckout() {
+            // 🔥 CEK APAKAH ADA ITEM DI CART
+            const cartCount = parseInt(document.getElementById('cart-count')?.textContent || 0);
+            
+            console.log('🛒 goToCheckout called, cart count:', cartCount);
+            
+            if (cartCount === 0) {
+                showToast('Keranjang kosong. Tambahkan produk terlebih dahulu.', 'warning');
+                return;
+            }
+            
+            // 🔥 TUTUP POPUP
+            const popup = document.getElementById('cart-popup');
+            if (popup) {
+                popup.classList.remove('active');
+                document.body.classList.remove('popup-open');
+            }
+            
+            // 🔥 REDIRECT KE CHECKOUT
+            const checkoutUrl = window.customerRoutes.checkout || '{{ route("customer.checkout.index") }}';
+            console.log('🛒 Redirecting to checkout:', checkoutUrl);
+            window.location.href = checkoutUrl;
+        }
+
+        // Expose ke global
+        window.goToCheckout = goToCheckout;
+    </script>
+
+    <script>
+        // ============================================
+        // LOGIN POPUP FUNCTIONS
+        // ============================================
+
+        let loginPopupCallback = null;
+        let loginPopupAction = null;
+
+        function openLoginPopup(action, callback) {
+            const overlay = document.getElementById('login-popup-overlay');
+            if (!overlay) return;
+
+            // Reset semua state
+            document.getElementById('login-popup-login-form').style.display = 'block';
+            document.getElementById('login-popup-register-form').style.display = 'none';
+            document.getElementById('login-popup-success').style.display = 'none';
+            document.getElementById('login-popup-error').style.display = 'none';
+            document.getElementById('register-popup-error').style.display = 'none';
+
+            // Reset form login
+            document.getElementById('login-popup-email').value = '';
+            document.getElementById('login-popup-password').value = '';
+            document.getElementById('login-popup-remember').checked = false;
+            
+            // Reset form register
+            document.getElementById('register-popup-name').value = '';
+            document.getElementById('register-popup-email').value = '';
+            document.getElementById('register-popup-password').value = '';
+            document.getElementById('register-popup-password-confirm').value = '';
+            document.getElementById('register-popup-terms').checked = false;
+            
+            const loginBtn = document.getElementById('login-popup-btn');
+            loginBtn.disabled = false;
+            loginBtn.querySelector('.spinner').style.display = 'none';
+            loginBtn.querySelector('.btn-text').textContent = 'Login';
+
+            const registerBtn = document.getElementById('register-popup-btn');
+            registerBtn.disabled = false;
+            registerBtn.querySelector('.spinner').style.display = 'none';
+            registerBtn.querySelector('.btn-text').textContent = 'Daftar Sekarang';
+
+            // Simpan callback dan action
+            loginPopupCallback = callback;
+            loginPopupAction = action;
+
+            // Tampilkan popup
+            overlay.style.display = 'flex';
+            overlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+
+            // Focus ke input email
+            setTimeout(function() {
+                document.getElementById('login-popup-email').focus();
+            }, 300);
+        }
+
+        function closeLoginPopup() {
+            const overlay = document.getElementById('login-popup-overlay');
+            if (overlay) {
+                overlay.classList.remove('active');
+                setTimeout(function() {
+                    overlay.style.display = 'none';
+                }, 300);
+                document.body.style.overflow = '';
+            }
+        }
+
+        function showLoginSuccess(message, username) {
+            // Sembunyikan form login dan register
+            document.getElementById('login-popup-login-form').style.display = 'none';
+            document.getElementById('login-popup-register-form').style.display = 'none';
+            document.getElementById('login-popup-error').style.display = 'none';
+            document.getElementById('register-popup-error').style.display = 'none';
+            
+            // Tampilkan state sukses
+            const successDiv = document.getElementById('login-popup-success');
+            successDiv.style.display = 'block';
+            
+            // Set title dan message
+            const titleEl = document.getElementById('login-popup-success-title');
+            const msgEl = document.getElementById('login-popup-success-message');
+            
+            if (message === 'login') {
+                titleEl.textContent = 'Login Berhasil!';
+                msgEl.textContent = 'Selamat datang, ' + (username || '') + '!';
+            } else if (message === 'register') {
+                titleEl.textContent = 'Registrasi Berhasil!';
+                msgEl.textContent = 'Selamat datang, ' + (username || '') + '!';
+            }
+            
+            // 🔥 LOAD ULANG WISHLIST STATUS UNTUK SEMUA PRODUK
+            loadWishlistStatus();
+            
+            // 🔥 LOAD ULANG CART COUNT
+            loadCartCount();
+            
+            // Auto close setelah 1.5 detik
+            setTimeout(function() {
+                closeLoginPopup();
+                // Reset success state setelah popup tertutup
+                setTimeout(function() {
+                    successDiv.style.display = 'none';
+                    document.getElementById('login-popup-login-form').style.display = 'block';
+                }, 300);
+            }, 1500);
+        }
+
+        function submitLoginPopup(event) {
+            event.preventDefault();
+
+            const email = document.getElementById('login-popup-email').value;
+            const password = document.getElementById('login-popup-password').value;
+            const remember = document.getElementById('login-popup-remember').checked;
+            const btn = document.getElementById('login-popup-btn');
+            const errorDiv = document.getElementById('login-popup-error');
+            const errorMessage = document.getElementById('login-popup-error-message');
+
+            errorDiv.style.display = 'none';
+
+            btn.disabled = true;
+            btn.querySelector('.spinner').style.display = 'block';
+            btn.querySelector('.btn-text').textContent = 'Memproses...';
+
+            fetch('{{ route("customer.login.process") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    email: email,
+                    password: password,
+                    remember: remember
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.querySelector('.spinner').style.display = 'none';
+                btn.querySelector('.btn-text').textContent = 'Login';
+
+                if (data.success) {
+                    // 🔥 TAMPILKAN STATE SUKSES (DI DALAMNYA ADA loadWishlistStatus)
+                    showLoginSuccess('login', data.user?.name || '');
+
+                    // UPDATE CSRF TOKEN
+                    const metaToken = document.querySelector('meta[name="csrf-token"]');
+                    if (metaToken) {
+                        metaToken.content = data.csrf_token || metaToken.content;
+                    }
+                    
+                    if (typeof $.ajaxSetup === 'function') {
+                        $.ajaxSetup({
+                            headers: {
+                                'X-CSRF-TOKEN': data.csrf_token || metaToken?.content || ''
+                            }
+                        });
+                    }
+
+                    // 🔥 LOAD ULANG CART & WISHLIST COUNT (SUDAH DI showLoginSuccess)
+                    // loadCartCount(); // SUDAH DI showLoginSuccess
+                    // loadWishlistStatus(); // SUDAH DI showLoginSuccess
+
+                    document.dispatchEvent(new CustomEvent('login-success'));
+
+                    const action = loginPopupAction;
+                    const callback = loginPopupCallback;
+
+                    loginPopupCallback = null;
+                    loginPopupAction = null;
+
+                    // 🔥 EKSEKUSI ACTION SETELAH POPUP TERTUTUP
+                    setTimeout(function() {
+                        if (typeof callback === 'function') {
+                            callback();
+                        } else if (action === 'add_to_cart') {
+                            if (window._pendingProductId) {
+                                fetch('/api/products/' + window._pendingProductId + '/variants', {
+                                    headers: { 'Accept': 'application/json' }
+                                })
+                                .then(function(response) { return response.json(); })
+                                .then(function(data) {
+                                    if (data.success && data.variants && data.variants.length > 0) {
+                                        if (typeof openVariantModal === 'function') {
+                                            openVariantModal(window._pendingProductId, 'add_to_cart');
+                                            window._pendingProductId = null;
+                                        }
+                                    } else {
+                                        addToCartDirect(window._pendingProductId);
+                                        window._pendingProductId = null;
+                                    }
+                                })
+                                .catch(function() {
+                                    addToCartDirect(window._pendingProductId);
+                                    window._pendingProductId = null;
+                                });
+                            }
+                        } else if (action === 'add_to_wishlist') {
+                            if (window._pendingProductId) {
+                                addToWishlistDirect(window._pendingProductId);
+                                window._pendingProductId = null;
+                            }
+                        }
+                    }, 2000);
+                } else {
+                    errorMessage.textContent = data.message || 'Email atau password salah';
+                    errorDiv.style.display = 'flex';
+                }
+            })
+            .catch(error => {
+                btn.disabled = false;
+                btn.querySelector('.spinner').style.display = 'none';
+                btn.querySelector('.btn-text').textContent = 'Login';
+                errorMessage.textContent = 'Terjadi kesalahan, silakan coba lagi';
+                errorDiv.style.display = 'flex';
+                console.error('Login error:', error);
+            });
+        }
+
+        function switchToRegister() {
+            document.getElementById('login-popup-login-form').style.display = 'none';
+            document.getElementById('login-popup-register-form').style.display = 'block';
+            document.getElementById('register-popup-error').style.display = 'none';
+            
+            // Reset form register
+            document.getElementById('register-popup-name').value = '';
+            document.getElementById('register-popup-email').value = '';
+            document.getElementById('register-popup-password').value = '';
+            document.getElementById('register-popup-password-confirm').value = '';
+            document.getElementById('register-popup-terms').checked = false;
+            
+            const btn = document.getElementById('register-popup-btn');
+            btn.disabled = false;
+            btn.querySelector('.spinner').style.display = 'none';
+            btn.querySelector('.btn-text').textContent = 'Daftar Sekarang';
+
+            // Focus ke name
+            setTimeout(function() {
+                document.getElementById('register-popup-name').focus();
+            }, 300);
+        }
+
+        function switchToLogin() {
+            document.getElementById('login-popup-register-form').style.display = 'none';
+            document.getElementById('login-popup-login-form').style.display = 'block';
+            document.getElementById('login-popup-error').style.display = 'none';
+            
+            // Reset form login
+            document.getElementById('login-popup-email').value = '';
+            document.getElementById('login-popup-password').value = '';
+            document.getElementById('login-popup-remember').checked = false;
+            
+            const btn = document.getElementById('login-popup-btn');
+            btn.disabled = false;
+            btn.querySelector('.spinner').style.display = 'none';
+            btn.querySelector('.btn-text').textContent = 'Login';
+
+            // Focus ke email
+            setTimeout(function() {
+                document.getElementById('login-popup-email').focus();
+            }, 300);
+        }
+
+        // ============================================
+        // TOGGLE PASSWORD VISIBILITY
+        // ============================================
+
+        function togglePasswordVisibility(inputId, button) {
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            
+            const icon = button.querySelector('iconify-icon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                if (icon) icon.setAttribute('icon', 'mdi:eye-off-outline');
+            } else {
+                input.type = 'password';
+                if (icon) icon.setAttribute('icon', 'mdi:eye-outline');
+            }
+        }
+
+        // ============================================
+        // PASSWORD STRENGTH CHECKER
+        // ============================================
+
+        function checkPasswordStrength(password) {
+            let strength = 0;
+            let label = '';
+            let className = '';
+            
+            // Length check
+            if (password.length >= 8) strength += 1;
+            if (password.length >= 12) strength += 1;
+            
+            // Contains lowercase
+            if (/[a-z]/.test(password)) strength += 1;
+            
+            // Contains uppercase
+            if (/[A-Z]/.test(password)) strength += 1;
+            
+            // Contains number
+            if (/\d/.test(password)) strength += 1;
+            
+            // Contains special character
+            if (/[^a-zA-Z0-9]/.test(password)) strength += 1;
+            
+            // Determine strength
+            if (strength <= 2) {
+                label = 'Lemah';
+                className = 'weak';
+            } else if (strength <= 4) {
+                label = 'Sedang';
+                className = 'medium';
+            } else {
+                label = 'Kuat';
+                className = 'strong';
+            }
+            
+            return { strength, label, className };
+        }
+
+        function updatePasswordStrength() {
+            const password = document.getElementById('register-popup-password');
+            const strengthDiv = document.getElementById('register-password-strength');
+            
+            if (!password || !strengthDiv) return;
+            
+            const value = password.value;
+            
+            if (value.length === 0) {
+                strengthDiv.innerHTML = '';
+                return;
+            }
+            
+            const result = checkPasswordStrength(value);
+            
+            // Create strength bars
+            const maxBars = 5;
+            const activeBars = Math.min(result.strength, maxBars);
+            
+            let barsHtml = '';
+            for (let i = 0; i < maxBars; i++) {
+                const isActive = i < activeBars;
+                barsHtml += `<span class="${isActive ? 'active ' + result.className : ''}"></span>`;
+            }
+            
+            strengthDiv.innerHTML = `
+                <div class="strength-bar">${barsHtml}</div>
+                <div class="strength-text">Kekuatan: <strong>${result.label}</strong></div>
+            `;
+        }
+
+        function validatePasswordMatch() {
+            const password = document.getElementById('register-popup-password');
+            const confirm = document.getElementById('register-popup-password-confirm');
+            const matchDiv = document.getElementById('register-password-match');
+            
+            if (!password || !confirm || !matchDiv) return;
+            
+            const passVal = password.value;
+            const confirmVal = confirm.value;
+            
+            if (confirmVal.length === 0) {
+                matchDiv.innerHTML = '';
+                return;
+            }
+            
+            if (passVal === confirmVal) {
+                matchDiv.innerHTML = '✓ Password cocok';
+                matchDiv.className = 'password-match match-success';
+            } else {
+                matchDiv.innerHTML = '✗ Password tidak cocok';
+                matchDiv.className = 'password-match match-error';
+            }
+        }
+
+        // ============================================
+        // EVENT LISTENERS UNTUK VALIDASI PASSWORD
+        // ============================================
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Password strength
+            const passwordInput = document.getElementById('register-popup-password');
+            if (passwordInput) {
+                passwordInput.addEventListener('input', function() {
+                    updatePasswordStrength();
+                    validatePasswordMatch();
+                });
+            }
+            
+            // Password match
+            const confirmInput = document.getElementById('register-popup-password-confirm');
+            if (confirmInput) {
+                confirmInput.addEventListener('input', function() {
+                    validatePasswordMatch();
+                });
+            }
+        });
+
+        // 🔥 JUGA TAMBAHKAN UNTUK HALAMAN REGISTER (jika ada)
+        // Sama seperti di atas, tapi untuk elemen dengan ID yang berbeda
+        document.addEventListener('DOMContentLoaded', function() {
+            // Untuk halaman register (customer.auth.register)
+            const regPassword = document.getElementById('password');
+            const regConfirm = document.getElementById('password_confirmation');
+            
+            if (regPassword && regConfirm) {
+                // Toggle password untuk halaman register
+                const toggleBtn = document.querySelector('.toggle-password-btn');
+                if (toggleBtn) {
+                    // sudah ada di HTML
+                }
+            }
+        });
+
+        // ============================================
+        // SUBMIT REGISTER POPUP
+        // ============================================
+
+        function submitRegisterPopup(event) {
+            event.preventDefault();
+
+            const name = document.getElementById('register-popup-name').value;
+            const email = document.getElementById('register-popup-email').value;
+            const password = document.getElementById('register-popup-password').value;
+            const passwordConfirm = document.getElementById('register-popup-password-confirm').value;
+            const terms = document.getElementById('register-popup-terms').checked;
+            const btn = document.getElementById('register-popup-btn');
+            const errorDiv = document.getElementById('register-popup-error');
+            const errorMessage = document.getElementById('register-popup-error-message');
+
+            errorDiv.style.display = 'none';
+
+            // Validasi
+            if (!name || name.length < 2) {
+                errorMessage.textContent = 'Nama lengkap minimal 2 karakter';
+                errorDiv.style.display = 'flex';
+                return;
+            }
+
+            if (!email || !email.includes('@')) {
+                errorMessage.textContent = 'Masukkan email yang valid';
+                errorDiv.style.display = 'flex';
+                return;
+            }
+
+            if (!password || password.length < 8) {
+                errorMessage.textContent = 'Password minimal 8 karakter';
+                errorDiv.style.display = 'flex';
+                return;
+            }
+
+            if (password !== passwordConfirm) {
+                errorMessage.textContent = 'Konfirmasi password tidak cocok';
+                errorDiv.style.display = 'flex';
+                return;
+            }
+
+            if (!terms) {
+                errorMessage.textContent = 'Anda harus menyetujui Syarat & Ketentuan';
+                errorDiv.style.display = 'flex';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.querySelector('.spinner').style.display = 'block';
+            btn.querySelector('.btn-text').textContent = 'Memproses...';
+
+            fetch('{{ route("customer.register.process") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    name: name,
+                    email: email,
+                    password: password,
+                    password_confirmation: passwordConfirm,
+                    terms: terms ? 1 : 0
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.querySelector('.spinner').style.display = 'none';
+                btn.querySelector('.btn-text').textContent = 'Daftar Sekarang';
+
+                if (data.success) {
+                    // 🔥 TAMPILKAN STATE SUKSES (DI DALAMNYA ADA loadWishlistStatus)
+                    showLoginSuccess('register', data.user?.name || '');
+
+                    // UPDATE CSRF TOKEN
+                    const metaToken = document.querySelector('meta[name="csrf-token"]');
+                    if (metaToken) {
+                        metaToken.content = data.csrf_token || metaToken.content;
+                    }
+
+                    // 🔥 LOAD ULANG CART & WISHLIST COUNT (SUDAH DI showLoginSuccess)
+                    // loadCartCount(); // SUDAH DI showLoginSuccess
+                    // loadWishlistStatus(); // SUDAH DI showLoginSuccess
+
+                    document.dispatchEvent(new CustomEvent('login-success'));
+
+                    // Reset state
+                    const action = loginPopupAction;
+                    loginPopupCallback = null;
+                    loginPopupAction = null;
+
+                    // 🔥 EKSEKUSI ACTION SETELAH POPUP TERTUTUP
+                    setTimeout(function() {
+                        if (action === 'add_to_cart' && window._pendingProductId) {
+                            fetch('/api/products/' + window._pendingProductId + '/variants', {
+                                headers: { 'Accept': 'application/json' }
+                            })
+                            .then(function(response) { return response.json(); })
+                            .then(function(data) {
+                                if (data.success && data.variants && data.variants.length > 0) {
+                                    if (typeof openVariantModal === 'function') {
+                                        openVariantModal(window._pendingProductId, 'add_to_cart');
+                                        window._pendingProductId = null;
+                                    }
+                                } else {
+                                    addToCartDirect(window._pendingProductId);
+                                    window._pendingProductId = null;
+                                }
+                            })
+                            .catch(function() {
+                                addToCartDirect(window._pendingProductId);
+                                window._pendingProductId = null;
+                            });
+                        } else if (action === 'add_to_wishlist' && window._pendingProductId) {
+                            addToWishlistDirect(window._pendingProductId);
+                            window._pendingProductId = null;
+                        }
+                    }, 2000);
+
+                } else {
+                    errorMessage.textContent = data.message || 'Registrasi gagal. Silakan coba lagi.';
+                    errorDiv.style.display = 'flex';
+                }
+            })
+            .catch(error => {
+                btn.disabled = false;
+                btn.querySelector('.spinner').style.display = 'none';
+                btn.querySelector('.btn-text').textContent = 'Daftar Sekarang';
+                errorMessage.textContent = 'Terjadi kesalahan, silakan coba lagi';
+                errorDiv.style.display = 'flex';
+                console.error('Register error:', error);
+            });
+        }
+
+        // Close popup with ESC
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeLoginPopup();
+            }
+        });
+
+        // Close on overlay click
+        document.addEventListener('click', function(e) {
+            const overlay = document.getElementById('login-popup-overlay');
+            if (e.target === overlay) {
+                closeLoginPopup();
+            }
+        });
+
+        // Close popup when clicking register link
+        document.addEventListener('click', function(e) {
+            const registerLink = document.getElementById('login-popup-register-link');
+            if (e.target === registerLink) {
+                closeLoginPopup();
+            }
+        });
+
+        console.log('✅ Login popup initialized');
+    </script>
+
+    <script>
+        document.addEventListener('login-success', function(e) {
+            console.log('🔔 Login success event received, reloading counts...');
+            loadCartCount();
+            loadWishlistCount();
+        });
+    </script>
 
     <script>
         var swiper = new Swiper(".testimonialSwiper", {
@@ -400,161 +1036,6 @@
     <script src="{{ asset('js/cart.js') }}"></script>
     <script src="{{ asset('js/popup.js') }}"></script>
     <script src="{{ asset('js/variant-modal.js') }}"></script>
-
-    <script>
-        if (typeof window.addToWishlist === 'function') {
-            const originalAddToWishlist = window.addToWishlist;
-            
-            window.addToWishlist = function(productId) {
-                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
-                
-                const allButtons = document.querySelectorAll(`.add_to_wishlist_btn[data-product-id="${productId}"]`);
-                allButtons.forEach(function(btn) {
-                    btn.disabled = true;
-                    btn.innerHTML = '⏳';
-                });
-                
-                fetch(window.customerRoutes.wishlistAdd, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken,
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({ product_id: productId })
-                })
-                .then(response => {
-                    if (response.status === 401) {
-                        // 🔥 REDIRECT KE LOGIN
-                        showToast('Silakan login terlebih dahulu', 'warning');
-                        setTimeout(() => {
-                            window.location.href = window.customerRoutes.login;
-                        }, 1500);
-                        throw new Error('Unauthorized');
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.success) {
-                        const count = data.count || 0;
-                        const inWishlist = data.in_wishlist || false;
-                        
-                        updateWishlistIcon(productId, inWishlist);
-                        
-                        if (typeof window.updateNavbarWishlistCount === 'function') {
-                            window.updateNavbarWishlistCount(count);
-                        }
-                        
-                        document.dispatchEvent(new CustomEvent('wishlist-updated', {
-                            detail: { count, product_id: productId, in_wishlist: inWishlist }
-                        }));
-                        
-                        showToast(data.message || (inWishlist ? 'Produk ditambahkan ke wishlist!' : 'Produk dihapus dari wishlist!'), 'success');
-                        
-                        if (typeof loadWishlistPopup === 'function') {
-                            loadWishlistPopup();
-                        }
-                    } else {
-                        showToast(data.message || 'Gagal menambahkan ke wishlist', 'error');
-                    }
-                })
-                .catch(function(error) {
-                    if (error.message !== 'Unauthorized') {
-                        showToast('Terjadi kesalahan', 'error');
-                    }
-                })
-                .finally(() => {
-                    allButtons.forEach(function(btn) {
-                        if (!btn.disabled) return;
-                        const currentState = btn.dataset.inWishlist === 'true';
-                        if (currentState) {
-                            btn.innerHTML = '<iconify-icon icon="solar:heart-bold" style="color: #ef4444;"></iconify-icon>';
-                            btn.classList.add('active');
-                        } else {
-                            btn.innerHTML = '<iconify-icon icon="solar:heart-linear"></iconify-icon>';
-                            btn.classList.remove('active');
-                        }
-                        btn.disabled = false;
-                    });
-                });
-            };
-        }
-
-        // Override addToCart untuk handle redirect login
-        if (typeof window.addToCartDirect === 'function') {
-            const originalAddToCartDirect = window.addToCartDirect;
-            
-            window.addToCartDirect = function(productId, variantId = null, quantity = 1) {
-                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
-                
-                const btn = document.querySelector(`.product_layout_box[data-product-id="${productId}"] .add_to_cart_btn`);
-                if (btn) {
-                    btn.disabled = true;
-                    btn.innerHTML = '⏳';
-                }
-                
-                fetch(window.customerRoutes.cartAdd, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken,
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        product_id: productId,
-                        variant_id: variantId,
-                        quantity: quantity
-                    })
-                })
-                .then(response => {
-                    if (response.status === 401) {
-                        showToast('Silakan login terlebih dahulu', 'warning');
-                        setTimeout(() => {
-                            window.location.href = window.customerRoutes.login;
-                        }, 1500);
-                        throw new Error('Unauthorized');
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.success) {
-                        const count = data.count || 0;
-                        updateNavbarCartCount(count);
-                        
-                        document.dispatchEvent(new CustomEvent('cart-updated', {
-                            detail: { count, message: data.message }
-                        }));
-                        
-                        showToast(data.message || 'Produk ditambahkan ke keranjang!', 'success');
-                        
-                        if (typeof loadCartPopup === 'function') {
-                            loadCartPopup();
-                        }
-                        
-                        if (window._buyNowMode) {
-                            window._buyNowMode = false;
-                            setTimeout(() => {
-                                window.location.href = window.customerRoutes.checkout;
-                            }, 500);
-                        }
-                    } else {
-                        showToast(data.message || 'Gagal menambahkan produk', 'error');
-                    }
-                })
-                .catch(function(error) {
-                    if (error.message !== 'Unauthorized') {
-                        showToast('Terjadi kesalahan', 'error');
-                    }
-                })
-                .finally(() => {
-                    if (btn) {
-                        btn.disabled = false;
-                        btn.innerHTML = '<iconify-icon icon="solar:cart-linear"></iconify-icon>';
-                    }
-                });
-            };
-        }
-    </script>
     
 
 </body>

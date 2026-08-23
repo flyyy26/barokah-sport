@@ -62,19 +62,13 @@ class ProductVariant extends Model
     public function values(): BelongsToMany
     {
         return $this->belongsToMany(
-            ProductOptionValue::class,           // Model tujuan
-            'product_variant_values',            // Tabel pivot
-            'product_variant_id',               // Foreign key di pivot
-            'product_option_value_id'           // Related key di pivot
+            ProductOptionValue::class,
+            'product_variant_values',
+            'product_variant_id',
+            'product_option_value_id'
         )->withTimestamps();
     }
 
-    /**
-     * 🔥 RELASI KE PRODUCT_OPTIONS (MANY-TO-MANY via values)
-     * 
-     * Digunakan untuk mendapatkan option dari varian ini
-     * Contoh: $variant->options->pluck('name') -> ['Ukuran', 'Warna']
-     */
     public function options(): BelongsToMany
     {
         return $this->belongsToMany(
@@ -83,6 +77,64 @@ class ProductVariant extends Model
             'product_variant_id',
             'product_option_value_id'
         );
+    }
+
+    public function stockHistories(): HasMany
+    {
+        return $this->hasMany(StockHistory::class, 'product_variant_id');
+    }
+
+    public function updateStock(int $newStock, string $reason = 'adjustment', ?string $note = null): bool
+    {
+        $oldStock = $this->stock;
+        
+        if ($oldStock == $newStock) {
+            return true;
+        }
+
+        $quantityChange = $newStock - $oldStock;
+
+        // 🔥 UPDATE STOK
+        $this->stock = $newStock;
+        $saved = $this->save();
+
+        if ($saved) {
+            // 🔥 CATAT HISTORY
+            $this->recordHistory($oldStock, $newStock, $quantityChange, $reason, $note);
+        }
+
+        return $saved;
+    }
+
+    public function addStock(int $quantity, string $reason = 'restock', ?string $note = null): bool
+    {
+        $newStock = $this->stock + $quantity;
+        return $this->updateStock($newStock, $reason, $note);
+    }
+
+    public function reduceStock(int $quantity, string $reason = 'sale', ?string $note = null): bool
+    {
+        if ($this->stock < $quantity) {
+            return false;
+        }
+        $newStock = $this->stock - $quantity;
+        return $this->updateStock($newStock, $reason, $note);
+    }
+
+    public function recordHistory(int $oldStock, int $newStock, int $quantityChange, string $reason, ?string $note = null): void
+    {
+        $this->stockHistories()->create([
+            'product_id' => $this->product_id,
+            'product_variant_id' => $this->id,
+            'user_id' => auth()->id() ?? 1, // Default admin jika tidak login
+            'old_stock' => $oldStock,
+            'new_stock' => $newStock,
+            'quantity_change' => $quantityChange,
+            'reason' => $reason,
+            'note' => $note,
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
+        ]);
     }
 
     // ============================================
@@ -114,12 +166,19 @@ class ProductVariant extends Model
      */
     public function getDiscountPercentAttribute(): float
     {
-        if ($this->discount_price && $this->discount_price < $this->price && $this->price > 0) {
+        if ($this->discount_price && $this->price > 0 && $this->discount_price < $this->price) {
             return round((1 - $this->discount_price / $this->price) * 100, 0);
         }
         return 0;
     }
 
+    public function getDiscountLabelAttribute(): string
+    {
+        if ($this->discount_price && $this->price > 0 && $this->discount_price < $this->price) {
+            return 'Diskon ' . $this->discount_percent . '%';
+        }
+        return '';
+    }
     /**
      * Mendapatkan status stok (in_stock / out_of_stock / low_stock)
      */

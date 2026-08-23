@@ -11,17 +11,12 @@ use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
-    /**
-     * Menampilkan halaman login customer
-     */
     public function showLogin()
     {
-        // 🔥 CEK JIKA SUDAH LOGIN SEBAGAI CUSTOMER
         if (Auth::guard('customer')->check()) {
             return redirect()->route('customer.account');
         }
         
-        // 🔥 CEK JIKA SUDAH LOGIN SEBAGAI ADMIN (GUARD DEFAULT)
         if (Auth::check() && Auth::user()->role === 'admin') {
             return redirect()->route('admin.dashboard');
         }
@@ -29,9 +24,6 @@ class AuthController extends Controller
         return view('customer.auth.login');
     }
 
-    /**
-     * Proses login customer
-     */
     public function login(Request $request)
     {
         $request->validate([
@@ -39,21 +31,44 @@ class AuthController extends Controller
             'password' => 'required',
         ]);
 
-        // 🔥 GUNAKAN guard('customer') UNTUK LOGIN
+        $isAjax = $request->ajax() || $request->wantsJson();
+
         if (Auth::guard('customer')->attempt($request->only('email', 'password'), $request->boolean('remember'))) {
             $request->session()->regenerate();
 
             $user = Auth::guard('customer')->user();
 
-            // 🔥 HAPUS SESSION CART & WISHLIST
+            // HAPUS SESSION CART & WISHLIST
             session()->forget('cart');
             session()->forget('wishlist');
             session()->forget('is_buy_now');
             session()->forget('old_cart_backup');
 
+            if ($isAjax) {
+                // 🔥 GENERATE CSRF TOKEN BARU
+                $csrfToken = csrf_token();
+                
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Login berhasil',
+                    'csrf_token' => $csrfToken,
+                    'user' => [
+                        'name' => $user->name,
+                        'email' => $user->email,
+                    ]
+                ]);
+            }
+
             return redirect()
                 ->route('customer.account')
                 ->with('success', 'Selamat datang, ' . $user->name . '!');
+        }
+
+        if ($isAjax) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Email atau password salah'
+            ], 401);
         }
 
         return back()
@@ -61,12 +76,8 @@ class AuthController extends Controller
             ->with('error', 'Email atau password salah.');
     }
 
-    /**
-     * Menampilkan halaman registrasi customer
-     */
     public function showRegister()
     {
-        // 🔥 CEK JIKA SUDAH LOGIN SEBAGAI CUSTOMER
         if (Auth::guard('customer')->check()) {
             return redirect()->route('customer.account');
         }
@@ -74,11 +85,11 @@ class AuthController extends Controller
         return view('customer.auth.register');
     }
 
-    /**
-     * Proses registrasi customer
-     */
     public function register(Request $request)
     {
+        // 🔥 CEK APAKAH REQUEST DARI AJAX
+        $isAjax = $request->ajax() || $request->wantsJson();
+
         $validator = Validator::make($request->all(), [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
@@ -87,6 +98,12 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) {
+            if ($isAjax) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $validator->errors()->first()
+                ], 422);
+            }
             return back()
                 ->withErrors($validator)
                 ->withInput();
@@ -100,23 +117,38 @@ class AuthController extends Controller
                 'role' => 'customer',
             ]);
 
-            // 🔥 GUNAKAN guard('customer') UNTUK LOGIN
             Auth::guard('customer')->login($user);
+
+            if ($isAjax) {
+                $csrfToken = csrf_token();
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Registrasi berhasil',
+                    'csrf_token' => $csrfToken,
+                    'user' => [
+                        'name' => $user->name,
+                        'email' => $user->email,
+                    ]
+                ]);
+            }
 
             return redirect()
                 ->route('customer.account')
                 ->with('success', 'Selamat datang, ' . $user->name . '! Akun Anda berhasil dibuat.');
 
         } catch (\Exception $e) {
+            if ($isAjax) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Registrasi gagal: ' . $e->getMessage()
+                ], 500);
+            }
             return back()
                 ->withInput()
                 ->with('error', 'Registrasi gagal: ' . $e->getMessage());
         }
     }
 
-    /**
-     * Proses logout customer
-     */
     public function logout(Request $request)
     {
         Auth::guard('customer')->logout();

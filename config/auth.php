@@ -45,7 +45,7 @@ return [
 
         'customer' => [
             'driver' => 'session',
-            'provider' => 'customers',
+            'provider' => 'users', // 🔥 PASTIKAN INI MENGGUNAKAN USERS
         ],
     ],
 

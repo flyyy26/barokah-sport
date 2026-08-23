@@ -858,58 +858,38 @@
                         }
                     }
                 }
+                
+                // 🔥 AMBIL DATA DARI attachDiscountData
+                $hasDiscount = $product->has_discount ?? false;
+                $displayPrice = $product->display_price ?? '';
+                $originalPriceDisplay = $product->original_price_display ?? null;
+                $discountLabel = $product->discount_label ?? null;
             @endphp
             <div class="product_layout_box" data-product-id="{{ $product->id }}">
                 <div class="product_layout_img">
                     <a href="{{ route('customer.products.show', $product->slug) }}">
                         <img src="{{ Storage::url($product->images->first()->image) }}" 
                             alt="{{ $product->name }}">
-                            @if($product->isOutOfStock())
+                        @if($product->isOutOfStock())
                             <span class="product_badge out-of-stock">HABIS</span>
-                            @endif
-                            @if($maxDiscount > 0)
+                        @endif
+                        @if($maxDiscount > 0)
                             <span class="discount_badge">Diskon {{ $maxDiscount }}%</span>
-                            @endif
+                        @endif
                     </a>
                 </div>
                 <div class="product_layout_content">
                     <h5>{{ $product->name }}</h5>
                     <div class="product_layout_price">
-                        @php
-                            $prices = [];
-                            foreach ($product->variants as $variant) {
-                                $prices[] = $variant->discount_price ? (float) $variant->discount_price : (float) $variant->price;
-                            }
-                            $minEffective = min($prices);
-                            $maxEffective = max($prices);
-                            
-                            $minPrice = $product->variants->min('price');
-                            $maxPrice = $product->variants->max('price');
-                            
-                            $hasDiscount = $product->variants->contains(function($v) {
-                                return $v->discount_price !== null && $v->discount_price < $v->price;
-                            });
-                        @endphp
-                        
-                        @if($hasDiscount)
+                        @if($hasDiscount && $originalPriceDisplay)
+                            {{-- 🔥 TAMPILKAN HARGA DISKON DENGAN CORET --}}
                             <div class="product_layout_price_box">
-                                @if($minEffective == $maxEffective)
-                                    <p class="price-discount">Rp {{ number_format($minEffective, 0, ',', '.') }}</p>
-                                @else
-                                    <p class="price-discount">Rp {{ number_format($minEffective, 0, ',', '.') }} - Rp {{ number_format($maxEffective, 0, ',', '.') }}</p>
-                                @endif
-                                @if($minPrice == $maxPrice)
-                                    <span class="price-original">Rp {{ number_format($minPrice, 0, ',', '.') }}</span>
-                                @else
-                                    <span class="price-original">Rp {{ number_format($minPrice, 0, ',', '.') }} - Rp {{ number_format($maxPrice, 0, ',', '.') }}</span>
-                                @endif
+                                <p class="price-discount">{{ $displayPrice }}</p>
+                                <span class="price-original">{{ $originalPriceDisplay }}</span>
                             </div>
                         @else
-                            @if($minEffective == $maxEffective)
-                                <p>Rp {{ number_format($minEffective, 0, ',', '.') }}</p>
-                            @else
-                                <p>Rp {{ number_format($minEffective, 0, ',', '.') }} - Rp {{ number_format($maxEffective, 0, ',', '.') }}</p>
-                            @endif
+                            {{-- 🔥 TANPA DISKON --}}
+                            <p>{{ $displayPrice }}</p>
                         @endif
                     </div>
                 </div>

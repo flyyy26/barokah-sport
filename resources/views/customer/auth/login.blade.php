@@ -198,6 +198,61 @@
         color: #16a34a;
     }
 
+    .password-wrapper {
+        position: relative;
+        width: 100%;
+    }
+
+    .password-wrapper input {
+        width: 100%;
+        padding-right: 3vw;
+    }
+
+    .toggle-password-btn {
+        position: absolute;
+        right: 0.8vw;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: #94a3b8;
+        font-size: 1.1vw;
+        padding: 0.2vw;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: color 0.3s ease;
+    }
+
+    .toggle-password-btn:hover {
+        color: #0f172a;
+    }
+
+    .toggle-password-btn iconify-icon {
+        font-size: 1.2vw;
+    }
+
+    @media (max-width: 768px) {
+        .toggle-password-btn {
+            right: 1.5vw;
+            font-size: 2vw;
+        }
+        .toggle-password-btn iconify-icon {
+            font-size: 2.5vw;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .toggle-password-btn {
+            right: 2vw;
+            font-size: 2.8vw;
+        }
+        .toggle-password-btn iconify-icon {
+            font-size: 3.5vw;
+        }
+    }
+
     /* Responsive */
     @media (max-width: 768px) {
         .auth_container {
@@ -372,8 +427,13 @@
 
         <div class="form_group">
             <label for="password">Kata Sandi</label>
-            <input type="password" name="password" id="password" 
-                   placeholder="••••••••" required>
+            <div class="password-wrapper">
+                <input type="password" name="password" id="password" 
+                    placeholder="••••••••" required>
+                <button type="button" class="toggle-password-btn" onclick="togglePasswordVisibility('password', this)">
+                    <iconify-icon icon="mdi:eye-outline"></iconify-icon>
+                </button>
+            </div>
             @error('password')
                 <p class="input_error">{{ $message }}</p>
             @enderror
@@ -396,7 +456,25 @@
     <div class="auth_footer">
         Belum punya akun? <a href="{{ route('customer.register') }}">Daftar Sekarang</a>
     </div>
+    
 </div>
+
+@if(session('success'))
+<script>
+    // 🔥 SET LOCALSTORAGE SAAT LOGIN BERHASIL
+    localStorage.setItem('customer_logged_in', 'true');
+    localStorage.setItem('customer_name', '{{ Auth::guard('customer')->user()->name ?? '' }}');
+    
+    // 🔥 CEK APAKAH ADA REDIRECT
+    const urlParams = new URLSearchParams(window.location.search);
+    const redirect = urlParams.get('redirect');
+    if (redirect) {
+        setTimeout(function() {
+            window.location.href = decodeURIComponent(redirect);
+        }, 500);
+    }
+</script>
+@endif
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {

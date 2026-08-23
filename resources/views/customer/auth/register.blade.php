@@ -199,6 +199,61 @@
         color: #16a34a;
     }
 
+    .password-wrapper {
+        position: relative;
+        width: 100%;
+    }
+
+    .password-wrapper input {
+        width: 100%;
+        padding-right: 3vw;
+    }
+
+    .toggle-password-btn {
+        position: absolute;
+        right: 0.8vw;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: #94a3b8;
+        font-size: 1.1vw;
+        padding: 0.2vw;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: color 0.3s ease;
+    }
+
+    .toggle-password-btn:hover {
+        color: #0f172a;
+    }
+
+    .toggle-password-btn iconify-icon {
+        font-size: 1.2vw;
+    }
+
+    @media (max-width: 768px) {
+        .toggle-password-btn {
+            right: 1.5vw;
+            font-size: 2vw;
+        }
+        .toggle-password-btn iconify-icon {
+            font-size: 2.5vw;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .toggle-password-btn {
+            right: 2vw;
+            font-size: 2.8vw;
+        }
+        .toggle-password-btn iconify-icon {
+            font-size: 3.5vw;
+        }
+    }
+
     /* Responsive */
     @media (max-width: 768px) {
         .auth_container {
@@ -391,8 +446,14 @@
 
         <div class="form_group">
             <label for="password">Kata Sandi</label>
-            <input type="password" name="password" id="password" 
-                   placeholder="Minimal 8 karakter" required>
+            <div class="password-wrapper">
+                <input type="password" name="password" id="password" 
+                    placeholder="Minimal 8 karakter" required>
+                <button type="button" class="toggle-password-btn" onclick="togglePasswordVisibility('password', this)">
+                    <iconify-icon icon="mdi:eye-outline"></iconify-icon>
+                </button>
+            </div>
+            <div id="register-password-strength" class="password-strength"></div>
             <p class="password_hint">Gunakan minimal 8 karakter dengan kombinasi huruf dan angka.</p>
             @error('password')
                 <p class="input_error">{{ $message }}</p>
@@ -401,8 +462,14 @@
 
         <div class="form_group">
             <label for="password_confirmation">Konfirmasi Kata Sandi</label>
-            <input type="password" name="password_confirmation" id="password_confirmation" 
-                   placeholder="Ketik ulang kata sandi" required>
+            <div class="password-wrapper">
+                <input type="password" name="password_confirmation" id="password_confirmation" 
+                    placeholder="Ketik ulang kata sandi" required>
+                <button type="button" class="toggle-password-btn" onclick="togglePasswordVisibility('password_confirmation', this)">
+                    <iconify-icon icon="mdi:eye-outline"></iconify-icon>
+                </button>
+            </div>
+            <div id="register-password-match" class="password-match"></div>
         </div>
 
         <div class="form_terms">

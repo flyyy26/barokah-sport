@@ -270,6 +270,18 @@
         padding: .3vw .7vw;
         border-radius: 100vw;
     }
+    .discount_badge{
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        z-index: 2;
+        font-size: .65vw;
+        background-color: #DE161F;
+        color: white;
+        padding: .3vw .7vw;
+        text-align:center;
+        width: 100%;
+    }
 
     .product-card:hover .product-image img {
         transform: scale(1.05);
@@ -853,13 +865,34 @@
     {{-- ============================================ --}}
     <div class="product-grid">
         @forelse ($products as $product)
+            @php
+                // 🔥 HITUNG DISKON TERBESAR
+                $maxDiscount = 0;
+                foreach ($product->variants as $variant) {
+                    if ($variant->discount_price && $variant->discount_price < $variant->price) {
+                        $discount = round((($variant->price - $variant->discount_price) / $variant->price) * 100);
+                        if ($discount > $maxDiscount) {
+                            $maxDiscount = $discount;
+                        }
+                    }
+                }
+                
+                // 🔥 AMBIL DATA DARI attachDiscountData
+                $hasDiscount = $product->has_discount ?? false;
+                $displayPrice = $product->display_price ?? '';
+                $originalPriceDisplay = $product->original_price_display ?? null;
+                $discountLabel = $product->discount_label ?? null;
+            @endphp
             <div class="product_layout_box" data-product-id="{{ $product->id }}">
                 <div class="product_layout_img">
                     <a href="{{ route('customer.products.show', $product->slug) }}">
                         <img src="{{ Storage::url($product->images->first()->image) }}" 
                             alt="{{ $product->name }}">
-                            @if($product->isOutOfStock())
+                        @if($product->isOutOfStock())
                         <span class="product_badge out-of-stock">HABIS</span>
+                        @endif
+                        @if($maxDiscount > 0)
+                            <span class="discount_badge">Diskon {{ $maxDiscount }}%</span>
                         @endif
                     </a>
                 </div>

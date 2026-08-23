@@ -8,6 +8,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\ProductVariant;
 use App\Models\Customer;
+use App\Models\Cart;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -30,8 +31,58 @@ class CheckoutController extends Controller
 
     public function index()
     {
+        // 🔥 AMBIL CART DARI SESSION (SUDAH SYNC DARI CART CONTROLLER)
         $cart = session()->get('cart', []);
         $isBuyNow = session()->get('is_buy_now', false);
+        
+        // 🔥 LOG UNTUK DEBUG
+        \Log::info('Checkout - Cart from session:', ['cart' => $cart]);
+        
+        // 🔥 JIKA CART SESSION KOSONG, AMBIL DARI DATABASE
+        if (empty($cart)) {
+            $user = Auth::guard('customer')->user();
+            if ($user) {
+                $cartItems = Cart::with(['product.images', 'variant'])
+                    ->where('user_id', $user->id)
+                    ->get();
+                
+                if ($cartItems->isNotEmpty()) {
+                    $cart = [];
+                    foreach ($cartItems as $item) {
+                        $variant = $item->variant;
+                        $product = $item->product;
+                        
+                        $price = $variant ? 
+                            ($variant->discount_price ?? $variant->price) : 
+                            $product->price;
+                        
+                        $variantImage = null;
+                        if ($variant) {
+                            $variantImage = $this->getVariantImage($variant, $product);
+                        }
+                        if (!$variantImage) {
+                            $variantImage = $product->images->first()?->image;
+                        }
+                        
+                        $cart[] = [
+                            'id' => $item->id,
+                            'product_id' => $product->id,
+                            'variant_id' => $variant?->id,
+                            'product_name' => $product->name,
+                            'variant_name' => $variant ? $variant->option_combination : null,
+                            'price' => $price,
+                            'original_price' => $variant?->price ?? $product->price,
+                            'quantity' => $item->quantity,
+                            'image' => $variantImage,
+                            'slug' => $product->slug,
+                            'weight' => $variant?->weight ?? $product->weight ?? 1000,
+                        ];
+                    }
+                    
+                    session()->put('cart', $cart);
+                }
+            }
+        }
 
         if (empty($cart)) {
             if (session()->has('old_cart_backup') && !empty(session()->get('old_cart_backup'))) {
@@ -50,6 +101,9 @@ class CheckoutController extends Controller
         foreach ($cart as $item) {
             $subtotal += $item['price'] * $item['quantity'];
         }
+
+        // 🔥 LOG UNTUK DEBUG
+        \Log::info('Checkout - Cart items:', ['count' => count($cart), 'subtotal' => $subtotal]);
 
         // Cek stok
         foreach ($cart as $key => $item) {
@@ -72,7 +126,6 @@ class CheckoutController extends Controller
         $customer = null;
         $defaultAddress = null;
         
-        // 🔥 PERBAIKI: Gunakan guard('customer')
         if (Auth::guard('customer')->check()) {
             $customer = Auth::guard('customer')->user();
             $addresses = $customer->addresses()->orderBy('is_default', 'desc')->get();
@@ -87,6 +140,28 @@ class CheckoutController extends Controller
             'defaultAddress',
             'isBuyNow'
         ));
+    }
+
+    private function getVariantImage($variant, $product)
+    {
+        if (!$variant) return null;
+
+        if ($variant->image) {
+            return $variant->image;
+        }
+
+        $variantValueIds = $variant->variantValues->pluck('product_option_value_id')->toArray();
+        foreach ($product->options as $option) {
+            if (strtolower($option->name) === 'warna' || strtolower($option->name) === 'color') {
+                foreach ($option->values as $value) {
+                    if (in_array($value->id, $variantValueIds) && $value->image) {
+                        return $value->image;
+                    }
+                }
+            }
+        }
+
+        return $product->images->first()?->image;
     }
 
     public function trackOrder(Order $order)

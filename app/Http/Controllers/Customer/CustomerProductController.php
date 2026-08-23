@@ -8,6 +8,7 @@ use App\Models\Product;
 use App\Models\ProductOptionValue;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 
 class CustomerProductController extends Controller
 {
@@ -60,10 +61,16 @@ class CustomerProductController extends Controller
         if ($request->filled('min_price') || $request->filled('max_price')) {
             $query->whereHas('variants', function($q) use ($request) {
                 if ($request->filled('min_price')) {
-                    $q->where('price', '>=', (float) $request->min_price);
+                    $q->where(function($sub) use ($request) {
+                        $sub->where('price', '>=', (float) $request->min_price)
+                            ->orWhere('discount_price', '>=', (float) $request->min_price);
+                    });
                 }
                 if ($request->filled('max_price')) {
-                    $q->where('price', '<=', (float) $request->max_price);
+                    $q->where(function($sub) use ($request) {
+                        $sub->where('price', '<=', (float) $request->max_price)
+                            ->orWhere('discount_price', '<=', (float) $request->max_price);
+                    });
                 }
             });
         }
@@ -72,12 +79,12 @@ class CustomerProductController extends Controller
         switch ($request->sort) {
             case 'price_asc':
                 $query->select('products.*')
-                    ->addSelect(\DB::raw('(SELECT MIN(price) FROM product_variants WHERE product_variants.product_id = products.id) as min_price'))
+                    ->addSelect(DB::raw('(SELECT MIN(COALESCE(discount_price, price)) FROM product_variants WHERE product_variants.product_id = products.id) as min_price'))
                     ->orderBy('min_price', 'asc');
                 break;
             case 'price_desc':
                 $query->select('products.*')
-                    ->addSelect(\DB::raw('(SELECT MIN(price) FROM product_variants WHERE product_variants.product_id = products.id) as min_price'))
+                    ->addSelect(DB::raw('(SELECT MIN(COALESCE(discount_price, price)) FROM product_variants WHERE product_variants.product_id = products.id) as min_price'))
                     ->orderBy('min_price', 'desc');
                 break;
             case 'name':
@@ -94,6 +101,11 @@ class CustomerProductController extends Controller
         // 🔥 TAMBAHKAN SEARCH KEYWORD KE PAGINATION
         if ($request->filled('search')) {
             $products->appends(['search' => $request->search]);
+        }
+
+        // 🔥 TAMBAHKAN DATA DISKON KE SETIAP PRODUK
+        foreach ($products as $product) {
+            $this->attachDiscountData($product);
         }
 
         $categories = Category::where('is_active', true)->orderBy('name')->get();
@@ -134,14 +146,18 @@ class CustomerProductController extends Controller
             'variants.variantValues.optionValue',
         ])->where('slug', $slug)->firstOrFail();
 
+        // 🔥 TAMBAHKAN DATA DISKON KE PRODUK
+        $this->attachDiscountData($product);
+
         // 🔥 BUILD VARIANT DATA UNTUK JAVASCRIPT
         $variantData = $product->variants->map(function($variant) {
             return [
                 'id' => $variant->id,
-                'price' => $variant->price,
-                'discount_price' => $variant->discount_price,
-                'stock' => $variant->stock,
-                'weight' => $variant->weight,
+                'price' => (float) $variant->price,
+                'discount_price' => $variant->discount_price ? (float) $variant->discount_price : null,
+                'discount_percent' => $variant->discount_percent ?? 0,
+                'stock' => (int) $variant->stock,
+                'weight' => (int) $variant->weight,
                 'image' => $variant->image ? Storage::url($variant->image) : null,
                 'values' => $variant->variantValues->pluck('product_option_value_id')->map(function($id) {
                     return (int) $id;
@@ -164,21 +180,54 @@ class CustomerProductController extends Controller
             }
         }
 
-        // RELATED PRODUCTS
-        $relatedProducts = Product::with(['images', 'variants'])
+        // ============================================
+        // 🔥 REKOMENDASI PRODUK - DATA REAL DARI DATABASE
+        // ============================================
+        
+        $allProducts = Product::with(['images', 'variants', 'category'])
             ->where('is_active', true)
             ->where('id', '!=', $product->id)
-            ->when($product->category_id, function($query) use ($product) {
-                return $query->where('category_id', $product->category_id);
-            })
-            ->limit(5)
             ->get();
+
+        // 🔥 TAMBAHKAN DATA DISKON KE REKOMENDASI
+        foreach ($allProducts as $item) {
+            $this->attachDiscountData($item);
+        }
+
+        if ($allProducts->isEmpty()) {
+            $recommendedProducts = collect();
+        } else {
+            $sameCategory = $allProducts->filter(function($item) use ($product) {
+                return $item->category_id == $product->category_id;
+            });
+
+            $otherCategory = $allProducts->filter(function($item) use ($product) {
+                return $item->category_id != $product->category_id;
+            });
+
+            $recommendedProducts = $sameCategory->concat($otherCategory)->take(10);
+
+            if ($recommendedProducts->isEmpty()) {
+                $fallback = Product::with(['images', 'variants', 'category'])
+                    ->where('is_active', true)
+                    ->where('id', '!=', $product->id)
+                    ->inRandomOrder()
+                    ->limit(4)
+                    ->get();
+                
+                foreach ($fallback as $item) {
+                    $this->attachDiscountData($item);
+                }
+                
+                $recommendedProducts = $fallback;
+            }
+        }
 
         return view('customer.products.show', compact(
             'product', 
             'variantData', 
             'firstVariant', 
-            'relatedProducts',
+            'recommendedProducts',
             'colors',
             'sizes'
         ));
@@ -188,7 +237,6 @@ class CustomerProductController extends Controller
     {
         $query = Product::with(['category', 'images', 'variants'])
             ->where('is_active', true)
-            // 🔥 FILTER PRODUK 1 BULAN TERAKHIR
             ->where('created_at', '>=', now()->subMonth());
 
         // 🔥 SEARCH
@@ -206,7 +254,7 @@ class CustomerProductController extends Controller
             $query->where('gender', $request->gender);
         }
 
-        // 🔥 SIZE FILTER (melalui variants)
+        // 🔥 SIZE FILTER
         if ($request->filled('size')) {
             $query->whereHas('variants', function($q) use ($request) {
                 $q->whereHas('values', function($qq) use ($request) {
@@ -215,7 +263,7 @@ class CustomerProductController extends Controller
             });
         }
 
-        // 🔥 COLOR FILTER (melalui variants)
+        // 🔥 COLOR FILTER
         if ($request->filled('color')) {
             $query->whereHas('variants', function($q) use ($request) {
                 $q->whereHas('values', function($qq) use ($request) {
@@ -228,10 +276,16 @@ class CustomerProductController extends Controller
         if ($request->filled('min_price') || $request->filled('max_price')) {
             $query->whereHas('variants', function($q) use ($request) {
                 if ($request->filled('min_price')) {
-                    $q->where('price', '>=', (float) $request->min_price);
+                    $q->where(function($sub) use ($request) {
+                        $sub->where('price', '>=', (float) $request->min_price)
+                            ->orWhere('discount_price', '>=', (float) $request->min_price);
+                    });
                 }
                 if ($request->filled('max_price')) {
-                    $q->where('price', '<=', (float) $request->max_price);
+                    $q->where(function($sub) use ($request) {
+                        $sub->where('price', '<=', (float) $request->max_price)
+                            ->orWhere('discount_price', '<=', (float) $request->max_price);
+                    });
                 }
             });
         }
@@ -240,12 +294,12 @@ class CustomerProductController extends Controller
         switch ($request->sort) {
             case 'price_asc':
                 $query->select('products.*')
-                      ->addSelect(DB::raw('(SELECT MIN(price) FROM product_variants WHERE product_variants.product_id = products.id) as min_price'))
+                      ->addSelect(DB::raw('(SELECT MIN(COALESCE(discount_price, price)) FROM product_variants WHERE product_variants.product_id = products.id) as min_price'))
                       ->orderBy('min_price', 'asc');
                 break;
             case 'price_desc':
                 $query->select('products.*')
-                      ->addSelect(DB::raw('(SELECT MIN(price) FROM product_variants WHERE product_variants.product_id = products.id) as min_price'))
+                      ->addSelect(DB::raw('(SELECT MIN(COALESCE(discount_price, price)) FROM product_variants WHERE product_variants.product_id = products.id) as min_price'))
                       ->orderBy('min_price', 'desc');
                 break;
             case 'name':
@@ -258,9 +312,14 @@ class CustomerProductController extends Controller
         }
 
         $products = $query->paginate(12);
+
+        // 🔥 TAMBAHKAN DATA DISKON
+        foreach ($products as $product) {
+            $this->attachDiscountData($product);
+        }
+
         $categories = Category::where('is_active', true)->orderBy('name')->get();
 
-        // 🔥 AMBIL DATA UNTUK FILTER
         $genders = ['pria', 'wanita', 'unisex'];
         
         $sizes = ProductOptionValue::whereHas('option', function($q) {
@@ -303,7 +362,7 @@ class CustomerProductController extends Controller
             $query->where('gender', $request->gender);
         }
 
-        // 🔥 SIZE FILTER (melalui variants)
+        // 🔥 SIZE FILTER
         if ($request->filled('size')) {
             $query->whereHas('variants', function($q) use ($request) {
                 $q->whereHas('values', function($qq) use ($request) {
@@ -312,7 +371,7 @@ class CustomerProductController extends Controller
             });
         }
 
-        // 🔥 COLOR FILTER (melalui variants)
+        // 🔥 COLOR FILTER
         if ($request->filled('color')) {
             $query->whereHas('variants', function($q) use ($request) {
                 $q->whereHas('values', function($qq) use ($request) {
@@ -325,10 +384,16 @@ class CustomerProductController extends Controller
         if ($request->filled('min_price') || $request->filled('max_price')) {
             $query->whereHas('variants', function($q) use ($request) {
                 if ($request->filled('min_price')) {
-                    $q->where('price', '>=', (float) $request->min_price);
+                    $q->where(function($sub) use ($request) {
+                        $sub->where('price', '>=', (float) $request->min_price)
+                            ->orWhere('discount_price', '>=', (float) $request->min_price);
+                    });
                 }
                 if ($request->filled('max_price')) {
-                    $q->where('price', '<=', (float) $request->max_price);
+                    $q->where(function($sub) use ($request) {
+                        $sub->where('price', '<=', (float) $request->max_price)
+                            ->orWhere('discount_price', '<=', (float) $request->max_price);
+                    });
                 }
             });
         }
@@ -336,19 +401,18 @@ class CustomerProductController extends Controller
         // 🔥 SORTING
         switch ($request->sort) {
             case 'discount_desc':
-                // Urutkan berdasarkan diskon terbesar
                 $query->select('products.*')
-                      ->addSelect(DB::raw('(SELECT MAX((price - discount_price) / price * 100) FROM product_variants WHERE product_variants.product_id = products.id AND discount_price IS NOT NULL) as max_discount'))
+                      ->addSelect(DB::raw('(SELECT MAX(CASE WHEN discount_price IS NOT NULL AND discount_price < price THEN ((price - discount_price) / price * 100) ELSE 0 END) FROM product_variants WHERE product_variants.product_id = products.id) as max_discount'))
                       ->orderBy('max_discount', 'desc');
                 break;
             case 'price_asc':
                 $query->select('products.*')
-                      ->addSelect(DB::raw('(SELECT MIN(price) FROM product_variants WHERE product_variants.product_id = products.id) as min_price'))
+                      ->addSelect(DB::raw('(SELECT MIN(COALESCE(discount_price, price)) FROM product_variants WHERE product_variants.product_id = products.id) as min_price'))
                       ->orderBy('min_price', 'asc');
                 break;
             case 'price_desc':
                 $query->select('products.*')
-                      ->addSelect(DB::raw('(SELECT MIN(price) FROM product_variants WHERE product_variants.product_id = products.id) as min_price'))
+                      ->addSelect(DB::raw('(SELECT MIN(COALESCE(discount_price, price)) FROM product_variants WHERE product_variants.product_id = products.id) as min_price'))
                       ->orderBy('min_price', 'desc');
                 break;
             case 'name':
@@ -361,9 +425,14 @@ class CustomerProductController extends Controller
         }
 
         $products = $query->paginate(12);
+
+        // 🔥 TAMBAHKAN DATA DISKON
+        foreach ($products as $product) {
+            $this->attachDiscountData($product);
+        }
+
         $categories = Category::where('is_active', true)->orderBy('name')->get();
 
-        // 🔥 AMBIL DATA UNTUK FILTER
         $genders = ['pria', 'wanita', 'unisex'];
         
         $sizes = ProductOptionValue::whereHas('option', function($q) {
@@ -379,5 +448,80 @@ class CustomerProductController extends Controller
         sort($colors);
 
         return view('customer.products.promo', compact('products', 'categories', 'genders', 'sizes', 'colors'));
+    }
+
+    /**
+     * 🔥 ATTACH DISCOUNT DATA TO PRODUCT
+     * Menambahkan data diskon ke produk
+     */
+    private function attachDiscountData($product)
+    {
+        if (!$product || !$product->relationLoaded('variants')) {
+            return;
+        }
+
+        // Cari varian dengan diskon terbaik (diskon terbesar)
+        $bestDiscountVariant = null;
+        $maxDiscountPercent = 0;
+        $hasDiscount = false;
+
+        foreach ($product->variants as $variant) {
+            if ($variant->discount_price && $variant->discount_price < $variant->price) {
+                $discountPercent = round((($variant->price - $variant->discount_price) / $variant->price) * 100);
+                $variant->discount_percent = $discountPercent;
+                
+                if ($discountPercent > $maxDiscountPercent) {
+                    $maxDiscountPercent = $discountPercent;
+                    $bestDiscountVariant = $variant;
+                    $hasDiscount = true;
+                }
+            } else {
+                $variant->discount_percent = 0;
+            }
+        }
+
+        // Tambahkan properti ke product
+        $product->has_discount = $hasDiscount;
+        $product->max_discount_percent = $maxDiscountPercent;
+        $product->best_discount_variant = $bestDiscountVariant;
+
+        // Hitung harga termurah (termasuk diskon)
+        $minEffectivePrice = null;
+        foreach ($product->variants as $variant) {
+            $effectivePrice = $variant->discount_price ?? $variant->price;
+            if ($minEffectivePrice === null || $effectivePrice < $minEffectivePrice) {
+                $minEffectivePrice = $effectivePrice;
+            }
+        }
+        $product->min_effective_price = $minEffectivePrice;
+
+        // Hitung harga tertinggi
+        $maxPrice = null;
+        foreach ($product->variants as $variant) {
+            if ($maxPrice === null || $variant->price > $maxPrice) {
+                $maxPrice = $variant->price;
+            }
+        }
+        $product->max_price = $maxPrice;
+
+        // Label harga dengan diskon
+        if ($hasDiscount && $minEffectivePrice < $maxPrice) {
+            $product->price_label = 'Rp ' . number_format($minEffectivePrice, 0, ',', '.') . 
+                                    ' - Rp ' . number_format($maxPrice, 0, ',', '.');
+            $product->discount_label = 'Diskon ' . $maxDiscountPercent . '%';
+        } elseif ($hasDiscount) {
+            $product->price_label = 'Rp ' . number_format($minEffectivePrice, 0, ',', '.');
+            $product->discount_label = 'Diskon ' . $maxDiscountPercent . '%';
+        } else {
+            if ($minEffectivePrice && $maxPrice && $minEffectivePrice < $maxPrice) {
+                $product->price_label = 'Rp ' . number_format($minEffectivePrice, 0, ',', '.') . 
+                                        ' - Rp ' . number_format($maxPrice, 0, ',', '.');
+            } else {
+                $product->price_label = 'Rp ' . number_format($minEffectivePrice ?? 0, 0, ',', '.');
+            }
+            $product->discount_label = '';
+        }
+
+        return $product;
     }
 }

@@ -1,8 +1,24 @@
+@php
+    // 🔥 CEK LOGIN DARI SEMUA GUARD
+    $isLoggedIn = Auth::guard('customer')->check() || Auth::check();
+    $userId = Auth::guard('customer')->id() ?? Auth::id();
+    $userRole = Auth::guard('customer')->user()->role ?? Auth::user()->role ?? 'customer';
+    $isAdmin = $userRole === 'admin';
+    
+    // 🔥 CEK LIKE STATUS
+    $isLiked = false;
+    if ($userId) {
+        $isLiked = $article->isLikedByUser($userId);
+    }
+@endphp
+
 @extends('layouts.customer')
 
 @section('title', $article->title . ' - Barokah Sport')
 
 @section('content')
+
+
 
 <style>
     /* ============================================
@@ -936,7 +952,6 @@
     .comment-reply {
         margin-left: 2.8vw;
         padding-left: 1vw;
-        border-left: 0.15vw solid #e2e8f0;
     }
 
     .comment-reply .comment-item {
@@ -946,6 +961,21 @@
 
     .comment-reply .comment-item:first-child {
         padding-top: 0.5vw;
+    }
+
+    @keyframes replySlideIn {
+        from {
+            opacity: 0;
+            transform: translateX(-1vw);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    .comment-reply .comment-item:first-child {
+        animation: replySlideIn 0.3s ease forwards;
     }
 
     .comment-empty {
@@ -1363,6 +1393,125 @@
             max-width: 80vw;
         }
     }
+
+    .comment-reply {
+    margin-top: 0.3vw;
+    padding-left: 0.5vw;
+}
+
+.comment-reply .comment-item {
+    padding: 0.5vw 0;
+    border-bottom: 0.05vw solid #f1f5f9;
+}
+
+.comment-reply .comment-item:last-child {
+    border-bottom: none;
+}
+
+.comment-reply .comment-header .comment-avatar {
+    width: 1.8vw;
+    height: 1.8vw;
+    font-size: 0.6vw;
+}
+
+.comment-reply .comment-user {
+    font-size: 0.75vw;
+}
+
+.comment-reply .comment-time {
+    font-size: 0.6vw;
+}
+
+.comment-reply .comment-content {
+    font-size: 0.75vw;
+    margin-left: 2.5vw;
+}
+
+.comment-reply .comment-actions {
+    margin-left: 2.5vw;
+}
+
+.comment-reply .comment-actions button {
+    font-size: 0.6vw;
+}
+
+/* 🔥 NESTED REPLY - LEVEL LEBIH DALAM */
+.comment-reply .comment-reply {
+    margin-left: 1.5vw !important;
+    padding-left: 0.3vw;
+}
+
+.comment-reply .comment-reply .comment-item {
+    border-left: 0.15vw solid #e2e8f0;
+    padding-left: 0.8vw;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .comment-reply .comment-header .comment-avatar {
+        width: 2.8vw;
+        height: 2.8vw;
+        font-size: 1vw;
+    }
+    
+    .comment-reply .comment-user {
+        font-size: 1.1vw;
+    }
+    
+    .comment-reply .comment-time {
+        font-size: 0.9vw;
+    }
+    
+    .comment-reply .comment-content {
+        font-size: 1.1vw;
+        margin-left: 4vw;
+    }
+    
+    .comment-reply .comment-actions {
+        margin-left: 4vw;
+    }
+    
+    .comment-reply .comment-actions button {
+        font-size: 0.9vw;
+    }
+    
+    .comment-reply .comment-reply {
+        margin-left: 2vw !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .comment-reply .comment-header .comment-avatar {
+        width: 4vw;
+        height: 4vw;
+        font-size: 1.4vw;
+    }
+    
+    .comment-reply .comment-user {
+        font-size: 1.5vw;
+    }
+    
+    .comment-reply .comment-time {
+        font-size: 1.2vw;
+    }
+    
+    .comment-reply .comment-content {
+        font-size: 1.5vw;
+        margin-left: 5.5vw;
+    }
+    
+    .comment-reply .comment-actions {
+        margin-left: 5.5vw;
+    }
+    
+    .comment-reply .comment-actions button {
+        font-size: 1.2vw;
+    }
+    
+    .comment-reply .comment-reply {
+        margin-left: 2.5vw !important;
+    }
+}
 </style>
 
 {{-- ============================================ --}}
@@ -1427,11 +1576,11 @@
             <div class="article-actions">
                 <div class="action-group">
                     {{-- LIKE BUTTON --}}
-                    <button class="action-btn like-btn {{ $article->isLikedByUser(Auth::id()) ? 'liked' : '' }}" 
+                    <button class="action-btn like-btn {{ $isLiked ? 'liked' : '' }}" 
                             data-article-id="{{ $article->id }}"
                             onclick="toggleLike({{ $article->id }})">
                         <span class="action-icon">
-                            <iconify-icon icon="{{ $article->isLikedByUser(Auth::id()) ? 'mdi:heart' : 'mdi:heart-outline' }}"></iconify-icon>
+                            <iconify-icon icon="{{ $isLiked ? 'mdi:heart' : 'mdi:heart-outline' }}"></iconify-icon>
                         </span>
                         <span class="action-text">Suka</span>
                         <span class="action-count" id="likes-count">{{ number_format($article->likes_count) }}</span>
@@ -1489,7 +1638,7 @@
 
             {{-- COMMENT FORM --}}
             <div class="comment-form-wrapper">
-                @auth
+                @if($isLoggedIn)
                     <form id="comment-form" onsubmit="submitComment(event)">
                         @csrf
                         <input type="hidden" id="comment-article-id" value="{{ $article->id }}">
@@ -1513,7 +1662,7 @@
                             Silakan <a href="{{ route('customer.login') }}" class="login-link">login</a> untuk memberikan komentar.
                         </p>
                     </div>
-                @endauth
+                @endif
             </div>
 
             {{-- COMMENT LIST --}}
@@ -1747,11 +1896,87 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('📊 Article view tracking initialized');
 });
 
+function checkLoginStatus() {
+    return new Promise((resolve) => {
+        // 🔥 CEK META TAG USER LOGIN (dari semua guard)
+        const metaLoggedIn = document.querySelector('meta[name="customer-logged-in"]');
+        const metaRole = document.querySelector('meta[name="user-role"]');
+        
+        if (metaLoggedIn) {
+            const isLoggedIn = metaLoggedIn.getAttribute('content') === 'true';
+            const role = metaRole ? metaRole.getAttribute('content') : 'guest';
+            
+            // 🔥 ADMIN DIANGGAP LOGIN (bisa like & comment)
+            if (isLoggedIn || role === 'admin') {
+                resolve(true);
+                return;
+            }
+            resolve(isLoggedIn);
+            return;
+        }
+        
+        // 🔥 FALLBACK: CEK MELALUI AJAX
+        fetch('/api/check-login', {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            resolve(data.logged_in === true);
+        })
+        .catch(() => {
+            const stored = localStorage.getItem('user_logged_in');
+            resolve(stored === 'true');
+        });
+    });
+}
+
+function openLoginPopup(action, callback) {
+    // Redirect ke halaman login dengan return URL
+    const currentUrl = encodeURIComponent(window.location.href);
+    const loginUrl = '{{ route("customer.login") }}?redirect=' + currentUrl + '&action=' + action;
+    
+    // Simpan callback untuk dieksekusi setelah login
+    if (callback) {
+        window._loginCallback = callback;
+    }
+    
+    // Redirect ke login
+    window.location.href = loginUrl;
+}
+
+
 // ============================================
 // LIKE FUNCTION
 // ============================================
 
 function toggleLike(articleId) {
+    const btn = document.querySelector('.like-btn');
+    const countSpan = document.getElementById('likes-count');
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+    // 🔥 CEK LOGIN STATUS
+    checkLoginStatus().then(isLoggedIn => {
+        if (!isLoggedIn) {
+            window._pendingArticleId = articleId;
+            window._pendingAction = 'like';
+            openLoginPopup('like', function() {
+                if (window._pendingArticleId) {
+                    toggleLikeDirect(window._pendingArticleId);
+                    window._pendingArticleId = null;
+                }
+            });
+            return;
+        }
+
+        toggleLikeDirect(articleId);
+    });
+}
+
+function toggleLikeDirect(articleId) {
     const btn = document.querySelector('.like-btn');
     const countSpan = document.getElementById('likes-count');
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
@@ -1906,10 +2131,18 @@ function renderComments(comments) {
         return;
     }
 
+    // 🔥 AMBIL USER ROLE DARI META
+    const metaRole = document.querySelector('meta[name="user-role"]');
+    const userRole = metaRole ? metaRole.getAttribute('content') : 'guest';
+    const metaUserId = document.querySelector('meta[name="user-id"]');
+    const currentUserId = metaUserId ? parseInt(metaUserId.getAttribute('content')) : 0;
+    
+    // 🔥 ADMIN BISA HAPUS SEMUA KOMENTAR
+    const isAdmin = userRole === 'admin';
+
     let html = '';
     comments.forEach(function(comment) {
-        const isOwner = {{ Auth::check() ? Auth::id() : 0 }} === comment.user_id;
-        const isAdmin = {{ Auth::check() && Auth::user()->role === 'admin' ? 'true' : 'false' }};
+        const isOwner = currentUserId === comment.user_id;
         const canDelete = isOwner || isAdmin;
         
         html += `
@@ -1924,7 +2157,7 @@ function renderComments(comments) {
                 <div class="comment-actions">
                     <button onclick="setReply(${comment.id}, '${escapeHtml(comment.user_name || 'User')}')">Balas</button>
                 </div>
-                ${comment.replies && comment.replies.length > 0 ? renderReplies(comment.replies) : ''}
+                ${comment.replies && comment.replies.length > 0 ? renderReplies(comment.replies, 1) : ''}
             </div>
         `;
     });
@@ -1932,24 +2165,36 @@ function renderComments(comments) {
     list.innerHTML = html;
 }
 
-function renderReplies(replies) {
+function renderReplies(replies, level = 1) {
     if (!replies || replies.length === 0) return '';
 
-    let html = '<div class="comment-reply">';
+    // 🔥 AMBIL USER ROLE DARI META
+    const metaRole = document.querySelector('meta[name="user-role"]');
+    const userRole = metaRole ? metaRole.getAttribute('content') : 'guest';
+    const metaUserId = document.querySelector('meta[name="user-id"]');
+    const currentUserId = metaUserId ? parseInt(metaUserId.getAttribute('content')) : 0;
+    const isAdmin = userRole === 'admin';
+
+    let html = `<div class="comment-reply" style="margin-left: ${level * 1.5}vw;">`;
     replies.forEach(function(reply) {
-        const isOwner = {{ Auth::check() ? Auth::id() : 0 }} === reply.user_id;
-        const isAdmin = {{ Auth::check() && Auth::user()->role === 'admin' ? 'true' : 'false' }};
+        const isOwner = currentUserId === reply.user_id;
         const canDelete = isOwner || isAdmin;
         
+        const hasNestedReplies = reply.replies && reply.replies.length > 0;
+        
         html += `
-            <div class="comment-item" id="comment-${reply.id}">
+            <div class="comment-item" id="comment-${reply.id}" style="border-left: 0.15vw solid #e2e8f0; padding-left: 0.8vw;">
                 <div class="comment-header">
-                    <div class="comment-avatar">${reply.user_avatar || 'U'}</div>
-                    <span class="comment-user">${reply.user_name || 'User'}</span>
-                    <span class="comment-time">${reply.created_at || 'Baru saja'}</span>
-                    ${canDelete ? `<button class="comment-delete-btn" onclick="deleteComment(${reply.id})" title="Hapus komentar">✕</button>` : ''}
+                    <div class="comment-avatar" style="width: 1.8vw; height: 1.8vw; font-size: 0.6vw;">${reply.user_avatar || 'U'}</div>
+                    <span class="comment-user" style="font-size: 0.75vw;">${reply.user_name || 'User'}</span>
+                    <span class="comment-time" style="font-size: 0.6vw;">${reply.created_at || 'Baru saja'}</span>
+                    ${canDelete ? `<button class="comment-delete-btn" onclick="deleteComment(${reply.id})" title="Hapus komentar" style="font-size: 0.6vw;">✕</button>` : ''}
                 </div>
-                <div class="comment-content">${escapeHtml(reply.content)}</div>
+                <div class="comment-content" style="font-size: 0.75vw; margin-left: 2.5vw;">${escapeHtml(reply.content)}</div>
+                <div class="comment-actions" style="margin-left: 2.5vw;">
+                    <button onclick="setReply(${reply.id}, '${escapeHtml(reply.user_name || 'User')}')" style="font-size: 0.6vw;">Balas</button>
+                </div>
+                ${hasNestedReplies ? renderReplies(reply.replies, level + 1) : ''}
             </div>
         `;
     });
@@ -1973,6 +2218,14 @@ function setReply(commentId, userName) {
     document.getElementById('reply-to-name').textContent = userName;
     document.getElementById('comment-reply-indicator').style.display = 'flex';
     document.getElementById('comment-content').focus();
+    
+    // 🔥 SCROLL KE FORM REPLY
+    const form = document.getElementById('comment-form');
+    if (form) {
+        setTimeout(() => {
+            form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 200);
+    }
 }
 
 function cancelReply() {
@@ -1995,6 +2248,37 @@ function submitComment(event) {
         showToast('Komentar tidak boleh kosong', 'warning');
         return;
     }
+
+    // 🔥 CEK LOGIN STATUS
+    checkLoginStatus().then(isLoggedIn => {
+        if (!isLoggedIn) {
+            window._pendingArticleId = articleId;
+            window._pendingContent = content;
+            window._pendingParentId = parentId;
+            window._pendingAction = 'comment';
+            openLoginPopup('comment', function() {
+                if (window._pendingArticleId) {
+                    submitCommentDirect(
+                        window._pendingArticleId,
+                        window._pendingContent,
+                        window._pendingParentId
+                    );
+                    window._pendingArticleId = null;
+                    window._pendingContent = null;
+                    window._pendingParentId = null;
+                }
+            });
+            return;
+        }
+
+        // 🔥 KIRIM PARENT_ID KE DIRECT FUNCTION
+        submitCommentDirect(articleId, content, parentId);
+    });
+}
+
+function submitCommentDirect(articleId, content, parentId) {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    const submitBtn = document.querySelector('.comment-submit-btn');
 
     submitBtn.disabled = true;
     submitBtn.innerHTML = '⏳ Mengirim...';
@@ -2024,42 +2308,23 @@ function submitComment(event) {
     })
     .then(data => {
         if (data.success) {
-            // 🔥 KOSONGKAN FORM
+            // KOSONGKAN FORM
             document.getElementById('comment-content').value = '';
             cancelReply();
             
-            // 🔥 UPDATE COUNT KOMMENTAR
+            // UPDATE COUNT
             const formattedCount = new Intl.NumberFormat('id-ID').format(data.comments_count || 0);
             document.getElementById('comments-count').textContent = formattedCount;
             document.getElementById('comment-count-display').textContent = formattedCount;
             
-            // 🔥 TAMBAHKAN KOMMENTAR BARU KE LIST TANPA RELOAD
-            const list = document.getElementById('comment-list');
-            
-            // Jika sebelumnya kosong, hapus empty state
-            const emptyState = list.querySelector('.comment-empty');
-            if (emptyState) {
-                list.innerHTML = '';
+            // 🔥 TAMBAHKAN KOMENTAR ATAU REPLY KE TEMPAT YANG BENAR
+            if (parentId) {
+                // 🔥 INI ADALAH REPLY - TAMBAHKAN KE DALAM THREAD REPLY
+                addReplyToThread(parentId, data.comment);
+            } else {
+                // 🔥 INI KOMENTAR BARU - TAMBAHKAN KE PALING ATAS
+                addNewComment(data.comment);
             }
-            
-            // Buat elemen comment baru
-            const newComment = document.createElement('div');
-            newComment.className = 'comment-item';
-            newComment.id = 'comment-' + data.comment.id;
-            newComment.innerHTML = `
-                <div class="comment-header">
-                    <div class="comment-avatar">${data.comment.user_avatar || 'U'}</div>
-                    <span class="comment-user">${data.comment.user_name || 'User'}</span>
-                    <span class="comment-time">${data.comment.created_at || 'Baru saja'}</span>
-                </div>
-                <div class="comment-content">${escapeHtml(data.comment.content)}</div>
-                <div class="comment-actions">
-                    <button onclick="setReply(${data.comment.id}, '${escapeHtml(data.comment.user_name || 'User')}')">Balas</button>
-                </div>
-            `;
-            
-            // Tambahkan ke paling atas list
-            list.prepend(newComment);
             
             showToast(data.message || 'Komentar berhasil ditambahkan!', 'success');
         } else {
@@ -2078,11 +2343,89 @@ function submitComment(event) {
     });
 }
 
-function deleteComment(commentId) {
-    if (!confirm('Apakah Anda yakin ingin menghapus komentar ini?')) {
+function addNewComment(comment) {
+    const list = document.getElementById('comment-list');
+    
+    // Hapus empty state jika ada
+    const emptyState = list.querySelector('.comment-empty');
+    if (emptyState) {
+        list.innerHTML = '';
+    }
+    
+    // Buat elemen comment baru
+    const newComment = document.createElement('div');
+    newComment.className = 'comment-item';
+    newComment.id = 'comment-' + comment.id;
+    newComment.innerHTML = `
+        <div class="comment-header">
+            <div class="comment-avatar">${comment.user_avatar || 'U'}</div>
+            <span class="comment-user">${comment.user_name || 'User'}</span>
+            <span class="comment-time">${comment.created_at || 'Baru saja'}</span>
+        </div>
+        <div class="comment-content">${escapeHtml(comment.content)}</div>
+        <div class="comment-actions">
+            <button onclick="setReply(${comment.id}, '${escapeHtml(comment.user_name || 'User')}')">Balas</button>
+        </div>
+        <div class="comment-reply" id="replies-for-${comment.id}"></div>
+    `;
+    
+    // Tambahkan ke paling atas
+    list.prepend(newComment);
+}
+
+function addReplyToThread(parentId, reply) {
+    // 🔥 CARI ELEMEN INDUK KOMENTAR
+    const parentComment = document.getElementById('comment-' + parentId);
+    
+    if (!parentComment) {
+        // Jika parent tidak ditemukan, reload comments
+        loadComments();
         return;
     }
+    
+    // 🔥 CARI ATAU BUAT CONTAINER REPLY
+    let replyContainer = parentComment.querySelector('.comment-reply');
+    if (!replyContainer) {
+        // Buat container reply jika belum ada
+        replyContainer = document.createElement('div');
+        replyContainer.className = 'comment-reply';
+        replyContainer.id = 'replies-for-' + parentId;
+        parentComment.appendChild(replyContainer);
+    }
+    
+    // 🔥 BUAT ELEMEN REPLY BARU
+    const replyElement = document.createElement('div');
+    replyElement.className = 'comment-item';
+    replyElement.id = 'comment-' + reply.id;
+    replyElement.style.cssText = 'border-left: 0.15vw solid #e2e8f0; padding-left: 0.8vw;';
+    replyElement.innerHTML = `
+        <div class="comment-header">
+            <div class="comment-avatar" style="width: 1.8vw; height: 1.8vw; font-size: 0.6vw;">${reply.user_avatar || 'U'}</div>
+            <span class="comment-user" style="font-size: 0.75vw;">${reply.user_name || 'User'}</span>
+            <span class="comment-time" style="font-size: 0.6vw;">${reply.created_at || 'Baru saja'}</span>
+        </div>
+        <div class="comment-content" style="font-size: 0.75vw; margin-left: 2.5vw;">${escapeHtml(reply.content)}</div>
+        <div class="comment-actions" style="margin-left: 2.5vw;">
+            <button onclick="setReply(${reply.id}, '${escapeHtml(reply.user_name || 'User')}')" style="font-size: 0.6vw;">Balas</button>
+        </div>
+        <div class="comment-reply" id="replies-for-${reply.id}"></div>
+    `;
+    
+    // 🔥 TAMBAHKAN REPLY KE DALAM CONTAINER
+    // Tambahkan di awal (paling baru di atas)
+    replyContainer.prepend(replyElement);
+    
+    // 🔥 UPDATE BORDER DAN STYLE UNTUK CONTAINER
+    replyContainer.style.marginTop = '0.3vw';
+    replyContainer.style.paddingLeft = '0.5vw';
+    
+    // 🔥 SCROLL KE REPLY YANG BARU
+    setTimeout(() => {
+        replyElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 300);
+}
 
+function deleteCommentDirect(commentId) {
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
 
     fetch('{{ route("customer.articles.delete-comment") }}', {
@@ -2112,7 +2455,6 @@ function deleteComment(commentId) {
     })
     .then(data => {
         if (data.success) {
-            // 🔥 HAPUS ELEMEN KOMMENTAR DARI DOM
             const commentElement = document.getElementById('comment-' + data.comment_id);
             if (commentElement) {
                 commentElement.style.transition = 'all 0.3s ease';
@@ -2120,13 +2462,10 @@ function deleteComment(commentId) {
                 commentElement.style.transform = 'translateX(-20px)';
                 setTimeout(function() {
                     commentElement.remove();
-                    
-                    // Cek jika tidak ada komentar lagi
                     const list = document.getElementById('comment-list');
                     if (list && list.children.length === 0) {
                         list.innerHTML = `
                             <div class="comment-empty">
-                                <iconify-icon icon="mdi:comment-outline"></iconify-icon>
                                 <p>Belum ada komentar. Jadilah yang pertama!</p>
                             </div>
                         `;
@@ -2134,7 +2473,6 @@ function deleteComment(commentId) {
                 }, 300);
             }
             
-            // 🔥 UPDATE COUNT
             const formattedCount = new Intl.NumberFormat('id-ID').format(data.comments_count || 0);
             document.getElementById('comments-count').textContent = formattedCount;
             document.getElementById('comment-count-display').textContent = formattedCount;
@@ -2149,6 +2487,27 @@ function deleteComment(commentId) {
             console.error('Error:', error);
             showToast('Terjadi kesalahan, silakan coba lagi', 'error');
         }
+    });
+}
+
+function deleteComment(commentId) {
+    if (!confirm('Apakah Anda yakin ingin menghapus komentar ini?')) {
+        return;
+    }
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+    // 🔥 CEK LOGIN STATUS
+    checkLoginStatus().then(isLoggedIn => {
+        if (!isLoggedIn) {
+            showToast('Silakan login terlebih dahulu', 'warning');
+            setTimeout(() => {
+                window.location.href = '{{ route("customer.login") }}';
+            }, 1500);
+            return;
+        }
+
+        deleteCommentDirect(commentId);
     });
 }
 

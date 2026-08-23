@@ -194,7 +194,8 @@ class CustomerArticleController extends Controller
             'article_id' => 'required|exists:articles,id',
         ]);
 
-        $user = Auth::user();
+        // 🔥 GUNAKAN GUARD CUSTOMER
+        $user = Auth::guard('customer')->user();
 
         if (!$user) {
             return response()->json([
@@ -210,12 +211,10 @@ class CustomerArticleController extends Controller
             ->first();
 
         if ($existingLike) {
-            // Unlike
             $existingLike->delete();
             $liked = false;
             $message = 'Anda membatalkan like';
         } else {
-            // Like
             ArticleLike::create([
                 'article_id' => $articleId,
                 'user_id' => $user->id,
@@ -247,9 +246,10 @@ class CustomerArticleController extends Controller
         $likesCount = ArticleLike::where('article_id', $articleId)->count();
         $isLiked = false;
 
-        if (Auth::check()) {
+        // 🔥 GUNAKAN GUARD CUSTOMER
+        if (Auth::guard('customer')->check()) {
             $isLiked = ArticleLike::where('article_id', $articleId)
-                ->where('user_id', Auth::id())
+                ->where('user_id', Auth::guard('customer')->id())
                 ->exists();
         }
 
@@ -269,7 +269,8 @@ class CustomerArticleController extends Controller
             'article_id' => 'required|exists:articles,id',
         ]);
 
-        $comments = ArticleComment::with(['user', 'replies.user'])
+        // 🔥 AMBIL KOMENTAR UTAMA DENGAN SEMUA REPLY BERTINGKAT
+        $comments = ArticleComment::with(['user', 'replies.user', 'replies.replies.user'])
             ->where('article_id', $request->article_id)
             ->whereNull('parent_id')
             ->where('is_active', true)
@@ -278,25 +279,40 @@ class CustomerArticleController extends Controller
 
         return response()->json([
             'success' => true,
-            'comments' => $comments->map(function($comment) {
-                return [
-                    'id' => $comment->id,
-                    'user_name' => $comment->user->name,
-                    'user_avatar' => strtoupper(substr($comment->user->name, 0, 1)),
-                    'content' => $comment->content,
-                    'created_at' => $comment->formatted_date,
-                    'replies' => $comment->replies->map(function($reply) {
-                        return [
-                            'id' => $reply->id,
-                            'user_name' => $reply->user->name,
-                            'user_avatar' => strtoupper(substr($reply->user->name, 0, 1)),
-                            'content' => $reply->content,
-                            'created_at' => $reply->formatted_date,
-                        ];
-                    }),
-                ];
-            }),
+            'comments' => $this->formatCommentsWithReplies($comments),
         ]);
+    }
+
+    private function formatCommentsWithReplies($comments)
+    {
+        return $comments->map(function($comment) {
+            return [
+                'id' => $comment->id,
+                'user_name' => $comment->user->name ?? 'User',
+                'user_avatar' => strtoupper(substr($comment->user->name ?? 'U', 0, 1)),
+                'content' => $comment->content,
+                'created_at' => $comment->formatted_date,
+                'user_id' => $comment->user_id,
+                'replies' => $this->formatRepliesRecursive($comment->replies),
+            ];
+        });
+    }
+
+    private function formatRepliesRecursive($replies)
+    {
+        return $replies->map(function($reply) {
+            return [
+                'id' => $reply->id,
+                'user_name' => $reply->user->name ?? 'User',
+                'user_avatar' => strtoupper(substr($reply->user->name ?? 'U', 0, 1)),
+                'content' => $reply->content,
+                'created_at' => $reply->formatted_date,
+                'user_id' => $reply->user_id,
+                'replies' => $reply->replies->isNotEmpty() 
+                    ? $this->formatRepliesRecursive($reply->replies) 
+                    : [],
+            ];
+        });
     }
 
     /**
@@ -310,7 +326,7 @@ class CustomerArticleController extends Controller
             'parent_id' => 'nullable|exists:article_comments,id',
         ]);
 
-        $user = Auth::user();
+        $user = Auth::guard('customer')->user();
 
         if (!$user) {
             return response()->json([
@@ -328,7 +344,6 @@ class CustomerArticleController extends Controller
             'is_active' => true,
         ]);
 
-        // Load user data
         $comment->load('user');
 
         $commentsCount = ArticleComment::where('article_id', $request->article_id)
@@ -345,6 +360,7 @@ class CustomerArticleController extends Controller
                 'content' => $comment->content,
                 'created_at' => $comment->formatted_date,
                 'parent_id' => $comment->parent_id,
+                'user_id' => $comment->user_id,
                 'replies' => [],
             ],
             'comments_count' => $commentsCount,
@@ -360,7 +376,8 @@ class CustomerArticleController extends Controller
             'comment_id' => 'required|exists:article_comments,id',
         ]);
 
-        $user = Auth::user();
+        // 🔥 CEK DARI SEMUA GUARD
+        $user = Auth::guard('customer')->user() ?? Auth::user();
 
         if (!$user) {
             return response()->json([
@@ -378,8 +395,11 @@ class CustomerArticleController extends Controller
             ], 404);
         }
 
-        // Cek apakah user adalah pemilik komentar atau admin
-        if ($comment->user_id != $user->id && $user->role !== 'admin') {
+        // 🔥 ADMIN BISA HAPUS SEMUA KOMENTAR
+        $isAdmin = $user->role === 'admin';
+        $isOwner = $comment->user_id == $user->id;
+
+        if (!$isOwner && !$isAdmin) {
             return response()->json([
                 'success' => false,
                 'message' => 'Anda tidak memiliki izin untuk menghapus komentar ini',

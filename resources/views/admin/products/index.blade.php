@@ -82,7 +82,6 @@
     {{-- ========================================================= --}}
 
     <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-
         {{-- TABLE WRAPPER --}}
         <div class="overflow-x-auto">
 
@@ -235,22 +234,42 @@
                                 @endif
                             </td>
 
-                            {{-- ===================================== --}}
-                            {{-- STOK --}}
-                            {{-- ===================================== --}}
-
                             <td class="whitespace-nowrap px-6 py-4">
                                 @php
                                     $totalStock = $product->variants->sum('stock');
+                                    $status = $product->stock_status ?? 'in_stock';
+                                    $label = $product->stock_status_label ?? 'Aman';
+                                    $color = $product->stock_status_color ?? 'green';
                                 @endphp
-
-                                @if ($totalStock > 0)
+                                
+                                <div class="flex flex-col">
                                     <span class="text-sm font-medium text-gray-700">
                                         {{ number_format($totalStock, 0, ',', '.') }}
                                     </span>
-                                @else
-                                    <span class="text-sm font-medium text-red-600">Habis</span>
-                                @endif
+                                    
+                                    <span class="inline-flex items-center gap-1 text-xs mt-1">
+                                        <span class="inline-block w-2 h-2 rounded-full 
+                                            {{ $color == 'red' ? 'bg-red-500' : '' }}
+                                            {{ $color == 'yellow' ? 'bg-yellow-500' : '' }}
+                                            {{ $color == 'green' ? 'bg-green-500' : '' }}
+                                            {{ $color == 'gray' ? 'bg-gray-400' : '' }}">
+                                        </span>
+                                        <span class="
+                                            {{ $color == 'red' ? 'text-red-600 font-semibold' : '' }}
+                                            {{ $color == 'yellow' ? 'text-yellow-600 font-semibold' : '' }}
+                                            {{ $color == 'green' ? 'text-green-600' : '' }}
+                                            {{ $color == 'gray' ? 'text-gray-500' : '' }}">
+                                            {{ $label }}
+                                        </span>
+                                    </span>
+                                    
+                                    {{-- 🔥 Tambahkan tooltip minimal dan maks --}}
+                                    @if($product->minimum_stock || $product->restock_threshold)
+                                        <span class="text-[10px] text-gray-400 mt-0.5">
+                                            Min: {{ $product->minimum_stock ?? 5 }} | Restock: {{ $product->restock_threshold ?? 10 }}
+                                        </span>
+                                    @endif
+                                </div>
                             </td>
 
                             {{-- ===================================== --}}
@@ -273,33 +292,28 @@
                             {{-- AKSI --}}
                             {{-- ===================================== --}}
 
+                            {{-- Di bagian Aksi --}}
                             <td class="whitespace-nowrap px-6 py-4">
                                 <div class="flex items-center justify-end gap-2">
+                                    
                                     {{-- EDIT --}}
-                                    <a
-                                        href="{{ route('admin.products.edit', $product) }}"
+                                    <a href="{{ route('admin.products.edit', $product) }}"
                                         class="rounded-lg border border-gray-200 p-2 text-gray-500 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
-                                        title="Edit Produk"
-                                    >
+                                        title="Edit Produk">
                                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.5-9.5a2.121 2.121 0 013 3L12 14l-4 1 1-4 7.5-7.5z"/>
                                         </svg>
                                     </a>
 
                                     {{-- DELETE --}}
-                                    <form
-                                        action="{{ route('admin.products.destroy', $product) }}"
-                                        method="POST"
-                                        onsubmit="return confirm('Apakah kamu yakin ingin menghapus produk ini? Semua varian dan gambar produk juga akan dihapus.')"
-                                        class="inline"
-                                    >
+                                    <form action="{{ route('admin.products.destroy', $product) }}" method="POST"
+                                        onsubmit="return confirm('Apakah kamu yakin ingin menghapus produk ini?')"
+                                        class="inline">
                                         @csrf
                                         @method('DELETE')
-                                        <button
-                                            type="submit"
+                                        <button type="submit"
                                             class="rounded-lg border border-gray-200 p-2 text-gray-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
-                                            title="Hapus Produk"
-                                        >
+                                            title="Hapus Produk">
                                             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                             </svg>

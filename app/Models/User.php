@@ -23,6 +23,9 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'phone',
+        'address',
+        'is_active',
     ];
 
     /**
@@ -45,6 +48,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_active' => 'boolean',
         ];
     }
 
@@ -68,5 +72,11 @@ class User extends Authenticatable
     public function wishlists()
     {
         return $this->hasMany(Wishlist::class);
+    }
+
+    // 🔥 RELASI ADDRESS (jika ada)
+    public function addresses()
+    {
+        return $this->hasMany(UserAddress::class);
     }
 }

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Feature;
 use App\Models\Product;
+use App\Models\StockHistory;
 use App\Models\ProductOption;
 use App\Models\ProductOptionValue;
 use App\Models\ProductVariantValue;
@@ -23,20 +24,49 @@ class ProductController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    public function index()
+    public function index(Request $request)
     {
-        $products = Product::with([
+        $query = Product::with([
             'category',
             'images',
             'variants',
-        ])
-        ->latest()
-        ->paginate(10);
+        ]);
 
-        return view(
-            'admin.products.index',
-            compact('products')
-        );
+        // 🔥 FILTER STOK
+        if ($request->filled('stock')) {
+            switch ($request->stock) {
+                case 'critical':
+                    $query->criticalStock();
+                    break;
+                case 'low':
+                    $query->lowStock();
+                    break;
+                case 'out_of_stock':
+                    $query->whereHas('variants', function($q) {
+                        $q->selectRaw('SUM(stock) as total_stock')
+                        ->havingRaw('SUM(stock) = 0');
+                    });
+                    break;
+                case 'in_stock':
+                    $query->inStock();
+                    break;
+                // 'all' atau lainnya: tanpa filter
+            }
+        }
+
+        $products = $query
+            ->latest()
+            ->paginate(10);
+
+        // 🔥 TAMBAHKAN TOTAL STOCK KE SETIAP PRODUK
+        foreach ($products as $product) {
+            $product->total_stock = $product->variants->sum('stock');
+            $product->stock_status = $product->stock_status;
+            $product->stock_status_label = $product->stock_status_label;
+            $product->stock_status_color = $product->stock_status_color;
+        }
+
+        return view('admin.products.index', compact('products'));
     }
 
 
@@ -87,6 +117,8 @@ class ProductController extends Controller
                     'is_featured' => $request->boolean('is_featured'),
                     'is_best_seller' => $request->boolean('is_best_seller'),
                     'is_active' => $request->boolean('is_active'),
+                    'minimum_stock' => $request->input('minimum_stock', 5),
+                    'restock_threshold' => $request->input('restock_threshold', 10),
                 ]);
 
                 // 2. UPLOAD IMAGES
@@ -106,7 +138,7 @@ class ProductController extends Controller
                     $optionValueMap = $this->createProductOptions(
                         $product,
                         $validated['options'],
-                        $request->file('options') ?? [] // 🔥 Kirim file dari request
+                        $request->file('options') ?? []
                     );
 
                     // 4. CREATE VARIANTS
@@ -165,7 +197,7 @@ class ProductController extends Controller
             },
             'variants.variantValues',
             'variants.variantValues.optionValue',
-            'features', // 🔥 LOAD FEATURES
+            'features',
         ]);
 
         $existingOptions = $product->options->map(function ($option) {
@@ -183,18 +215,32 @@ class ProductController extends Controller
         })->values()->toArray();
 
         $existingVariants = $product->variants->map(function ($variant) {
+            $discountPercent = 0;
+            if ($variant->discount_price && $variant->price > 0 && $variant->discount_price < $variant->price) {
+                $discountPercent = round((($variant->price - $variant->discount_price) / $variant->price) * 100);
+            }
+
+            // 🔥 AMBIL VALUE NAMES DENGAN SORT
+            $valueNames = $variant->variantValues
+                ->map(function($vv) {
+                    return $vv->optionValue->value ?? '';
+                })
+                ->filter()
+                ->sort()
+                ->values()
+                ->toArray();
+
             return [
                 'id' => $variant->id,
                 'sku' => $variant->sku,
                 'price' => $variant->price,
                 'discount_price' => $variant->discount_price,
-                'stock' => $variant->stock,
+                'discount_percent' => $discountPercent,
+                'stock' => (int) $variant->stock, // ← PASTIKAN INTEGER
                 'weight' => $variant->weight,
                 'image' => $variant->image ? Storage::url($variant->image) : null,
                 'option_value_ids' => $variant->variantValues->pluck('product_option_value_id')->values()->toArray(),
-                'option_value_names' => $variant->variantValues->map(function($vv) {
-                    return $vv->optionValue->value ?? '';
-                })->values()->toArray(),
+                'option_value_names' => $valueNames,
             ];
         })->values()->toArray();
 
@@ -244,6 +290,8 @@ class ProductController extends Controller
                     'is_featured' => $request->boolean('is_featured'),
                     'is_best_seller' => $request->boolean('is_best_seller'),
                     'is_active' => $request->boolean('is_active'),
+                    'minimum_stock' => $request->input('minimum_stock', 5),
+                    'restock_threshold' => $request->input('restock_threshold', 10),
                 ]);
 
                 // 2. DELETE SELECTED OLD IMAGES
@@ -280,10 +328,9 @@ class ProductController extends Controller
                 }
 
                 // ============================================
-                // 🔥 UPDATE OPTIONS (WARNA & UKURAN) - PERTAHANKAN GAMBAR LAMA
+                // 🔥 UPDATE OPTIONS (WARNA & UKURAN)
                 // ============================================
 
-                // 🔥 AMBIL DATA OPTIONS LAMA
                 $oldOptions = $product->options()->with('values')->get();
                 $oldOptionValuesMap = [];
 
@@ -299,7 +346,6 @@ class ProductController extends Controller
 
                 // Create new options & variants
                 if (!empty($validated['options'])) {
-                    // 🔥 PROSES OPTIONS DENGAN MEMPERTAHANKAN GAMBAR LAMA
                     $optionValueMap = $this->createProductOptionsWithExistingImages(
                         $product,
                         $validated['options'],
@@ -338,6 +384,66 @@ class ProductController extends Controller
             throw $e;
         }
     }
+
+    public function dashboard()
+    {
+        // Produk dengan stok kritis
+        $criticalProducts = Product::with(['variants', 'category'])
+            ->where('is_active', true)
+            ->criticalStock()
+            ->get()
+            ->map(function($product) {
+                $product->total_stock = $product->variants->sum('stock');
+                return $product;
+            });
+
+        // Produk dengan stok menipis
+        $lowProducts = Product::with(['variants', 'category'])
+            ->where('is_active', true)
+            ->lowStock()
+            ->get()
+            ->map(function($product) {
+                $product->total_stock = $product->variants->sum('stock');
+                return $product;
+            });
+
+        // Produk habis
+        $outOfStockProducts = Product::with(['variants', 'category'])
+            ->where('is_active', true)
+            ->whereHas('variants', function($q) {
+                $q->selectRaw('SUM(stock) as total_stock')
+                  ->havingRaw('SUM(stock) = 0');
+            })
+            ->get()
+            ->map(function($product) {
+                $product->total_stock = $product->variants->sum('stock');
+                return $product;
+            });
+
+        // Produk aman
+        $inStockProducts = Product::with(['variants', 'category'])
+            ->where('is_active', true)
+            ->inStock()
+            ->get()
+            ->map(function($product) {
+                $product->total_stock = $product->variants->sum('stock');
+                return $product;
+            });
+
+        return view('admin.dashboard', compact(
+            'criticalProducts',
+            'lowProducts',
+            'outOfStockProducts',
+            'inStockProducts'
+        ));
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | CREATE PRODUCT OPTIONS WITH EXISTING IMAGES
+    |--------------------------------------------------------------------------
+    */
 
     private function createProductOptionsWithExistingImages(
         Product $product,
@@ -407,6 +513,13 @@ class ProductController extends Controller
 
         return $optionValueMap;
     }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | NORMALIZE STORED IMAGE PATH
+    |--------------------------------------------------------------------------
+    */
 
     private function normalizeStoredImagePath(?string $imagePath): ?string
     {
@@ -706,6 +819,8 @@ class ProductController extends Controller
             'material' => ['nullable', 'string', 'max:255'],
             'features' => ['nullable', 'array'],
             'features.*' => ['exists:features,id'],
+            'minimum_stock' => ['nullable', 'integer', 'min:0'],
+            'restock_threshold' => ['nullable', 'integer', 'min:0'],
             'options' => ['nullable', 'array'],
             'options.*.name' => ['required_with:options', 'string', 'max:100'],
             'options.*.values' => ['required_with:options', 'array', 'min:1'],
@@ -715,8 +830,6 @@ class ProductController extends Controller
             'options.*.old_value_ids.*' => ['nullable', 'integer'],
             'options.*.existing_images' => ['nullable', 'array'],
             'options.*.existing_images.*' => ['nullable', 'string'],
-            
-            // 🔥 VALIDASI GAMBAR OPSI
             'options.*.images' => ['nullable', 'array'],
             'options.*.images.*' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
 
@@ -724,8 +837,9 @@ class ProductController extends Controller
             'variants.*.id' => ['nullable', 'integer'],
             'variants.*.sku' => ['required_with:variants', 'string', 'max:100'],
             'variants.*.price' => ['required_with:variants', 'numeric', 'min:0'],
+            'variants.*.discount_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'variants.*.discount_price' => ['nullable', 'numeric', 'min:0'],
-            'variants.*.stock' => ['required_with:variants', 'integer', 'min:0'],
+            'variants.*.stock' => ['nullable', 'integer', 'min:0'], // 🔥 PERBAIKI: nullable
             'variants.*.weight' => ['required_with:variants', 'integer', 'min:0'],
             'variants.*.option_value_indexes' => ['required_with:variants', 'array', 'min:1'],
             'variants.*.option_value_indexes.*' => ['required_with:variants', 'integer', 'min:0'],
@@ -755,7 +869,6 @@ class ProductController extends Controller
 
             $values = $optionData['values'] ?? [];
             
-            // 🔥 AMBIL FILE GAMBAR UNTUK OPSI INI
             $images = [];
             if (isset($optionFiles[$optionIndex]['images'])) {
                 $images = $optionFiles[$optionIndex]['images'];
@@ -764,7 +877,6 @@ class ProductController extends Controller
             foreach ($values as $valueIndex => $value) {
                 $imagePath = null;
 
-                // 🔥 CEK APAKAH ADA GAMBAR UNTUK VALUE INI
                 if (isset($images[$valueIndex]) && 
                     $images[$valueIndex] instanceof \Illuminate\Http\UploadedFile) {
                     $imagePath = $images[$valueIndex]->store('products/option-values', 'public');
@@ -799,53 +911,86 @@ class ProductController extends Controller
             $optionValueIndexes = $variantData['option_value_indexes'] ?? [];
             $optionValueIds = [];
 
+            // 🔥 PERBAIKI: Mapping yang lebih robust
             foreach ($optionValueIndexes as $optionIndex => $valueIndex) {
                 $optionIndex = (int) $optionIndex;
                 $valueIndex = (int) $valueIndex;
                 
-                $optionValueId = null;
-
+                // Coba cari di map berdasarkan optionIndex dan valueIndex
                 if (isset($optionValueMap[$optionIndex][$valueIndex])) {
-                    $optionValueId = $optionValueMap[$optionIndex][$valueIndex];
+                    $optionValueIds[] = $optionValueMap[$optionIndex][$valueIndex];
                 } else {
+                    // Jika tidak ditemukan, coba cari berdasarkan valueIndex saja
                     foreach ($optionValueMap as $mapOptionIndex => $mapValues) {
                         if (isset($mapValues[$valueIndex])) {
-                            $optionValueId = $mapValues[$valueIndex];
+                            $optionValueIds[] = $mapValues[$valueIndex];
                             break;
                         }
                     }
                 }
+            }
 
-                if ($optionValueId && !in_array($optionValueId, $optionValueIds)) {
-                    $optionValueIds[] = $optionValueId;
+            // Jika masih kosong, coba ambil option value pertama yang tersedia
+            if (empty($optionValueIds) && !empty($optionValueMap)) {
+                $firstOptionIndex = array_key_first($optionValueMap);
+                if ($firstOptionIndex !== null && !empty($optionValueMap[$firstOptionIndex])) {
+                    $firstValueIndex = array_key_first($optionValueMap[$firstOptionIndex]);
+                    if ($firstValueIndex !== null) {
+                        $optionValueIds[] = $optionValueMap[$firstOptionIndex][$firstValueIndex];
+                    }
                 }
             }
 
-            if (empty($optionValueIds)) {
-                \Log::warning('Skipping variant - no option value IDs:', [
-                    'sku' => $variantData['sku'],
-                    'optionValueIndexes' => $optionValueIndexes,
-                ]);
-                continue;
+            // 🔥 HITUNG HARGA DAN DISKON
+            $price = (float) ($variantData['price'] ?? 0);
+            $discountPercent = (float) ($variantData['discount_percent'] ?? 0);
+            
+            $discountPrice = null;
+            if ($discountPercent > 0 && $price > 0) {
+                $discountPrice = round($price - ($price * ($discountPercent / 100)), 2);
+            }
+            
+            // Jika ada discount_price langsung dari input (untuk edit)
+            if (isset($variantData['discount_price']) && $variantData['discount_price'] !== '' && $variantData['discount_price'] !== null) {
+                $discountPrice = (float) $variantData['discount_price'];
+                // Recalculate discount percent
+                if ($price > 0 && $discountPrice > 0 && $discountPrice < $price) {
+                    $discountPercent = round((($price - $discountPrice) / $price) * 100);
+                }
             }
 
+            $stock = 0;
+            if (isset($variantData['stock']) && $variantData['stock'] !== '' && $variantData['stock'] !== null) {
+                $stock = (int) $variantData['stock'];
+            }
+
+            // 🔥 BUAT VARIAN
             $variant = $product->variants()->create([
-                'sku' => trim($variantData['sku']),
-                'price' => (float) $variantData['price'],
-                'discount_price' => isset($variantData['discount_price']) && $variantData['discount_price'] !== '' 
-                    ? (float) $variantData['discount_price'] 
-                    : null,
-                'stock' => (int) $variantData['stock'],
+                'sku' => trim($variantData['sku'] ?? ''),
+                'price' => $price,
+                'discount_price' => $discountPrice,
+                'stock' => $stock,
                 'weight' => (int) ($variantData['weight'] ?? 1000),
                 'is_active' => true,
             ]);
 
+            // 🔥 SIMPAN OPTION VALUES
             foreach ($optionValueIds as $optionValueId) {
                 $variant->variantValues()->create([
                     'product_option_value_id' => $optionValueId,
                 ]);
             }
         }
+    }
+
+    public function stockHistory(Product $product)
+    {
+        $histories = StockHistory::with(['variant', 'user'])
+            ->where('product_id', $product->id)
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+
+        return view('admin.products.stock-history', compact('product', 'histories'));
     }
 
 

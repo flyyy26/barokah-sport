@@ -13,6 +13,33 @@ $(document).ready(function() {
      * @param {string} message - Pesan yang akan ditampilkan
      * @param {string} type - Jenis toast: success, error, warning, info
      */
+
+    $(document).on('click', '.popup-footer-buttons .btn-primary, #checkout-popup-btn', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        console.log('🛒 Checkout button clicked from popup');
+        
+        // 🔥 AMBIL COUNT DARI ELEMEN
+        var cartCount = parseInt($('#cart-count').text()) || 0;
+        
+        if (cartCount === 0) {
+            showToast('Keranjang kosong. Tambahkan produk terlebih dahulu.', 'warning');
+            return;
+        }
+        
+        // 🔥 TUTUP POPUP
+        $('#cart-popup').removeClass('active');
+        $('body').removeClass('popup-open');
+        
+        // 🔥 REDIRECT KE CHECKOUT
+        if (window.customerRoutes && window.customerRoutes.checkout) {
+            window.location.href = window.customerRoutes.checkout;
+        } else {
+            window.location.href = '{{ route("customer.checkout.index") }}';
+        }
+    });
+
     function showToast(message, type = 'info') {
         var container = $('#toast-container');
         
@@ -93,11 +120,20 @@ $(document).ready(function() {
             }
         });
     }
+
     /**
-     * Load Cart Popup Content
+     * Load Cart Popup Content - DENGAN SPINNER
      */
     function loadCartPopup() {
-        $('#cart-content').addClass('loading');
+        var $content = $('#cart-content');
+        
+        // 🔥 TAMPILKAN SPINNER LOADING (HANYA SATU)
+        $content.html(`
+            <div class="popup-loading">
+                <div class="popup-spinner"></div>
+                <p>Memuat keranjang...</p>
+            </div>
+        `);
         
         $.ajax({
             url: window.customerRoutes.cartPopup,
@@ -105,10 +141,9 @@ $(document).ready(function() {
             dataType: 'json',
             success: function(response) {
                 console.log('🛒 Cart popup response:', response);
-                $('#cart-content').removeClass('loading');
                 
                 if (response.success) {
-                    $('#cart-content').html(response.html);
+                    $content.html(response.html);
                     $('#cart-total').text('Rp ' + formatRupiah(response.total));
                     
                     // 🔥 UPDATE CART COUNT
@@ -129,9 +164,8 @@ $(document).ready(function() {
                 }
             },
             error: function(xhr) {
-                $('#cart-content').removeClass('loading');
                 console.error('Error loading cart:', xhr);
-                $('#cart-content').html(`
+                $content.html(`
                     <div class="popup-body-empty">
                         <iconify-icon icon="mdi:alert-circle-outline"></iconify-icon>
                         <p>Gagal memuat keranjang</p>
@@ -176,7 +210,6 @@ $(document).ready(function() {
         }
     }
 
-
     /**
      * Load Cart Count from Server
      */
@@ -202,7 +235,15 @@ $(document).ready(function() {
      * Update Cart Item Quantity
      */
     function updateCartItem(key, quantity) {
-        $('#cart-content').addClass('loading');
+        var $content = $('#cart-content');
+        
+        // 🔥 TAMPILKAN LOADING SAAT UPDATE
+        $content.html(`
+            <div class="popup-loading">
+                <div class="popup-spinner"></div>
+                <p>Memperbarui keranjang...</p>
+            </div>
+        `);
         
         $.ajax({
             url: window.customerRoutes.cartUpdate,
@@ -214,7 +255,6 @@ $(document).ready(function() {
             },
             dataType: 'json',
             success: function(response) {
-                $('#cart-content').removeClass('loading');
                 if (response.success) {
                     loadCartPopup();
                     loadCartCount();
@@ -225,7 +265,6 @@ $(document).ready(function() {
                 }
             },
             error: function(xhr) {
-                $('#cart-content').removeClass('loading');
                 if (xhr.status === 400) {
                     showToast(xhr.responseJSON?.message || 'Stok tidak mencukupi', 'warning');
                 } else {
@@ -243,6 +282,7 @@ $(document).ready(function() {
         if (!confirm('Hapus item ini dari keranjang?')) return;
         
         var $item = $('.cart-item[data-key="' + key + '"]');
+        var $content = $('#cart-content');
         
         // Add removing animation
         $item.css({
@@ -258,7 +298,13 @@ $(document).ready(function() {
             });
         }, 50);
 
-        $('#cart-content').addClass('loading');
+        // 🔥 TAMPILKAN LOADING SAAT MENGHAPUS
+        $content.html(`
+            <div class="popup-loading">
+                <div class="popup-spinner"></div>
+                <p>Menghapus item...</p>
+            </div>
+        `);
         
         $.ajax({
             url: window.customerRoutes.cartRemove,
@@ -269,28 +315,50 @@ $(document).ready(function() {
             },
             dataType: 'json',
             success: function(response) {
-                $('#cart-content').removeClass('loading');
                 if (response.success) {
                     setTimeout(function() {
-                        loadCartPopup();
-                        loadCartCount();
+                        // 🔥 HAPUS ELEMEN DARI DOM
+                        $item.remove();
+                        
+                        // 🔥 CEK APAKAH CART KOSONG
+                        if ($('.cart-item').length === 0) {
+                            // Render ulang popup kosong
+                            loadCartPopup();
+                        } else {
+                            // Reload popup untuk refresh data
+                            loadCartPopup();
+                        }
+                        
+                        // 🔥 UPDATE CART COUNT
+                        if (typeof window.updateNavbarCartCount === 'function') {
+                            window.updateNavbarCartCount(response.count);
+                        }
+                        
+                        // 🔥 UPDATE CLEAR BUTTON
+                        if (response.count > 0) {
+                            $('#cart-clear').addClass('visible').show();
+                        } else {
+                            $('#cart-clear').removeClass('visible').hide();
+                        }
+                        
+                        showToast('Item berhasil dihapus', 'success');
                     }, 350);
-                    showToast('Item berhasil dihapus', 'success');
                 } else {
                     $item.css({
                         'opacity': '1',
                         'transform': 'translateX(0)'
                     });
                     showToast(response.message || 'Gagal menghapus item', 'error');
+                    loadCartPopup();
                 }
             },
             error: function(xhr) {
-                $('#cart-content').removeClass('loading');
                 $item.css({
                     'opacity': '1',
                     'transform': 'translateX(0)'
                 });
                 showToast('Terjadi kesalahan, silakan coba lagi', 'error');
+                loadCartPopup();
             }
         });
     }
@@ -316,7 +384,15 @@ $(document).ready(function() {
         
         if (!confirm('Kosongkan semua item di keranjang?')) return;
         
-        $('#cart-content').addClass('loading');
+        var $content = $('#cart-content');
+        
+        // 🔥 TAMPILKAN LOADING SAAT KOSONGKAN
+        $content.html(`
+            <div class="popup-loading">
+                <div class="popup-spinner"></div>
+                <p>Mengosongkan keranjang...</p>
+            </div>
+        `);
         
         $.ajax({
             url: window.customerRoutes.cartClear,
@@ -326,7 +402,6 @@ $(document).ready(function() {
             },
             dataType: 'json',
             success: function(response) {
-                $('#cart-content').removeClass('loading');
                 if (response.success) {
                     // 🔥 Update cart count ke 0
                     if (typeof window.updateNavbarCartCount === 'function') {
@@ -343,11 +418,12 @@ $(document).ready(function() {
                     showToast('Keranjang berhasil dikosongkan', 'success');
                 } else {
                     showToast(response.message || 'Gagal mengosongkan keranjang', 'error');
+                    loadCartPopup();
                 }
             },
             error: function(xhr) {
-                $('#cart-content').removeClass('loading');
                 showToast('Terjadi kesalahan, silakan coba lagi', 'error');
+                loadCartPopup();
             }
         });
     }
@@ -366,17 +442,23 @@ $(document).ready(function() {
             return;
         }
 
-        $('#wishlist-content').addClass('loading');
+        var $content = $('#wishlist-content');
+        
+        // 🔥 TAMPILKAN SPINNER LOADING
+        $content.html(`
+            <div class="popup-loading">
+                <div class="popup-spinner"></div>
+                <p>Memuat wishlist...</p>
+            </div>
+        `);
 
         $.ajax({
             url: window.customerRoutes.wishlistPopup,
             method: 'GET',
             dataType: 'json',
             success: function(response) {
-                $('#wishlist-content').removeClass('loading');
-                
                 if (response.success) {
-                    $('#wishlist-content').html(response.html);
+                    $content.html(response.html);
                     if (response.count !== undefined) {
                         updateWishlistCount(response.count);
                     }
@@ -390,9 +472,8 @@ $(document).ready(function() {
                 }
             },
             error: function(xhr) {
-                $('#wishlist-content').removeClass('loading');
                 console.error('Error loading wishlist:', xhr);
-                $('#wishlist-content').html(`
+                $content.html(`
                     <div class="popup-body-empty">
                         <iconify-icon icon="mdi:heart-outline"></iconify-icon>
                         <p>Gagal memuat wishlist</p>
@@ -886,7 +967,6 @@ $(document).ready(function() {
         loadCartPopup();
     });
 
-
     /**
      * Listen for wishlist updated events from other scripts
      */
@@ -908,7 +988,6 @@ $(document).ready(function() {
             }
         }
     });
-
 
     // ---------- CLICK OUTSIDE ----------
 

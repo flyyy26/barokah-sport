@@ -117,6 +117,19 @@
                     </span>
                 </a>
 
+                <a href="{{ route('admin.stock.index') }}"
+                    class="group flex items-center rounded-lg px-3 py-2 text-sm font-medium {{ request()->routeIs('admin.stock.*') ? 'bg-gray-200 text-gray-900' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
+                    <svg class="mr-3 h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                    </svg>
+                    Manajemen Stok
+                    <span class="ml-auto">
+                        <span class="inline-flex rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800">
+                            {{ \App\Models\Product::where('is_active', true)->criticalStock()->count() }}
+                        </span>
+                    </span>
+                </a>
+
                 <a
                     href="{{ route('admin.articles.index') }}"
                     class="flex items-center gap-3 px-4 py-3

@@ -248,26 +248,96 @@
                     $maxPrice = $product->variants->max('price');
                     $minDiscount = $product->variants->min('discount_price');
                     $totalStock = $product->variants->sum('stock');
+                    
+                    // 🔥 CEK APAKAH ADA DISKON
+                    $hasAnyDiscount = false;
+                    $bestDiscountVariant = null;
+                    $maxDiscountPercent = 0;
+                    
+                    foreach ($product->variants as $variant) {
+                        if ($variant->discount_price && $variant->discount_price < $variant->price) {
+                            $hasAnyDiscount = true;
+                            $discountPercent = round((($variant->price - $variant->discount_price) / $variant->price) * 100);
+                            if ($discountPercent > $maxDiscountPercent) {
+                                $maxDiscountPercent = $discountPercent;
+                                $bestDiscountVariant = $variant;
+                            }
+                        }
+                    }
+                    
+                    // 🔥 HITUNG HARGA TERMURAH SETELAH DISKON (EFFECTIVE PRICE)
+                    $effectivePrices = [];
+                    $originalPrices = [];
+                    foreach ($product->variants as $variant) {
+                        $effectivePrices[] = $variant->discount_price ?? $variant->price;
+                        $originalPrices[] = $variant->price;
+                    }
+                    $minEffective = !empty($effectivePrices) ? min($effectivePrices) : 0;
+                    $maxEffective = !empty($effectivePrices) ? max($effectivePrices) : 0;
+                    
+                    // 🔥 HITUNG HARGA ORIGINAL TERMURAH DAN TERMAHAL
+                    $minOriginalPrice = !empty($originalPrices) ? min($originalPrices) : 0;
+                    $maxOriginalPrice = !empty($originalPrices) ? max($originalPrices) : 0;
+                    
+                    // 🔥 BUAT STRING HARGA UNTUK DEFAULT
+                    $defaultDisplayPrice = '';
+                    $defaultOriginalPrice = '';
+                    $defaultDiscountBadge = '';
+                    
+                    if ($hasAnyDiscount) {
+                        if ($minEffective == $maxEffective) {
+                            $defaultDisplayPrice = 'Rp ' . number_format($minEffective, 0, ',', '.');
+                        } else {
+                            $defaultDisplayPrice = 'Rp ' . number_format($minEffective, 0, ',', '.') . ' - Rp ' . number_format($maxEffective, 0, ',', '.');
+                        }
+                        
+                        if ($minOriginalPrice == $maxOriginalPrice) {
+                            $defaultOriginalPrice = 'Rp ' . number_format($minOriginalPrice, 0, ',', '.');
+                        } else {
+                            $defaultOriginalPrice = 'Rp ' . number_format($minOriginalPrice, 0, ',', '.') . ' - Rp ' . number_format($maxOriginalPrice, 0, ',', '.');
+                        }
+                        
+                        $defaultDiscountBadge = 'Diskon ' . $maxDiscountPercent . '%';
+                    } else {
+                        if ($minEffective == $maxEffective) {
+                            $defaultDisplayPrice = 'Rp ' . number_format($minEffective, 0, ',', '.');
+                        } else {
+                            $defaultDisplayPrice = 'Rp ' . number_format($minEffective, 0, ',', '.') . ' - Rp ' . number_format($maxEffective, 0, ',', '.');
+                        }
+                        $defaultOriginalPrice = '';
+                        $defaultDiscountBadge = '';
+                    }
                 @endphp
 
-                <div class="product_price_display">
-                    @if ($minDiscount && $minDiscount < $minPrice)
-                        <span class="price-current discounted" id="display-price">
-                            Rp {{ number_format($minDiscount, 0, ',', '.') }}
-                        </span>
-                        <span class="price-original">
-                            Rp {{ number_format($minPrice, 0, ',', '.') }}
-                        </span>
+                <div class="product_price_display" id="price-display-container">
+                    @if($hasAnyDiscount)
+                        {{-- Ada Diskon - Tampilkan Range Harga --}}
+                        <div class="product_price_box" id="default-price-box">
+                            <span class="price-current discounted" id="display-price">
+                                @if($minEffective == $maxEffective)
+                                    Rp {{ number_format($minEffective, 0, ',', '.') }}
+                                @else
+                                    Rp {{ number_format($minEffective, 0, ',', '.') }} - Rp {{ number_format($maxEffective, 0, ',', '.') }}
+                                @endif
+                            </span>
+                            <span class="price-original" id="original-price-display">
+                                @if($minOriginalPrice == $maxOriginalPrice)
+                                    Rp {{ number_format($minOriginalPrice, 0, ',', '.') }}
+                                @else
+                                    Rp {{ number_format($minOriginalPrice, 0, ',', '.') }} - Rp {{ number_format($maxOriginalPrice, 0, ',', '.') }}
+                                @endif
+                            </span>
+                            <span class="discount-badge">Diskon {{ $maxDiscountPercent }}%</span>
+                        </div>
                     @else
-                        @if ($minPrice != $maxPrice)
-                            <span class="price-current" id="display-price">
-                                Rp {{ number_format($minPrice, 0, ',', '.') }} - Rp {{ number_format($maxPrice, 0, ',', '.') }}
-                            </span>
-                        @else
-                            <span class="price-current" id="display-price">
-                                Rp {{ number_format($minPrice, 0, ',', '.') }}
-                            </span>
-                        @endif
+                        {{-- Tidak Ada Diskon --}}
+                        <span class="price-current" id="display-price">
+                            @if($minEffective == $maxEffective)
+                                Rp {{ number_format($minEffective, 0, ',', '.') }}
+                            @else
+                                Rp {{ number_format($minEffective, 0, ',', '.') }} - Rp {{ number_format($maxEffective, 0, ',', '.') }}
+                            @endif
+                        </span>
                     @endif
                 </div>
 
@@ -308,7 +378,7 @@
                                             }
                                         @endphp
                                         <button type="button"
-                                                class="variant-option {{ $loop->first && $hasStock ? 'active' : '' }}"
+                                                class="variant-option"
                                                 data-option-id="{{ $option->id }}"
                                                 data-option-name="{{ $option->name }}"
                                                 data-value-id="{{ $value->id }}"
@@ -331,7 +401,7 @@
                     <form action="{{ route('customer.cart.add') }}" method="POST" id="add-to-cart-form">
                         @csrf
                         <input type="hidden" name="product_id" value="{{ $product->id }}">
-                        <input type="hidden" name="variant_id" id="selected-variant" value="{{ $firstVariant?->id }}">
+                        <input type="hidden" name="variant_id" id="selected-variant" value="">
                         <input type="hidden" name="variant_values" id="selected-variant-values" value="">
 
                         <div class="action-row">
@@ -346,8 +416,8 @@
                             <button type="submit"
                                     id="add-to-cart-btn"
                                     class="btn-add-to-cart"
-                                    {{ $totalStock <= 0 ? 'disabled' : '' }}>
-                                {{ $totalStock > 0 ? 'Tambah ke Keranjang' : 'Stok Habis' }}
+                                    disabled>
+                                Pilih Varian
                             </button>
 
                             <button type="button"
@@ -366,9 +436,9 @@
                         <button type="button"
                                 id="buy-now-btn"
                                 class="btn-buy-now"
-                                {{ $totalStock <= 0 ? 'disabled' : '' }}
+                                disabled
                                 onclick="buyNow()">
-                            {{ $totalStock > 0 ? 'Beli Sekarang' : 'Stok Habis' }}
+                            Pilih Varian
                         </button>
                     </form>
 
@@ -445,63 +515,269 @@
             </div>
         </div>
     </div>
-
-    {{-- ============================================ --}}
-    {{-- RELATED PRODUCTS --}}
-    {{-- ============================================ --}}
-    @if ($relatedProducts->isNotEmpty())
-        <section class="related-products">
-            <h2>Produk Terkait</h2>
-            <div class="related-grid">
-                @foreach ($relatedProducts as $related)
-                    <a href="{{ route('customer.products.show', $related) }}" class="related-item">
-                        <div class="image-wrapper">
-                            @if ($related->images->first())
-                                <img src="{{ Storage::url($related->images->first()->image) }}"
-                                     alt="{{ $related->name }}"
-                                     loading="lazy">
-                            @else
-                                <span class="placeholder">📦</span>
-                            @endif
-                        </div>
-                        <div class="related-name">{{ $related->name }}</div>
-                        <div class="related-price">
-                            @php
-                                $relMinPrice = $related->variants->min('discount_price') ?? $related->variants->min('price');
-                            @endphp
-                            Rp {{ number_format($relMinPrice, 0, ',', '.') }}
-                        </div>
-                    </a>
-                @endforeach
-            </div>
-        </section>
-    @endif
-
 </div>
+
+{{-- ============================================ --}}
+{{-- RECOMMENDED PRODUCTS --}}
+{{-- ============================================ --}}
+@if ($recommendedProducts->isNotEmpty())
+    <section class="recommended-products">
+        <div class="heading_product_layout">
+            <h3>REKOMENDASI PRODUK</h3>
+            <a href="{{ route('customer.products.index') }}">LIHAT SEMUA</a>
+        </div>
+        <div class="product_layout_grid">
+            @foreach($recommendedProducts as $related)
+            
+            <div class="product_layout_box" data-product-id="{{ $related->id }}">
+                <div class="product_layout_img">
+                    <a href="{{ route('customer.products.show', $related->slug) }}">
+                        @php
+                            // Cek gambar dari product images
+                            $imageUrl = asset('images/product_dummy.png');
+                            if ($related->images->first() && Storage::disk('public')->exists($related->images->first()->image)) {
+                                $imageUrl = Storage::url($related->images->first()->image);
+                            }
+                        @endphp
+                        <img src="{{ $imageUrl }}" alt="{{ $related->name }}">
+                    </a>
+                    @php
+                        // 🔥 CEK STOK (TERMASUK YANG HABIS)
+                        $totalStock = $related->variants->sum('stock');
+                        $isOutOfStock = $totalStock <= 0;
+                        
+                        // 🔥 HITUNG DISKON TERBESAR DARI VARIAN PRODUK
+                        $maxDiscount = 0;
+                        foreach ($related->variants as $variant) {
+                            if ($variant->discount_price && $variant->discount_price < $variant->price) {
+                                $discount = round((($variant->price - $variant->discount_price) / $variant->price) * 100);
+                                if ($discount > $maxDiscount) {
+                                    $maxDiscount = $discount;
+                                }
+                            }
+                        }
+                        
+                        // 🔥 CEK APAKAH ADA DISKON
+                        $hasDiscount = $maxDiscount > 0;
+                    @endphp
+                    @if($isOutOfStock)
+                        <span class="product_badge out-of-stock">HABIS</span>
+                    @endif
+                    @if($hasDiscount)
+                        <span class="discount_badge">Diskon {{ $maxDiscount }}%</span>
+                    @endif
+                </div>
+                <div class="product_layout_content">
+                    <h5>{{ $related->name }}</h5>
+                    <div class="product_layout_price">
+                        @php
+                            // 🔥 HITUNG HARGA EFEKTIF (HARGA SETELAH DISKON)
+                            $effectivePrices = [];
+                            $originalPrices = [];
+                            foreach ($related->variants as $variant) {
+                                $effectivePrices[] = $variant->discount_price ? (float) $variant->discount_price : (float) $variant->price;
+                                $originalPrices[] = (float) $variant->price;
+                            }
+                            
+                            $minEffective = !empty($effectivePrices) ? min($effectivePrices) : 0;
+                            $maxEffective = !empty($effectivePrices) ? max($effectivePrices) : 0;
+                            $minOriginal = !empty($originalPrices) ? min($originalPrices) : 0;
+                            $maxOriginal = !empty($originalPrices) ? max($originalPrices) : 0;
+                        @endphp
+                        
+                        @if($hasDiscount)
+                            <div class="product_layout_price_box">
+                                {{-- Harga Diskon --}}
+                                @if($minEffective == $maxEffective)
+                                    <p class="price-discount">Rp {{ number_format($minEffective, 0, ',', '.') }}</p>
+                                @else
+                                    <p class="price-discount">Rp {{ number_format($minEffective, 0, ',', '.') }} - Rp {{ number_format($maxEffective, 0, ',', '.') }}</p>
+                                @endif
+                                
+                                {{-- Harga Original (Coret) --}}
+                                @if($minOriginal == $maxOriginal)
+                                    <span class="price-original">Rp {{ number_format($minOriginal, 0, ',', '.') }}</span>
+                                @else
+                                    <span class="price-original">Rp {{ number_format($minOriginal, 0, ',', '.') }} - Rp {{ number_format($maxOriginal, 0, ',', '.') }}</span>
+                                @endif
+                            </div>
+                        @else
+                            {{-- Tanpa Diskon --}}
+                            @if($minEffective == $maxEffective)
+                                <p>Rp {{ number_format($minEffective, 0, ',', '.') }}</p>
+                            @else
+                                <p>Rp {{ number_format($minEffective, 0, ',', '.') }} - Rp {{ number_format($maxEffective, 0, ',', '.') }}</p>
+                            @endif
+                        @endif
+                    </div>
+                </div>
+                <div class="product_layout_button">
+                    {{-- 🔥 TOMBOL BELI SEKARANG DI-DISABLE JIKA STOK HABIS --}}
+                    <button class="buy_now_btn {{ $isOutOfStock ? 'disabled' : '' }}" 
+                            onclick="{{ $isOutOfStock ? '' : 'buyNow(' . $related->id . ')' }}"
+                            {{ $isOutOfStock ? 'disabled' : '' }}>
+                        {{ $isOutOfStock ? 'HABIS' : 'BELI SEKARANG' }}
+                    </button>
+                    <button class="add_to_cart_btn {{ $isOutOfStock ? 'disabled' : '' }}" 
+                            onclick="{{ $isOutOfStock ? '' : 'addToCart(' . $related->id . ')' }}"
+                            {{ $isOutOfStock ? 'disabled' : '' }}>
+                        <iconify-icon icon="solar:cart-linear"></iconify-icon>
+                    </button>
+                    <button class="add_to_wishlist_btn" 
+                            data-product-id="{{ $related->id }}"
+                            data-in-wishlist="{{ in_array($related->id, array_keys(session()->get('wishlist', []))) ? 'true' : 'false' }}"
+                            onclick="addToWishlist({{ $related->id }})">
+                        @if(in_array($related->id, array_keys(session()->get('wishlist', []))))
+                            <iconify-icon icon="solar:heart-bold" style="color: #ef4444;"></iconify-icon>
+                        @else
+                            <iconify-icon icon="solar:heart-linear"></iconify-icon>
+                        @endif
+                    </button>
+                </div>
+            </div>
+            @endforeach
+        </div>
+    </section>
+@endif
+
 
 {{-- ============================================ --}}
 {{-- JAVASCRIPT --}}
 {{-- ============================================ --}}
 <script>
-// ============================================
-// JAVASCRIPT LENGKAP - PRODUCT DETAIL
-// ============================================
-
 document.addEventListener('DOMContentLoaded', function() {
 
     const productVariants = @json($variantData ?? []);
     const productImages = @json($product->images);
+    const defaultVariantId = null;
 
     const selectedVariantInput = document.getElementById('selected-variant');
     const variantValuesInput = document.getElementById('selected-variant-values');
-    const displayPrice = document.getElementById('display-price');
     const stockDisplay = document.getElementById('stock-display');
     const addToCartBtn = document.getElementById('add-to-cart-btn');
+    const buyNowBtn = document.getElementById('buy-now-btn');
     const qtyInput = document.getElementById('qty-input');
     const mainImage = document.getElementById('main-image');
+    const priceContainer = document.getElementById('price-display-container');
 
     let selectedValues = {};
     let currentVariantId = null;
+    let isVariantSelected = false;
+
+    // 🔥 DATA HARGA DEFAULT (RANGE)
+    const defaultDisplayPrice = @json($defaultDisplayPrice);
+    const defaultOriginalPrice = @json($defaultOriginalPrice);
+    const defaultDiscountBadge = @json($defaultDiscountBadge);
+    const hasAnyDiscount = {{ $hasAnyDiscount ? 'true' : 'false' }};
+    const maxDiscountPercent = {{ $maxDiscountPercent ?? 0 }};
+    const defaultMinEffective = {{ $minEffective ?? 0 }};
+    const defaultMaxEffective = {{ $maxEffective ?? 0 }};
+    const defaultMinOriginal = {{ $minOriginalPrice ?? 0 }};
+    const defaultMaxOriginal = {{ $maxOriginalPrice ?? 0 }};
+
+    let previousSelectedValues = {};
+    let previousVariantId = null;
+    let previousIsVariantSelected = false;
+
+    // ============================================
+    // FUNGSI RESET KE HARGA DEFAULT
+    // ============================================
+    function resetToDefaultPrice() {
+        if (!priceContainer) return;
+
+        console.log('🔄 Resetting to default price');
+
+        if (hasAnyDiscount) {
+            priceContainer.innerHTML = `
+                <div class="product_price_box" id="default-price-box">
+                    <span class="price-current discounted" id="display-price">
+                        ${defaultDisplayPrice}
+                    </span>
+                    <span class="price-original" id="original-price-display">
+                        ${defaultOriginalPrice}
+                    </span>
+                    <span class="discount-badge">${defaultDiscountBadge}</span>
+                </div>
+            `;
+        } else {
+            priceContainer.innerHTML = `
+                <span class="price-current" id="display-price">
+                    ${defaultDisplayPrice}
+                </span>
+            `;
+        }
+
+        // Reset stock display ke total stok
+        const totalStock = productVariants.reduce(function(sum, v) {
+            return sum + v.stock;
+        }, 0);
+        
+        stockDisplay.textContent = totalStock > 0 ? 'Stok: ' + totalStock : 'Stok Habis';
+        stockDisplay.className = 'product_stock_status ' + (totalStock > 0 ? 'in-stock' : 'out-of-stock');
+
+        // Disable tombol
+        addToCartBtn.disabled = true;
+        addToCartBtn.textContent = 'Pilih Varian';
+        buyNowBtn.disabled = true;
+        buyNowBtn.textContent = 'Pilih Varian';
+
+        // Reset selected variant
+        selectedVariantInput.value = '';
+        currentVariantId = null;
+        isVariantSelected = false;
+        
+        // Reset qty max ke total stok
+        qtyInput.max = totalStock > 0 ? totalStock : 1;
+        qtyInput.value = 1;
+        
+        // 🔥 RESET SEMUA PILIHAN VARIAN
+        document.querySelectorAll('.variant-option').forEach(function(btn) {
+            btn.classList.remove('active');
+        });
+        selectedValues = {};
+        variantValuesInput.value = '';
+        
+        // 🔥 UPDATE AVAILABILITAS VARIAN - AKTIFKAN SEMUA YANG MEMILIKI STOK
+        updateAvailableVariants();
+    }
+
+    function saveCurrentState() {
+        previousSelectedValues = Object.assign({}, selectedValues);
+        previousVariantId = currentVariantId;
+        previousIsVariantSelected = isVariantSelected;
+    }
+
+    function restorePreviousState() {
+        if (previousIsVariantSelected && previousVariantId) {
+            
+            // Restore selected values
+            selectedValues = Object.assign({}, previousSelectedValues);
+            
+            // Restore active classes
+            document.querySelectorAll('.variant-option').forEach(function(btn) {
+                const valueId = parseInt(btn.dataset.valueId);
+                const optionId = btn.dataset.optionId;
+                
+                if (previousSelectedValues[optionId] === valueId) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+            
+            // Cari varian yang cocok
+            const variant = findVariantByValues(selectedValues, false);
+            if (variant) {
+                selectVariant(variant, true); // true = skip image update
+            }
+            
+            variantValuesInput.value = JSON.stringify(Object.values(selectedValues));
+            updateAvailableVariants();
+        } else {
+            // Jika tidak ada state sebelumnya, reset ke default
+            resetToDefaultPrice();
+        }
+    }
 
     // ============================================
     // FUNGSI BUKA POPUP
@@ -560,26 +836,35 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function findVariantForSelectedOption(optionId, valueId) {
+        // 🔥 BUAT CANDIDATE VALUES DARI SELECTED VALUES + PILIHAN BARU
         const candidateValues = Object.assign({}, selectedValues, {
             [optionId]: parseInt(valueId)
         });
 
-        const exactMatch = findVariantByValues(candidateValues);
+        // 🔥 CEK APAKAH ADA VARIAN YANG COCOK (TERMASUK YANG STOK 0)
+        const exactMatch = findVariantByValues(candidateValues, false);
         if (exactMatch) {
+            // Jika ada varian yang cocok (walaupun stok 0), return
             return exactMatch;
         }
 
+        // 🔥 CARI VARIAN YANG MEMILIKI VALUE INI (TANPA HARUS SEMUA OPTION MATCH)
         const targetValueId = parseInt(valueId);
+        
+        // Cari varian yang memiliki value ini (stok > 0)
         const variantsWithValue = productVariants.filter(function(variant) {
             return variant.values.includes(targetValueId) && variant.stock > 0;
         });
 
         if (variantsWithValue.length === 0) {
-            return productVariants.find(function(variant) {
+            // Jika tidak ada yang stok > 0, cari yang stok 0 (untuk ditampilkan)
+            const anyVariant = productVariants.find(function(variant) {
                 return variant.values.includes(targetValueId);
-            }) || null;
+            });
+            return anyVariant || null;
         }
 
+        // 🔥 PRIORITASKAN VARIAN YANG COCOK DENGAN SEMUA SELECTED VALUES (STOK > 0)
         const selectedIds = Object.values(candidateValues).map(Number);
 
         return variantsWithValue.find(function(variant) {
@@ -587,7 +872,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return selectedIds.every(function(id) {
                 return variantValueIds.includes(id);
             });
-        }) || variantsWithValue[0];
+        }) || variantsWithValue[0]; // Fallback ke yang pertama
     }
 
     function findVariantById(id) {
@@ -613,8 +898,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // ============================================
     // CHANGE MAIN IMAGE
     // ============================================
-    window.changeMainImage = function(imageUrl, element) {
+    window.changeMainImage = function(imageUrl, element, isOptionImage = false) {
         if (!imageUrl || !mainImage) return;
+
+        console.log('🖼️ changeMainImage called:', { imageUrl, isOptionImage });
 
         mainImage.src = imageUrl;
         mainImage.classList.remove('fade-in');
@@ -645,55 +932,181 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         }
+
+        // 🔥 LOGIKA UTAMA:
+        // - Jika gambar dari option values (isOptionImage = true) -> PILIH VARIAN
+        // - Jika gambar dari product images (isOptionImage = false) -> JANGAN RESET, PERTAHANKAN STATE
+        if (isOptionImage) {
+            // Gambar dari option value - pilih varian yang sesuai
+            const optionValueId = element ? element.dataset.optionValueId : null;
+            console.log('🔄 Option image clicked, optionValueId:', optionValueId);
+            if (optionValueId) {
+                // Hapus semua active class terlebih dahulu
+                document.querySelectorAll('.variant-option').forEach(function(btn) {
+                    btn.classList.remove('active');
+                });
+                selectVariantByOptionValueId(parseInt(optionValueId));
+            }
+        } else {
+            // 🔥 GAMBAR DARI PRODUCT IMAGES - JANGAN RESET, PERTAHANKAN STATE
+            console.log('🔄 Product image clicked - KEEPING current selection');
+            // Tidak melakukan reset, tetap pertahankan pilihan varian saat ini
+            // Hanya update gambar thumbnail aktif
+        }
     };
+
+    // ============================================
+    // PILIH VARIAN BERDASARKAN OPTION VALUE ID
+    // ============================================
+    function selectVariantByOptionValueId(optionValueId) {
+        console.log('🔍 Selecting variant by option value ID:', optionValueId);
+        
+        // Cari varian yang memiliki value ini
+        let foundVariant = null;
+        for (let i = 0; i < productVariants.length; i++) {
+            if (productVariants[i].values.includes(parseInt(optionValueId))) {
+                // Prioritaskan yang stok > 0
+                if (productVariants[i].stock > 0) {
+                    foundVariant = productVariants[i];
+                    break;
+                } else if (!foundVariant) {
+                    // Simpan yang stok 0 sebagai fallback
+                    foundVariant = productVariants[i];
+                }
+            }
+        }
+
+        if (foundVariant) {
+            console.log('✅ Found variant:', foundVariant);
+            
+            let variantValues = {};
+            let valueIds = foundVariant.values;
+
+            // Set active class untuk semua opsi yang cocok
+            document.querySelectorAll('.variant-options[data-option-id]').forEach(function(group) {
+                let optionId = group.dataset.optionId;
+                let optionButtons = group.querySelectorAll('.variant-option');
+                let hasActiveInGroup = false;
+                
+                optionButtons.forEach(function(btn) {
+                    let valId = parseInt(btn.dataset.valueId);
+                    if (valueIds.includes(valId)) {
+                        variantValues[optionId] = valId;
+                        btn.classList.add('active');
+                        hasActiveInGroup = true;
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                });
+                
+                // Jika tidak ada yang aktif di grup ini, pilih yang pertama tersedia
+                if (!hasActiveInGroup) {
+                    const firstAvailable = group.querySelector('.variant-option:not([disabled])');
+                    if (firstAvailable) {
+                        firstAvailable.classList.add('active');
+                        variantValues[optionId] = parseInt(firstAvailable.dataset.valueId);
+                    }
+                }
+            });
+
+            selectedValues = variantValues;
+            variantValuesInput.value = JSON.stringify(Object.values(variantValues));
+            selectVariant(foundVariant);
+            
+            // 🔥 UPDATE GAMBAR - HANYA JIKA OPTION VALUE ADALAH WARNA
+            // Cek apakah option value ini adalah warna
+            const optionName = getOptionNameByValueId(parseInt(optionValueId));
+            var isColorOption = false;
+            var colorKeywords = ['warna', 'color', 'colour'];
+            var optionNameLower = (optionName || '').toLowerCase().trim();
+            
+            for (var c = 0; c < colorKeywords.length; c++) {
+                if (optionNameLower === colorKeywords[c]) {
+                    isColorOption = true;
+                    break;
+                }
+            }
+            
+            if (isColorOption) {
+                updateVariantImage(foundVariant);
+            }
+            
+            updateAvailableVariants();
+            isVariantSelected = true;
+        } else {
+            console.log('❌ No variant found for option value ID:', optionValueId);
+            updateAvailableVariants();
+        }
+    }
+
 
     // ============================================
     // HANDLE THUMBNAIL CLICK
     // ============================================
     window.handleThumbnailClick = function(imageUrl, optionValueId, element) {
-        changeMainImage(imageUrl, element);
-
-        if (optionValueId) {
-            var foundVariant = null;
-            for (var i = 0; i < productVariants.length; i++) {
-                var variant = productVariants[i];
-                if (variant.values.includes(parseInt(optionValueId))) {
-                    foundVariant = variant;
-                    break;
-                }
-            }
-
-            if (foundVariant) {
-                var variantValues = {};
-                var valueIds = foundVariant.values;
-
-                document.querySelectorAll('.variant-options[data-option-id]').forEach(function(group) {
-                    var optionId = group.dataset.optionId;
-                    var optionButtons = group.querySelectorAll('.variant-option');
-                    optionButtons.forEach(function(btn) {
-                        var valId = parseInt(btn.dataset.valueId);
-                        if (valueIds.includes(valId)) {
-                            variantValues[optionId] = valId;
-                        }
-                    });
-                });
-
-                selectedValues = variantValues;
-                variantValuesInput.value = JSON.stringify(Object.values(variantValues));
-                selectVariant(foundVariant);
-                updateAvailableVariants();
-            }
+        // 🔥 TENTUKAN APAKAH INI GAMBAR DARI OPTION VALUE ATAU PRODUCT IMAGES
+        const isOptionImage = optionValueId !== null && optionValueId !== undefined && optionValueId !== 'null' && optionValueId !== '';
+        
+        console.log('🖼️ Thumbnail clicked:', { imageUrl, optionValueId, isOptionImage });
+        
+        // Ganti gambar utama
+        changeMainImage(imageUrl, element, isOptionImage);
+        
+        // 🔥 JIKA GAMBAR DARI OPTION VALUE, PILIH VARIAN YANG SESUAI
+        if (isOptionImage && optionValueId) {
+            // Hapus semua active class terlebih dahulu
+            document.querySelectorAll('.variant-option').forEach(function(btn) {
+                btn.classList.remove('active');
+            });
+            selectVariantByOptionValueId(parseInt(optionValueId));
         }
-    }
+        // 🔥 JIKA GAMBAR DARI PRODUCT IMAGES, TIDAK ADA TINDAKAN - PERTAHANKAN STATE
+    };
 
-    function selectVariant(variant) {
+    // ============================================
+    // SELECT VARIANT
+    // ============================================
+    function selectVariant(variant, skipImageUpdate = false) {
         if (!variant) return;
 
         currentVariantId = variant.id;
         selectedVariantInput.value = variant.id;
+        isVariantSelected = true;
 
         var price = variant.discount_price ?? variant.price;
-        displayPrice.textContent = 'Rp ' + new Intl.NumberFormat('id-ID').format(price);
+        var originalPrice = variant.price;
+        var hasDiscount = variant.discount_price && variant.discount_price < variant.price;
+        var discountPercent = 0;
+        var isOutOfStock = variant.stock <= 0;
+        
+        if (hasDiscount) {
+            discountPercent = Math.round(((originalPrice - price) / originalPrice) * 100);
+        }
+
+        // 🔥 UPDATE HARGA DENGAN CORET
+        if (priceContainer) {
+            if (hasDiscount) {
+                priceContainer.innerHTML = `
+                    <div class="product_price_box">
+                        <span class="price-current discounted" id="display-price">
+                            Rp ${new Intl.NumberFormat('id-ID').format(price)}
+                            ${isOutOfStock ? '<span class="text-red-500 text-xs ml-2 font-normal">(Stok Habis)</span>' : ''}
+                        </span>
+                        <span class="price-original" id="original-price-display">
+                            Rp ${new Intl.NumberFormat('id-ID').format(originalPrice)}
+                        </span>
+                        <span class="discount-badge">Diskon ${discountPercent}%</span>
+                    </div>
+                `;
+            } else {
+                priceContainer.innerHTML = `
+                    <span class="price-current" id="display-price">
+                        Rp ${new Intl.NumberFormat('id-ID').format(price)}
+                        ${isOutOfStock ? '<span class="text-red-500 text-xs ml-2 font-normal">(Stok Habis)</span>' : ''}
+                    </span>
+                `;
+            }
+        }
 
         stockDisplay.textContent = variant.stock > 0 ? 'Stok: ' + variant.stock : 'Stok Habis';
         stockDisplay.className = 'product_stock_status ' + (variant.stock > 0 ? 'in-stock' : 'out-of-stock');
@@ -703,17 +1116,47 @@ document.addEventListener('DOMContentLoaded', function() {
         if (variant.stock > 0) {
             addToCartBtn.disabled = false;
             addToCartBtn.textContent = 'Tambah ke Keranjang';
-            document.getElementById('buy-now-btn').disabled = false;
-            document.getElementById('buy-now-btn').textContent = 'Beli Sekarang';
+            buyNowBtn.disabled = false;
+            buyNowBtn.textContent = 'Beli Sekarang';
         } else {
             addToCartBtn.disabled = true;
             addToCartBtn.textContent = 'Stok Habis';
-            document.getElementById('buy-now-btn').disabled = true;
-            document.getElementById('buy-now-btn').textContent = 'Stok Habis';
+            buyNowBtn.disabled = true;
+            buyNowBtn.textContent = 'Stok Habis';
         }
 
         updateVariantActiveState(variant);
-        updateVariantImage(variant);
+        
+        // 🔥 UPDATE GAMBAR HANYA JIKA TIDAK SKIP
+        if (!skipImageUpdate) {
+            updateVariantImage(variant);
+        }
+    }
+
+    function isColorOptionName(optionName) {
+        if (!optionName) return false;
+        var colorKeywords = ['warna', 'color', 'colour'];
+        var optionNameLower = optionName.toLowerCase().trim();
+        
+        for (var c = 0; c < colorKeywords.length; c++) {
+            if (optionNameLower === colorKeywords[c]) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function isSizeOptionName(optionName) {
+        if (!optionName) return false;
+        var sizeKeywords = ['ukuran', 'size'];
+        var optionNameLower = optionName.toLowerCase().trim();
+        
+        for (var c = 0; c < sizeKeywords.length; c++) {
+            if (optionNameLower === sizeKeywords[c]) {
+                return true;
+            }
+        }
+        return false;
     }
 
     function updateVariantActiveState(variant) {
@@ -732,23 +1175,111 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function updateAvailableVariants() {
-        document.querySelectorAll('.variant-option').forEach(function(button) {
-            var optionId = button.dataset.optionId;
-            var valueId = button.dataset.valueId;
-
-            var tempValues = Object.assign({}, selectedValues);
-            tempValues[optionId] = parseInt(valueId);
-
-            var variant = findVariantByValues(tempValues);
-            var isAvailable = variant && variant.stock > 0;
-
-            if (!isAvailable) {
-                button.disabled = true;
-                button.classList.add('disabled');
-            } else {
-                button.disabled = false;
-                button.classList.remove('disabled');
+        const totalOptions = document.querySelectorAll('.variant-options').length;
+        const hasSelectedValues = Object.keys(selectedValues).length > 0;
+        
+        console.log('🔄 Updating available variants, selectedValues:', selectedValues);
+        console.log('Total options:', totalOptions, 'Has selected:', hasSelectedValues);
+        
+        document.querySelectorAll('.variant-options').forEach(function(group) {
+            const optionId = group.dataset.optionId;
+            const buttons = group.querySelectorAll('.variant-option');
+            
+            buttons.forEach(function(button) {
+                const valueId = parseInt(button.dataset.valueId);
+                
+                // 🔥 CEK APAKAH OPSI INI MEMILIKI STOK DI SETIDAKNYA SATU VARIAN
+                let hasStockForValue = false;
+                let hasAnyVariant = false;
+                
+                for (var i = 0; i < productVariants.length; i++) {
+                    var variant = productVariants[i];
+                    if (variant.values.includes(valueId)) {
+                        hasAnyVariant = true;
+                        if (variant.stock > 0) {
+                            hasStockForValue = true;
+                            break;
+                        }
+                    }
+                }
+                
+                // 🔥 JIKA OPSI INI TIDAK ADA DI VARIAN MANAPUN, DISABLE
+                if (!hasAnyVariant) {
+                    button.disabled = true;
+                    button.classList.add('disabled');
+                    return;
+                }
+                
+                // 🔥 JIKA BELUM ADA VARIAN YANG DIPILIH, AKTIFKAN SEMUA YANG ADA STOK
+                if (!hasSelectedValues) {
+                    if (hasStockForValue) {
+                        button.disabled = false;
+                        button.classList.remove('disabled');
+                    } else {
+                        button.disabled = true;
+                        button.classList.add('disabled');
+                    }
+                    return;
+                }
+                
+                // 🔥 JIKA SUDAH ADA VARIAN YANG DIPILIH
+                // Cek apakah kombinasi dengan nilai yang dipilih saat ini tersedia
+                var tempValues = Object.assign({}, selectedValues);
+                tempValues[optionId] = valueId;
+                
+                var variant = findVariantByValues(tempValues, false);
+                var isAvailable = variant && variant.stock > 0;
+                
+                if (!isAvailable && variant) {
+                    // Jika varian ada tapi stok 0, tetap disable
+                    button.disabled = true;
+                    button.classList.add('disabled');
+                } else if (!isAvailable) {
+                    // Jika tidak ada varian sama sekali
+                    button.disabled = true;
+                    button.classList.add('disabled');
+                } else {
+                    button.disabled = false;
+                    button.classList.remove('disabled');
+                }
+            });
+            
+            // 🔥 PASTIKAN SETIDAKNYA SATU OPSI AKTIF DI SETIAP GRUP (JIKA ADA YANG AKTIF)
+            const activeInGroup = group.querySelector('.variant-option.active:not([disabled])');
+            const anyAvailable = group.querySelector('.variant-option:not([disabled])');
+            
+            // Jika tidak ada yang aktif dan ada yang tersedia, pilih yang pertama
+            if (!activeInGroup && anyAvailable && hasSelectedValues) {
+                // Cek apakah option ini sudah memiliki nilai yang dipilih di selectedValues
+                if (selectedValues[optionId]) {
+                    // Cari tombol dengan value yang sesuai
+                    const matchingBtn = group.querySelector(`.variant-option[data-value-id="${selectedValues[optionId]}"]`);
+                    if (matchingBtn && !matchingBtn.disabled) {
+                        matchingBtn.classList.add('active');
+                    } else {
+                        // Jika yang dipilih tidak tersedia, pilih yang pertama tersedia
+                        anyAvailable.classList.add('active');
+                        selectedValues[optionId] = parseInt(anyAvailable.dataset.valueId);
+                    }
+                } else {
+                    // Jika belum ada nilai di selectedValues, pilih yang pertama tersedia
+                    anyAvailable.classList.add('active');
+                    selectedValues[optionId] = parseInt(anyAvailable.dataset.valueId);
+                }
             }
+        });
+    }
+
+    function findVariantByValues(values, checkStock = true) {
+        const selectedValueIds = Object.values(values).map(Number).sort();
+
+        return productVariants.find(function(variant) {
+            const variantValueIds = variant.values.map(Number).sort();
+            const matches = JSON.stringify(variantValueIds) === JSON.stringify(selectedValueIds);
+            if (checkStock) {
+                return matches && variant.stock > 0;
+            }
+            return matches;
         });
     }
 
@@ -797,19 +1328,19 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         if (colorImage) {
-            changeMainImage(colorImage);
+            changeMainImage(colorImage, null, true);
             return;
         }
 
         if (variant.image) {
-            changeMainImage(variant.image);
+            changeMainImage(variant.image, null, true);
             return;
         }
 
         const firstImage = productImages.length > 0 ? 
             '{{ $product->images->first() ? Storage::url($product->images->first()->image) : '' }}' : null;
         if (firstImage) {
-            changeMainImage(firstImage);
+            changeMainImage(firstImage, null, false);
         }
     }
 
@@ -931,10 +1462,32 @@ document.addEventListener('DOMContentLoaded', function() {
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
         const btn = document.getElementById('wishlist-toggle-product');
 
-        btn.disabled = true;
-        btn.style.opacity = '0.5';
+        checkLoginStatus().then(isLoggedIn => {
+            if (!isLoggedIn) {
+                window._pendingProductId = productId;
+                openLoginPopup('add_to_wishlist', function() {
+                    if (window._pendingProductId) {
+                        toggleWishlistDirect(window._pendingProductId);
+                        window._pendingProductId = null;
+                    }
+                });
+                return;
+            }
 
-        fetch('{{ route("customer.wishlist.add") }}', {
+            toggleWishlistDirect(productId);
+        });
+    };
+
+    function toggleWishlistDirect(productId) {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+        const btn = document.getElementById('wishlist-toggle-product');
+
+        if (btn) {
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+        }
+
+        fetch(window.customerRoutes.wishlistAdd, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -943,15 +1496,28 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             body: JSON.stringify({ product_id: productId })
         })
-        .then(response => response.json())
+        .then(response => {
+            if (response.status === 401) {
+                window._pendingProductId = productId;
+                openLoginPopup('add_to_wishlist', function() {
+                    if (window._pendingProductId) {
+                        toggleWishlistDirect(window._pendingProductId);
+                        window._pendingProductId = null;
+                    }
+                });
+                throw new Error('Unauthorized');
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
                 if (data.in_wishlist) {
-                    btn.classList.add('active');
-                    btn.textContent = '❤️';
+                    if (btn) {
+                        btn.classList.add('active');
+                        btn.innerHTML = '❤️';
+                    }
                     showToast('❤️ ' + data.message, 'success');
                     
-                    // 🔥 BUKA POPUP WISHLIST
                     if (typeof loadWishlistPopup === 'function') {
                         setTimeout(function() {
                             loadWishlistPopup();
@@ -963,12 +1529,13 @@ document.addEventListener('DOMContentLoaded', function() {
                         }, 400);
                     }
                 } else {
-                    btn.classList.remove('active');
-                    btn.textContent = '🤍';
+                    if (btn) {
+                        btn.classList.remove('active');
+                        btn.innerHTML = '🤍';
+                    }
                     showToast('💔 ' + data.message, 'info');
                 }
 
-                // 🔥 UPDATE WISHLIST COUNT
                 const wishlistCount = document.getElementById('wishlist-count');
                 if (wishlistCount) {
                     wishlistCount.textContent = data.count || 0;
@@ -982,14 +1549,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 showToast(data.message || 'Gagal menambahkan ke wishlist', 'error');
             }
         })
-        .catch(() => {
-            showToast('Terjadi kesalahan', 'error');
+        .catch(error => {
+            if (error.message !== 'Unauthorized') {
+                console.error('Error:', error);
+                showToast('Terjadi kesalahan', 'error');
+            }
         })
         .finally(() => {
-            btn.disabled = false;
-            btn.style.opacity = '1';
+            if (btn) {
+                btn.disabled = false;
+                btn.style.opacity = '1';
+            }
         });
-    };
+    }
+
 
     // ============================================
     // SHARE PRODUCT
@@ -1035,24 +1608,121 @@ document.addEventListener('DOMContentLoaded', function() {
 
             var optionId = this.dataset.optionId;
             var valueId = this.dataset.valueId;
+            var optionName = this.dataset.optionName || '';
 
             var group = this.closest('[data-option-id]');
+            
+            // 🔥 HAPUS ACTIVE CLASS DARI SEMUA TOMBOL DI GRUP YANG SAMA
             group.querySelectorAll('.variant-option').forEach(function(btn) {
                 btn.classList.remove('active');
             });
 
             this.classList.add('active');
 
+            // 🔥 UPDATE SELECTED VALUES
             selectedValues[optionId] = parseInt(valueId);
 
-            var values = Object.values(selectedValues);
-            variantValuesInput.value = JSON.stringify(values);
+            // 🔥 UPDATE AVAILABLE VARIANTS DULU
+            updateAvailableVariants();
 
-            var variant = findVariantForSelectedOption(optionId, valueId);
-
+            // 🔥 CEK APAKAH ADA KOMBINASI YANG LENGKAP
+            var totalOptions = document.querySelectorAll('.variant-options').length;
+            var selectedCount = Object.keys(selectedValues).length;
+            
+            console.log('Selected values:', selectedValues, 'Total options:', totalOptions);
+            
+            // 🔥 CARI VARIAN YANG COCOK
+            var variant = null;
+            if (selectedCount === totalOptions) {
+                variant = findVariantByValues(selectedValues, false);
+            } else {
+                variant = findVariantByValues(selectedValues, false);
+            }
+            
             if (variant) {
-                selectVariant(variant);
-                updateVariantImage(variant);
+                // 🔥 UPDATE VARIAN SELECTED
+                selectedVariantInput.value = variant.id;
+                currentVariantId = variant.id;
+                isVariantSelected = true;
+                
+                // 🔥 UPDATE HARGA
+                var price = variant.discount_price ?? variant.price;
+                var originalPrice = variant.price;
+                var hasDiscount = variant.discount_price && variant.discount_price < variant.price;
+                var isOutOfStock = variant.stock <= 0;
+                
+                if (priceContainer) {
+                    if (hasDiscount) {
+                        var discountPercent = Math.round(((originalPrice - price) / originalPrice) * 100);
+                        priceContainer.innerHTML = `
+                            <div class="product_price_box">
+                                <span class="price-current discounted" id="display-price">
+                                    Rp ${new Intl.NumberFormat('id-ID').format(price)}
+                                    ${isOutOfStock ? '<span class="text-red-500 text-xs ml-2 font-normal">(Stok Habis)</span>' : ''}
+                                </span>
+                                <span class="price-original" id="original-price-display">
+                                    Rp ${new Intl.NumberFormat('id-ID').format(originalPrice)}
+                                </span>
+                                <span class="discount-badge">Diskon ${discountPercent}%</span>
+                            </div>
+                        `;
+                    } else {
+                        priceContainer.innerHTML = `
+                            <span class="price-current" id="display-price">
+                                Rp ${new Intl.NumberFormat('id-ID').format(price)}
+                                ${isOutOfStock ? '<span class="text-red-500 text-xs ml-2 font-normal">(Stok Habis)</span>' : ''}
+                            </span>
+                        `;
+                    }
+                }
+                
+                // 🔥 UPDATE STOK
+                stockDisplay.textContent = variant.stock > 0 ? 'Stok: ' + variant.stock : 'Stok Habis';
+                stockDisplay.className = 'product_stock_status ' + (variant.stock > 0 ? 'in-stock' : 'out-of-stock');
+                
+                // 🔥 TOMBOL HANYA AKTIF JIKA STOK > 0 DAN SEMUA OPSI DIPILIH
+                if (variant.stock > 0 && selectedCount === totalOptions) {
+                    addToCartBtn.disabled = false;
+                    addToCartBtn.textContent = 'Tambah ke Keranjang';
+                    buyNowBtn.disabled = false;
+                    buyNowBtn.textContent = 'Beli Sekarang';
+                } else if (selectedCount === totalOptions && variant.stock <= 0) {
+                    addToCartBtn.disabled = true;
+                    addToCartBtn.textContent = 'Stok Habis';
+                    buyNowBtn.disabled = true;
+                    buyNowBtn.textContent = 'Stok Habis';
+                } else {
+                    addToCartBtn.disabled = true;
+                    addToCartBtn.textContent = 'Pilih Varian';
+                    buyNowBtn.disabled = true;
+                    buyNowBtn.textContent = 'Pilih Varian';
+                }
+                
+                // 🔥 UPDATE GAMBAR - HANYA JIKA YANG DIPILIH ADALAH WARNA
+                // Cek apakah option yang diklik adalah Warna
+                var isColorOption = false;
+                var colorKeywords = ['warna', 'color', 'colour'];
+                var optionNameLower = (optionName || '').toLowerCase().trim();
+                
+                for (var c = 0; c < colorKeywords.length; c++) {
+                    if (optionNameLower === colorKeywords[c]) {
+                        isColorOption = true;
+                        break;
+                    }
+                }
+                
+                // 🔥 JIKA WARNA, UPDATE GAMBAR
+                if (isColorOption) {
+                    updateVariantImage(variant);
+                }
+                // 🔥 JIKA UKURAN, JANGAN UPDATE GAMBAR
+                
+                // 🔥 UPDATE ACTIVE STATE
+                updateVariantActiveState(variant);
+                
+            } else {
+                // 🔥 TIDAK ADA VARIAN - RESET KE DEFAULT
+                resetToDefaultPrice();
             }
 
             updateAvailableVariants();
@@ -1080,13 +1750,40 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
+        checkLoginStatus().then(isLoggedIn => {
+            if (!isLoggedIn) {
+                window._pendingProductId = productId;
+                window._pendingVariantId = variantId;
+                window._pendingQuantity = quantity;
+                openLoginPopup('add_to_cart', function() {
+                    if (window._pendingProductId) {
+                        addToCartFromShowPage(
+                            window._pendingProductId, 
+                            window._pendingVariantId, 
+                            window._pendingQuantity
+                        );
+                        window._pendingProductId = null;
+                        window._pendingVariantId = null;
+                        window._pendingQuantity = null;
+                    }
+                });
+                return;
+            }
+
+            addToCartFromShowPage(productId, variantId, quantity);
+        });
+    });
+
+    function addToCartFromShowPage(productId, variantId, quantity) {
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
         const btn = document.getElementById('add-to-cart-btn');
 
-        btn.disabled = true;
-        btn.textContent = '⏳ Memproses...';
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = '⏳ Memproses...';
+        }
 
-        fetch('{{ route("customer.cart.add") }}', {
+        fetch(window.customerRoutes.cartAdd, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1099,10 +1796,29 @@ document.addEventListener('DOMContentLoaded', function() {
                 quantity: quantity
             })
         })
-        .then(response => response.json())
+        .then(response => {
+            if (response.status === 401) {
+                window._pendingProductId = productId;
+                window._pendingVariantId = variantId;
+                window._pendingQuantity = quantity;
+                openLoginPopup('add_to_cart', function() {
+                    if (window._pendingProductId) {
+                        addToCartFromShowPage(
+                            window._pendingProductId, 
+                            window._pendingVariantId, 
+                            window._pendingQuantity
+                        );
+                        window._pendingProductId = null;
+                        window._pendingVariantId = null;
+                        window._pendingQuantity = null;
+                    }
+                });
+                throw new Error('Unauthorized');
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
-                // 🔥 UPDATE CART COUNT
                 const cartCountEl = document.getElementById('cart-count');
                 if (cartCountEl) {
                     cartCountEl.textContent = data.count || 0;
@@ -1113,7 +1829,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     window.updateNavbarCartCount(data.count);
                 }
                 
-                // 🔥 BUKA POPUP CART
                 if (typeof loadCartPopup === 'function') {
                     setTimeout(function() {
                         loadCartPopup();
@@ -1130,14 +1845,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 showToast(data.message || 'Gagal menambahkan ke keranjang', 'error');
             }
         })
-        .catch(() => {
-            showToast('Terjadi kesalahan. Silakan coba lagi.', 'error');
+        .catch(error => {
+            if (error.message !== 'Unauthorized') {
+                console.error('Error:', error);
+                showToast('Terjadi kesalahan. Silakan coba lagi.', 'error');
+            }
         })
         .finally(() => {
-            btn.disabled = false;
-            btn.textContent = 'Tambah ke Keranjang';
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = 'Tambah ke Keranjang';
+            }
         });
-    });
+    }
 
     // ============================================
     // CHECK WISHLIST STATUS
@@ -1156,35 +1876,21 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // ============================================
-    // INITIALIZATION
+    // INITIALIZATION - DEFAULT TIDAK PILIH VARIAN
     // ============================================
     function initVariantSelection() {
-        var firstVariant = productVariants.find(function(v) { return v.stock > 0; });
-
-        if (firstVariant) {
-            var valueIds = firstVariant.values.map(Number);
-
-            document.querySelectorAll('.variant-options[data-option-id]').forEach(function(group) {
-                var optionButtons = group.querySelectorAll('.variant-option');
-                optionButtons.forEach(function(btn) {
-                    var valId = parseInt(btn.dataset.valueId);
-                    if (valueIds.includes(valId)) {
-                        selectedValues[group.dataset.optionId] = valId;
-                    }
-                });
-            });
-
-            variantValuesInput.value = JSON.stringify(Object.values(selectedValues));
-            selectVariant(firstVariant);
-            updateAvailableVariants();
-        } else {
-            document.querySelectorAll('.variant-options[data-option-id]').forEach(function(group) {
-                var first = group.querySelector('.variant-option:not(:disabled)');
-                if (first) {
-                    first.click();
-                }
-            });
-        }
+        resetToDefaultPrice();
+        
+        // Jangan pilih varian apapun
+        document.querySelectorAll('.variant-option').forEach(function(btn) {
+            btn.classList.remove('active');
+        });
+        
+        selectedValues = {};
+        variantValuesInput.value = '';
+        isVariantSelected = false;
+        
+        updateAvailableVariants();
     }
 
     window.toggleAccordion = function(button) {
@@ -1227,12 +1933,14 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // ============================================
+    // ZOOM FUNCTIONALITY
+    // ============================================
     (function() {
         const container = document.getElementById('main-image-container');
         const image = document.getElementById('main-image');
         const magnifier = document.getElementById('magnifier-glass');
 
-        // 🔥 CEK APAKAH ELEMEN TERSEDIA
         if (!container || !image || !magnifier) return;
 
         let isZoomed = false;
@@ -1261,18 +1969,12 @@ document.addEventListener('DOMContentLoaded', function() {
             magnifier.style.backgroundSize = `${rect.width * 2}px ${rect.height * 2}px`;
         });
 
-        // ============================================
-        // 🔥 MOUSE ENTER - AKTIFKAN ZOOM
-        // ============================================
         container.addEventListener('mouseenter', function() {
             isZoomed = true;
             container.classList.add('zoomed');
             magnifier.classList.add('active');
         });
 
-        // ============================================
-        // 🔥 MOUSE LEAVE - NONAKTIFKAN ZOOM
-        // ============================================
         container.addEventListener('mouseleave', function() {
             isZoomed = false;
             container.classList.remove('zoomed');
@@ -1280,23 +1982,17 @@ document.addEventListener('DOMContentLoaded', function() {
             magnifier.style.backgroundImage = '';
         });
 
-        // ============================================
-        // 🔥 KLIK UNTUK ZOOM TOGGLE (ALTERNATIF)
-        // ============================================
         container.addEventListener('click', function() {
             if (isZoomed) {
-                // Jika sudah zoom, nonaktifkan
                 isZoomed = false;
                 container.classList.remove('zoomed');
                 magnifier.classList.remove('active');
                 magnifier.style.backgroundImage = '';
             } else {
-                // Aktifkan zoom
                 isZoomed = true;
                 container.classList.add('zoomed');
                 magnifier.classList.add('active');
                 
-                // Set posisi magnifier di tengah
                 const rect = container.getBoundingClientRect();
                 const glassSize = magnifier.offsetWidth;
                 const centerX = (rect.width - glassSize) / 2;
@@ -1305,30 +2001,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 magnifier.style.left = centerX + 'px';
                 magnifier.style.top = centerY + 'px';
                 
-                // Set background image
                 magnifier.style.backgroundImage = `url('${image.src}')`;
                 magnifier.style.backgroundSize = `${rect.width * 2}px ${rect.height * 2}px`;
                 magnifier.style.backgroundPosition = `50% 50%`;
             }
         });
 
-        // ============================================
-        // 🔥 UPDATE SAAT GAMBAR BERUBAH
-        // ============================================
         window.updateZoomImage = function(newImageUrl) {
             if (!newImageUrl) return;
             image.src = newImageUrl;
             
-            // Reset zoom
             isZoomed = false;
             container.classList.remove('zoomed');
             magnifier.classList.remove('active');
             magnifier.style.backgroundImage = '';
         };
 
-        // ============================================
-        // 🔥 RESIZE - UPDATE MAGNIFIER SIZE
-        // ============================================
         window.addEventListener('resize', function() {
             if (isZoomed) {
                 const rect = container.getBoundingClientRect();
@@ -1348,7 +2036,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    setTimeout(initVariantSelection, 500);
+    // 🔥 INIT - JANGAN PILIH VARIAN, TAMPILKAN RANGE HARGA
+    setTimeout(initVariantSelection, 300);
     setTimeout(checkWishlistStatus, 400);
 
 });
@@ -1361,9 +2050,6 @@ function openSizeGuide() {
     }
 }
 
-/**
- * Tutup popup panduan ukuran
- */
 function closeSizeGuide() {
     const overlay = document.getElementById('size-guide-overlay');
     if (overlay) {
@@ -1372,7 +2058,6 @@ function closeSizeGuide() {
     }
 }
 
-// 🔥 Tutup popup dengan tombol ESC
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         closeSizeGuide();

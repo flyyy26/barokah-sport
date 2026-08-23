@@ -1,6 +1,7 @@
 .product_show_layout {
         width: 100%;
-        padding: 0 11vw;
+        padding: 0 9vw;
+        padding-bottom:2vw;
         border-top: 0.1vw solid #076694;
     }
 
@@ -124,6 +125,95 @@
         height: 100%;
         font-size: 5vw;
         color: #cbd5e1;
+    }
+
+    /* ============================================
+    SLIDE TRANSITION FOR MAIN IMAGE
+    ============================================ */
+
+    .main-image-wrapper {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .main-image-slide {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        will-change: transform;
+    }
+
+    .main-image-slide .slide-item {
+        min-width: 100%;
+        height: 100%;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .main-image-slide .slide-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    /* Indicator dots for slide */
+    .slide-dots {
+        position: absolute;
+        bottom: 1vw;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 0.4vw;
+        z-index: 10;
+        background: rgba(0, 0, 0, 0.4);
+        padding: 0.3vw 0.8vw;
+        border-radius: 1vw;
+        backdrop-filter: blur(0.2vw);
+    }
+
+    .slide-dots .dot {
+        width: 0.6vw;
+        height: 0.6vw;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.5);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: none;
+        padding: 0;
+    }
+
+    .slide-dots .dot.active {
+        background: #ffffff;
+        transform: scale(1.3);
+    }
+
+    /* Responsive slide dots */
+    @media (max-width: 768px) {
+        .slide-dots {
+            padding: 0.5vw 1.2vw;
+            gap: 0.6vw;
+        }
+        .slide-dots .dot {
+            width: 1vw;
+            height: 1vw;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .slide-dots {
+            padding: 0.8vw 1.8vw;
+            gap: 0.8vw;
+        }
+        .slide-dots .dot {
+            width: 1.4vw;
+            height: 1.4vw;
+        }
     }
 
     .product-accordion {
@@ -1150,3 +1240,232 @@
             opacity: 0;
         }
     }
+
+.recommended-products {
+    width: 100%;
+    padding: 2vw 9vw;
+    padding-bottom:4vw;
+    border-top: 0.1vw solid #e2e8f0;
+}
+
+.recommended-header {
+    text-align: center;
+    margin-bottom: 2vw;
+}
+
+.recommended-header h2 {
+    font-size: 1.8vw;
+    font-weight: 700;
+    color: #0f172a;
+    font-family: heading, sans-serif;
+}
+
+.recommended-header p {
+    font-size: 0.85vw;
+    color: #94a3b8;
+    margin-top: 0.2vw;
+}
+
+.recommended-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2vw;
+}
+
+.recommended-item {
+    background: #ffffff;
+    border: 0.1vw solid #e2e8f0;
+    border-radius: 0.8vw;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: block;
+}
+
+.recommended-item:hover {
+    transform: translateY(-0.3vw);
+    box-shadow: 0 0.5vw 1.5vw rgba(0, 0, 0, 0.08);
+    border-color: #076694;
+}
+
+.recommended-item .image-wrapper {
+    aspect-ratio: 1;
+    overflow: hidden;
+    background: #f8fafc;
+    position: relative;
+}
+
+.recommended-item .image-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.recommended-item:hover .image-wrapper img {
+    transform: scale(1.05);
+}
+
+.recommended-item .image-wrapper .placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    font-size: 3vw;
+    color: #cbd5e1;
+}
+
+.recommended-item .product_badge {
+    position: absolute;
+    right: 0.6vw;
+    top: 0.6vw;
+    z-index: 2;
+    font-size: 0.65vw;
+    background-color: #DE161F;
+    color: white;
+    padding: 0.3vw 0.7vw;
+    border-radius: 100vw;
+}
+
+.discount_badge{
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    z-index: 2;
+    font-size: .65vw;
+    background-color: #DE161F;
+    color: white;
+    padding: .3vw .7vw;
+    text-align:center;
+    width: 100%;
+}
+.discount-badge{
+    font-size: .65vw;
+    background-color: #DE161F;
+    color: white;
+    padding: .3vw .7vw;
+    text-align:center;
+    width: 100%;
+    margin-left: .7vw;
+}
+
+
+
+.recommended-info {
+    padding: 0.8vw 1vw 1vw;
+}
+
+.recommended-info .recommended-name {
+    font-size: 0.85vw;
+    font-weight: 600;
+    color: #0f172a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 0.2vw;
+}
+
+.recommended-info .recommended-price {
+    font-size: 0.9vw;
+    font-weight: 700;
+    color: #076694;
+}
+
+.recommended-info .recommended-price .price-discount {
+    color: #ef4444;
+}
+
+/* ============================================
+   RESPONSIVE RECOMMENDED
+   ============================================ */
+@media (max-width: 1200px) {
+    .recommended-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 1024px) {
+    .recommended-products {
+        padding: 2vw 4vw 4vw;
+    }
+}
+
+@media (max-width: 768px) {
+    .recommended-products {
+        padding: 3vw 3vw 5vw;
+    }
+
+    .recommended-header h2 {
+        font-size: 3.5vw;
+    }
+
+    .recommended-header p {
+        font-size: 2.5vw;
+    }
+
+    .recommended-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.5vw;
+    }
+
+    .recommended-info .recommended-name {
+        font-size: 1.4vw;
+    }
+
+    .recommended-info .recommended-price {
+        font-size: 1.6vw;
+    }
+
+    .recommended-item .product_badge {
+        font-size: 1.2vw;
+        padding: 0.5vw 1.2vw;
+    }
+}
+
+@media (max-width: 480px) {
+    .recommended-products {
+        padding: 4vw 2vw 6vw;
+    }
+
+    .recommended-header h2 {
+        font-size: 4.5vw;
+    }
+
+    .recommended-header p {
+        font-size: 3vw;
+    }
+
+    .recommended-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 2vw;
+    }
+
+    .recommended-info .recommended-name {
+        font-size: 2vw;
+    }
+
+    .recommended-info .recommended-price {
+        font-size: 2.2vw;
+    }
+
+    .recommended-item .product_badge {
+        font-size: 1.8vw;
+        padding: 0.8vw 1.8vw;
+    }
+}
+
+@media (max-width: 360px) {
+    .recommended-grid {
+        grid-template-columns: 1fr;
+        gap: 2.5vw;
+    }
+
+    .recommended-info .recommended-name {
+        font-size: 2.8vw;
+    }
+
+    .recommended-info .recommended-price {
+        font-size: 3vw;
+    }
+}

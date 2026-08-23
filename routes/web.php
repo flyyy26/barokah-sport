@@ -35,6 +35,7 @@ use App\Http\Controllers\Customer\CustomerSizeGuideController;
 use App\Http\Controllers\Customer\HelpController;
 use App\Http\Controllers\Customer\CaraPesanController;
 use App\Http\Controllers\Admin\FaqCategoryController;
+use App\Http\Controllers\Admin\StockController;
 
 // ============================================
 // CUSTOMER FRONTEND
@@ -55,6 +56,12 @@ Route::get('/api/articles/get-comments', [CustomerArticleController::class, 'get
 Route::post('/api/articles/post-comment', [CustomerArticleController::class, 'postComment'])->name('customer.articles.post-comment');
 Route::delete('/api/articles/delete-comment', [CustomerArticleController::class, 'deleteComment'])->name('customer.articles.delete-comment');
 Route::get('/cara-pesan', [CaraPesanController::class, 'index'])->name('customer.cara-pesan');
+
+Route::get('/api/check-login', function() {
+    return response()->json([
+        'logged_in' => Auth::guard('customer')->check()
+    ]);
+})->name('customer.check-login');
 
 Route::get('/api/trending-search', function() {
     // Contoh trending search dari data populer
@@ -307,6 +314,17 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::delete('/products/{product}', [ProductController::class, 'destroy'])->name('admin.products.destroy');
     Route::delete('/products/{product}/images/{image}', [ProductController::class, 'destroyImage'])->name('admin.products.images.destroy');
     Route::post('/products/check-sku', [ProductController::class, 'checkSku'])->name('admin.products.check-sku');
+
+    Route::get('/products/{product}/stock-history', [ProductController::class, 'stockHistory'])
+        ->name('admin.products.stock-history');
+
+    Route::get('/stock', [StockController::class, 'index'])->name('admin.stock.index');
+    Route::get('/stock/{product}/edit', [StockController::class, 'edit'])->name('admin.stock.edit');
+    Route::put('/stock/{product}', [StockController::class, 'update'])->name('admin.stock.update');
+    Route::put('/stock/{variant}/update-single', [StockController::class, 'updateSingle'])->name('admin.stock.update-single');
+    Route::post('/stock/bulk', [StockController::class, 'bulkUpdate'])->name('admin.stock.bulk');
+    Route::get('/stock/history/{product}', [StockController::class, 'history'])->name('admin.stock.history');
+    Route::get('/stock/history-variant/{variant}', [StockController::class, 'variantHistory'])->name('admin.stock.history-variant');
 
     // BANNER
     Route::get('/banners', [BannerController::class, 'index'])->name('admin.banners.index');
