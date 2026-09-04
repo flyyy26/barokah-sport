@@ -36,6 +36,7 @@ use App\Http\Controllers\Customer\HelpController;
 use App\Http\Controllers\Customer\CaraPesanController;
 use App\Http\Controllers\Admin\FaqCategoryController;
 use App\Http\Controllers\Admin\StockController;
+use App\Http\Controllers\Admin\VoucherController;
 
 // ============================================
 // CUSTOMER FRONTEND
@@ -56,6 +57,13 @@ Route::get('/api/articles/get-comments', [CustomerArticleController::class, 'get
 Route::post('/api/articles/post-comment', [CustomerArticleController::class, 'postComment'])->name('customer.articles.post-comment');
 Route::delete('/api/articles/delete-comment', [CustomerArticleController::class, 'deleteComment'])->name('customer.articles.delete-comment');
 Route::get('/cara-pesan', [CaraPesanController::class, 'index'])->name('customer.cara-pesan');
+
+Route::post('/checkout/apply-voucher', [CheckoutController::class, 'applyVoucher'])
+    ->name('customer.checkout.apply-voucher');
+Route::post('/checkout/remove-voucher', [CheckoutController::class, 'removeVoucher'])
+    ->name('customer.checkout.remove-voucher');
+Route::get('/checkout/vouchers-ajax', [CheckoutController::class, 'getAvailableVouchers'])
+    ->name('customer.checkout.vouchers-ajax');
 
 Route::get('/api/check-login', function() {
     return response()->json([
@@ -95,17 +103,53 @@ Route::get('/api/products/{product}/variants', function (App\Models\Product $pro
             $query->orderBy('sort_order', 'asc');
         },
         'variants' => function ($query) {
-            $query->where('stock', '>', 0); // Hanya varian dengan stok
+            $query->orderBy('price', 'asc');
         },
         'variants.variantValues',
+        'variants.variantValues.optionValue',
         'images' => function ($query) {
             $query->orderBy('sort_order', 'asc');
         },
     ]);
 
-    // 🔥 CEK APAKAH PRODUK PUNYA OPTIONS
-    $hasOptions = $product->options->isNotEmpty();
+    // 🔥 CEK APAKAH PRODUK PUNYA DISKON PRODUK (GLOBAL)
+    $hasProductDiscount = $product->isOnProductDiscount();
+    $productDiscountPercent = 0;
+    
+    // 🔥 HITUNG DATA DISKON PRODUK
+    if ($hasProductDiscount) {
+        $minPrice = $product->variants->min('price') ?? 0;
+        $productDiscountPercent = $product->getProductDiscountPercent($minPrice);
+    }
 
+    // 🔥 HITUNG DATA DISKON UNTUK SETIAP VARIAN
+    $variants = $product->variants->map(function ($variant) use ($product, $hasProductDiscount, $productDiscountPercent) {
+        // 🔥 HITUNG HARGA EFEKTIF (PRIORITAS: DISKON VARIAN > DISKON PRODUK)
+        $effectivePrice = $variant->effective_price;
+        $discountPercent = $variant->discount_percent;
+        
+        // 🔥 TAMBAHKAN INFO DISKON PRODUK KE VARIAN
+        $variantData = [
+            'id' => (int) $variant->id,
+            'sku' => $variant->sku,
+            'price' => (float) $variant->price,
+            'discount_price' => $variant->discount_price ? (float) $variant->discount_price : null,
+            'effective_price' => (float) $effectivePrice,
+            'discount_percent' => (float) $discountPercent,
+            'stock' => (int) $variant->stock,
+            'weight' => (int) $variant->weight,
+            'image' => $variant->image ? Storage::url($variant->image) : null,
+            'values' => $variant->variantValues->pluck('product_option_value_id')->map(function($id) {
+                return (int) $id;
+            })->toArray(),
+            'has_product_discount' => $hasProductDiscount,
+            'product_discount_percent' => (float) $productDiscountPercent,
+        ];
+        
+        return $variantData;
+    })->values()->toArray();
+
+    // 🔥 BUILD DATA OPTIONS
     $options = $product->options->map(function ($option) {
         return [
             'id' => (int) $option->id,
@@ -120,28 +164,19 @@ Route::get('/api/products/{product}/variants', function (App\Models\Product $pro
         ];
     })->values()->toArray();
 
-    // 🔥 BUILD VARIANT DATA DENGAN VALUE IDS
-    $variants = $product->variants->map(function ($variant) {
-        $valueIds = $variant->variantValues->pluck('product_option_value_id')->map(function($id) {
-            return (int) $id;
-        })->toArray();
-
-        return [
-            'id' => (int) $variant->id,
-            'sku' => $variant->sku,
-            'price' => (float) $variant->price,
-            'discount_price' => $variant->discount_price ? (float) $variant->discount_price : null,
-            'stock' => (int) $variant->stock,
-            'weight' => (int) $variant->weight,
-            'image' => $variant->image ? Storage::url($variant->image) : null,
-            'values' => $valueIds,
-        ];
-    })->values()->toArray();
-
     // 🔥 AMBIL GAMBAR PRODUK
     $productImage = $product->images->first() 
         ? Storage::url($product->images->first()->image) 
         : null;
+
+    // 🔥 HITUNG HARGA TERMURAH (TERMASUK DISKON PRODUK)
+    $minEffectivePrice = null;
+    foreach ($variants as $variant) {
+        $effPrice = $variant['effective_price'] ?? $variant['price'];
+        if ($minEffectivePrice === null || $effPrice < $minEffectivePrice) {
+            $minEffectivePrice = $effPrice;
+        }
+    }
 
     return response()->json([
         'success' => true,
@@ -149,13 +184,20 @@ Route::get('/api/products/{product}/variants', function (App\Models\Product $pro
             'id' => (int) $product->id,
             'name' => $product->name,
             'image' => $productImage,
-            'has_options' => $hasOptions,
+            'has_options' => $product->options->isNotEmpty(),
+            // 🔥 DATA DISKON PRODUK
+            'has_product_discount' => $hasProductDiscount,
+            'product_discount_percent' => (float) $productDiscountPercent,
+            'min_effective_price' => (float) $minEffectivePrice,
+            'max_price' => (float) $product->variants->max('price') ?? 0,
         ],
         'options' => $options,
         'variants' => $variants,
         'debug' => [
             'options_count' => count($options),
             'variants_count' => count($variants),
+            'has_product_discount' => $hasProductDiscount,
+            'product_discount_percent' => $productDiscountPercent,
         ]
     ]);
 })->name('api.products.variants');
@@ -327,12 +369,15 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::get('/stock/history-variant/{variant}', [StockController::class, 'variantHistory'])->name('admin.stock.history-variant');
 
     // BANNER
+    Route::put('/banners/promo-bar', [BannerController::class, 'updatePromoBar'])->name('admin.banners.promo-bar.update');
     Route::get('/banners', [BannerController::class, 'index'])->name('admin.banners.index');
     Route::get('/banners/create', [BannerController::class, 'create'])->name('admin.banners.create');
     Route::post('/banners', [BannerController::class, 'store'])->name('admin.banners.store');
     Route::get('/banners/{banner}/edit', [BannerController::class, 'edit'])->name('admin.banners.edit');
     Route::put('/banners/{banner}', [BannerController::class, 'update'])->name('admin.banners.update');
     Route::delete('/banners/{banner}', [BannerController::class, 'destroy'])->name('admin.banners.destroy');
+
+    
 
     // MARKETPLACE
     Route::get('/marketplaces', [MarketplaceController::class, 'index'])->name('admin.marketplaces.index');
@@ -375,6 +420,14 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::get('/faqs/{faq}/edit', [FaqController::class, 'edit'])->name('admin.faqs.edit');
     Route::put('/faqs/{faq}', [FaqController::class, 'update'])->name('admin.faqs.update');
     Route::delete('/faqs/{faq}', [FaqController::class, 'destroy'])->name('admin.faqs.destroy');
+
+    Route::patch('vouchers/{voucher}/toggle-status', [VoucherController::class, 'toggleStatus'])->name('vouchers.toggle-status');
+    Route::get('/vouchers', [VoucherController::class, 'index'])->name('admin.vouchers.index');
+    Route::get('/vouchers/create', [VoucherController::class, 'create'])->name('admin.vouchers.create');
+    Route::post('/vouchers', [VoucherController::class, 'store'])->name('admin.vouchers.store');
+    Route::get('/vouchers/{voucher}/edit', [VoucherController::class, 'edit'])->name('admin.vouchers.edit');
+    Route::put('/vouchers/{voucher}', [VoucherController::class, 'update'])->name('admin.vouchers.update');
+    Route::delete('/vouchers/{voucher}', [VoucherController::class, 'destroy'])->name('admin.vouchers.destroy');
 
     Route::get('/faqs/categories', [FaqCategoryController::class, 'index'])->name('admin.faqs.categories');
     Route::post('/faqs/categories', [FaqCategoryController::class, 'store'])->name('admin.faqs.categories.store');

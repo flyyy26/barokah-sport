@@ -8,16 +8,17 @@ use App\Models\Wishlist;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use App\Traits\ProductDiscountTrait; 
 
 class WishlistController extends Controller
 {
+    use ProductDiscountTrait;
     // ============================================
     // INDEX - Tampilkan Wishlist
     // ============================================
 
     public function index()
     {
-        // 🔥 PERBAIKI: Gunakan guard('customer')
         $user = Auth::guard('customer')->user();
 
         if (!$user) {
@@ -30,6 +31,14 @@ class WishlistController extends Controller
 
         $products = $wishlist->pluck('product');
 
+        // 🔥 TAMBAHKAN DATA DISKON KE SETIAP PRODUK
+        foreach ($products as $product) {
+            if (!$product->relationLoaded('variants')) {
+                $product->load('variants');
+            }
+            $this->attachDiscountData($product);
+        }
+
         return view('customer.wishlist.index', compact('products'));
     }
 
@@ -39,7 +48,6 @@ class WishlistController extends Controller
 
     public function popup(Request $request)
     {
-        // 🔥 PERBAIKI: Gunakan guard('customer')
         $user = Auth::guard('customer')->user();
 
         if (!$user) {
@@ -56,6 +64,15 @@ class WishlistController extends Controller
             ->get();
 
         $products = $wishlist->pluck('product');
+
+        // 🔥 TAMBAHKAN DATA DISKON KE SETIAP PRODUK
+        foreach ($products as $product) {
+            if (!$product->relationLoaded('variants')) {
+                $product->load('variants');
+            }
+            $this->attachDiscountData($product);
+        }
+
         $count = $products->count();
         $wishlistIds = $wishlist->pluck('product_id')->toArray();
 
@@ -74,7 +91,7 @@ class WishlistController extends Controller
     }
 
     // ============================================
-    // ADD - Tambah ke Wishlist (WAJIB LOGIN)
+    // ADD - Tambah ke Wishlist
     // ============================================
 
     public function add(Request $request)
@@ -83,7 +100,6 @@ class WishlistController extends Controller
             'product_id' => 'required|exists:products,id',
         ]);
 
-        // 🔥 PERBAIKI: Gunakan guard('customer')
         $user = Auth::guard('customer')->user();
 
         if (!$user) {
@@ -96,7 +112,6 @@ class WishlistController extends Controller
 
         $productId = $request->product_id;
 
-        // Cek apakah sudah ada
         $exists = Wishlist::where('user_id', $user->id)
             ->where('product_id', $productId)
             ->exists();
@@ -143,7 +158,6 @@ class WishlistController extends Controller
             'product_id' => 'required|exists:products,id',
         ]);
 
-        // 🔥 PERBAIKI: Gunakan guard('customer')
         $user = Auth::guard('customer')->user();
 
         if (!$user) {
@@ -177,7 +191,6 @@ class WishlistController extends Controller
 
     public function clear(Request $request)
     {
-        // 🔥 PERBAIKI: Gunakan guard('customer')
         $user = Auth::guard('customer')->user();
 
         if (!$user) {
@@ -208,7 +221,6 @@ class WishlistController extends Controller
 
     public function status(Request $request)
     {
-        // 🔥 PERBAIKI: Gunakan guard('customer')
         $user = Auth::guard('customer')->user();
 
         if (!$user) {

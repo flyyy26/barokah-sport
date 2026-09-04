@@ -258,7 +258,6 @@ $(document).ready(function() {
                 if (response.success) {
                     loadCartPopup();
                     loadCartCount();
-                    showToast('Keranjang diperbarui', 'success');
                 } else {
                     showToast(response.message || 'Gagal memperbarui keranjang', 'error');
                     loadCartPopup();
@@ -340,8 +339,6 @@ $(document).ready(function() {
                         } else {
                             $('#cart-clear').removeClass('visible').hide();
                         }
-                        
-                        showToast('Item berhasil dihapus', 'success');
                     }, 350);
                 } else {
                     $item.css({
@@ -414,8 +411,6 @@ $(document).ready(function() {
                     // 🔥 Sembunyikan footer dan clear button
                     $('#cart-footer').removeClass('visible').hide();
                     $('#cart-clear').removeClass('visible').hide();
-                    
-                    showToast('Keranjang berhasil dikosongkan', 'success');
                 } else {
                     showToast(response.message || 'Gagal mengosongkan keranjang', 'error');
                     loadCartPopup();
@@ -671,7 +666,6 @@ $(document).ready(function() {
                             $('#wishlist-clear').removeClass('visible').hide();
                         }
                         
-                        showToast('Produk dihapus dari wishlist', 'info');
                     }, 350);
                 } else {
                     $item.css({
@@ -746,7 +740,6 @@ $(document).ready(function() {
                         window.loadWishlistStatus();
                     }
                     
-                    showToast('Wishlist berhasil dikosongkan', 'success');
                 } else {
                     showToast(response.message || 'Gagal mengosongkan wishlist', 'error');
                 }

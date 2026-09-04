@@ -5,7 +5,6 @@
 @section('content')
     
     <style>
-
         /* ============================================
            CHECKOUT CONTAINER
            ============================================ */
@@ -26,8 +25,8 @@
             font-size: 2.7vw;
             font-weight: 700;
             color: #0f172a;
-            font-family:heading;
-            text-transform:uppercase;
+            font-family: heading;
+            text-transform: uppercase;
         }
 
         .checkout-header p {
@@ -70,7 +69,8 @@
            ============================================ */
         .checkout-grid {
             display: grid;
-            grid-template-columns: 70% 30%;
+            grid-template-columns: 68% 32%;
+            gap: 1.5vw;
         }
 
         /* ============================================
@@ -82,7 +82,6 @@
             border-radius: 1.2vw;
             padding: 1.5vw;
             margin-bottom: 1.5vw;
-            margin-right:1.5vw;
         }
 
         .checkout-section:last-child {
@@ -469,7 +468,112 @@
         }
 
         /* ============================================
-           RESPONSIVE - TABLET
+           VOUCHER DISPLAY IN SUMMARY (Right Side)
+           ============================================ */
+        .voucher-summary-section {
+            border-top: 0.1vw solid #e2e8f0;
+            padding-top: 0.8vw;
+            margin-top: 0.5vw;
+        }
+
+        .voucher-summary-section .voucher-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.5vw;
+        }
+
+        .voucher-summary-section .voucher-header .voucher-label {
+            font-size: 0.8vw;
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .voucher-summary-section .voucher-header .btn-open-voucher {
+            background: none;
+            border: none;
+            color: #3b82f6;
+            font-size: 0.7vw;
+            font-weight: 500;
+            cursor: pointer;
+            padding: 0.2vw 0.6vw;
+            border-radius: 0.3vw;
+            transition: all 0.2s;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            gap: 0.3vw;
+        }
+
+        .voucher-summary-section .voucher-header .btn-open-voucher:hover {
+            background: #eff6ff;
+        }
+
+        .voucher-summary-section .voucher-header .btn-open-voucher .icon {
+            font-size: 0.9vw;
+        }
+
+        /* Applied Voucher in Summary */
+        .applied-voucher-summary {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5vw 0.8vw;
+            background: #f0fdf4;
+            border: 0.1vw solid #86efac;
+            border-radius: 0.6vw;
+            margin-top: 0.3vw;
+        }
+
+        .applied-voucher-summary .voucher-info {
+            display: flex;
+            align-items: center;
+            gap: 0.5vw;
+            flex-wrap: wrap;
+        }
+
+        .applied-voucher-summary .voucher-info .code {
+            font-family: monospace;
+            font-weight: 700;
+            font-size: 0.65vw;
+            padding: 0.1vw 0.4vw;
+            background: #22c55e;
+            color: white;
+            border-radius: 0.2vw;
+            letter-spacing: 0.05em;
+        }
+
+        .applied-voucher-summary .voucher-info .name {
+            font-size: 0.7vw;
+            color: #0f172a;
+        }
+
+        .applied-voucher-summary .voucher-info .discount {
+            font-weight: 600;
+            font-size: 0.75vw;
+            color: #16a34a;
+        }
+
+        .applied-voucher-summary .btn-remove-voucher-sm {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            padding: 0.1vw 0.3vw;
+            border-radius: 0.2vw;
+            transition: all 0.2s;
+            font-size: 0.8vw;
+        }
+
+        .applied-voucher-summary .btn-remove-voucher-sm:hover {
+            color: #ef4444;
+            background: #fef2f2;
+        }
+
+        
+
+        /* ============================================
+           RESPONSIVE
            ============================================ */
         @media (max-width: 1024px) {
             .checkout-grid {
@@ -479,6 +583,11 @@
 
             .checkout-summary {
                 position: static;
+            }
+
+            .voucher-popup {
+                width: 70vw;
+                right: -70vw;
             }
         }
 
@@ -623,6 +732,74 @@
                 padding: 1.2vw 1.8vw;
                 border-radius: 1vw;
             }
+
+            .voucher-popup {
+                width: 85vw;
+                right: -85vw;
+            }
+
+            .voucher-popup-header h2 {
+                font-size: 1.8vw;
+            }
+
+            .voucher-popup-body {
+                padding: 2vw;
+            }
+
+            .popup-voucher-input {
+                font-size: 1.2vw;
+                padding: 0.8vw 1.2vw;
+            }
+
+            .popup-btn-apply {
+                font-size: 1.2vw;
+                padding: 0.8vw 1.5vw;
+            }
+
+            .popup-voucher-item .item-info {
+                gap: 0.5vw;
+            }
+
+            .popup-voucher-item .item-code {
+                font-size: 1vw;
+            }
+
+            .popup-voucher-item .item-name {
+                font-size: 1.1vw;
+            }
+
+            .popup-voucher-item .item-discount {
+                font-size: 1vw;
+            }
+
+            .popup-voucher-item .item-min {
+                font-size: 0.9vw;
+            }
+
+            .popup-voucher-item .btn-use {
+                font-size: 0.9vw;
+                padding: 0.3vw 0.8vw;
+            }
+
+            .voucher-summary-section .voucher-header .voucher-label {
+                font-size: 1.2vw;
+            }
+
+            .voucher-summary-section .voucher-header .btn-open-voucher {
+                font-size: 1vw;
+            }
+
+            .applied-voucher-summary .voucher-info .code {
+                font-size: 1vw;
+            }
+
+            .applied-voucher-summary .voucher-info .name {
+                font-size: 1vw;
+            }
+
+            .applied-voucher-summary .voucher-info .discount {
+                font-size: 1.1vw;
+            }
         }
 
         @media (max-width: 480px) {
@@ -758,6 +935,111 @@
                 padding: 1.8vw 2.5vw;
                 border-radius: 1.5vw;
             }
+
+            .voucher-popup {
+                width: 100vw;
+                right: -100vw;
+                max-width: 100%;
+            }
+
+            .voucher-popup-header {
+                padding: 2vw 3vw 1.5vw;
+            }
+
+            .voucher-popup-header h2 {
+                font-size: 2.5vw;
+            }
+
+            .voucher-popup-header .close-popup {
+                font-size: 2.5vw;
+            }
+
+            .voucher-popup-body {
+                padding: 3vw;
+            }
+
+            .popup-voucher-input {
+                font-size: 1.8vw;
+                padding: 1.2vw 1.8vw;
+                border-radius: 1.2vw;
+            }
+
+            .popup-btn-apply {
+                font-size: 1.8vw;
+                padding: 1.2vw 2vw;
+                border-radius: 1.2vw;
+            }
+
+            .popup-voucher-item {
+                padding: 1.2vw 1.5vw;
+                border-radius: 1vw;
+            }
+
+            .popup-voucher-item .item-content {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .popup-voucher-item .item-info {
+                width: 100%;
+            }
+
+            .popup-voucher-item .item-code {
+                font-size: 1.4vw;
+            }
+
+            .popup-voucher-item .item-name {
+                font-size: 1.6vw;
+            }
+
+            .popup-voucher-item .item-discount {
+                font-size: 1.4vw;
+            }
+
+            .popup-voucher-item .item-min {
+                font-size: 1.2vw;
+            }
+
+            .popup-voucher-item .btn-use {
+                width: 100%;
+                text-align: center;
+                padding: 0.6vw 1.2vw;
+                font-size: 1.4vw;
+            }
+
+            .popup-voucher-list .list-title {
+                font-size: 1.6vw;
+            }
+
+            .voucher-summary-section .voucher-header .voucher-label {
+                font-size: 1.8vw;
+            }
+
+            .voucher-summary-section .voucher-header .btn-open-voucher {
+                font-size: 1.4vw;
+            }
+
+            .applied-voucher-summary {
+                flex-wrap: wrap;
+                gap: 0.5vw;
+            }
+
+            .applied-voucher-summary .voucher-info .code {
+                font-size: 1.4vw;
+            }
+
+            .applied-voucher-summary .voucher-info .name {
+                font-size: 1.4vw;
+            }
+
+            .applied-voucher-summary .voucher-info .discount {
+                font-size: 1.6vw;
+            }
+
+            .applied-voucher-summary .btn-remove-voucher-sm {
+                font-size: 1.4vw;
+                padding: 0.3vw 0.6vw;
+            }
         }
 
         @media (max-width: 360px) {
@@ -772,6 +1054,12 @@
 
             .payment-option {
                 flex-wrap: wrap;
+            }
+
+            .applied-voucher-summary .voucher-info {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.3vw;
             }
         }
 
@@ -1018,10 +1306,43 @@
                     <span class="row-value" id="shipping-cost-text">Rp 0</span>
                 </div>
 
+                {{-- VOUCHER SECTION IN SUMMARY --}}
+                <div class="voucher-summary-section">
+                    <div class="voucher-header">
+                        <span class="voucher-label">Voucher</span>
+                        <button type="button" class="btn-open-voucher" id="btn-open-voucher">
+                            <span class="icon">+</span> 
+                            <span id="voucher-action-text">{{ $appliedVoucher ? 'Ganti Voucher' : 'Pilih Voucher' }}</span>
+                        </button>
+                    </div>
+                    
+                    {{-- Applied Voucher Display --}}
+                    <div id="applied-voucher-summary" class="{{ $appliedVoucher ? '' : 'hidden' }}">
+                        <div class="applied-voucher-summary">
+                            <div class="voucher-info">
+                                <span class="code">{{ $appliedVoucher->code ?? '' }}</span>
+                                <span class="name">{{ $appliedVoucher->name ?? '' }}</span>
+                                <span class="discount">-Rp {{ number_format($voucherDiscount ?? 0, 0, ',', '.') }}</span>
+                            </div>
+                            <button type="button" class="btn-remove-voucher-sm" id="btn-remove-voucher" title="Hapus Voucher">
+                                ✕
+                            </button>
+                        </div>
+                    </div>
+
+                    {{-- Voucher Discount Row --}}
+                    <div class="summary-row" id="voucher-discount-row">
+                        <span class="row-label">Diskon Voucher</span>
+                        <span class="row-value" id="voucher-discount-text">
+                            -Rp {{ number_format($voucherDiscount ?? 0, 0, ',', '.') }}
+                        </span>
+                    </div>
+                </div>
+
                 {{-- Total --}}
                 <div class="summary-total">
                     <span>Total</span>
-                    <span id="total-display">Rp {{ number_format($subtotal, 0, ',', '.') }}</span>
+                    <span id="total-display">Rp {{ number_format($subtotal + ($shippingCost ?? 0) - ($voucherDiscount ?? 0), 0, ',', '.') }}</span>
                 </div>
 
                 {{-- Submit Button --}}
@@ -1038,7 +1359,7 @@
 
     </main>
 
-    @include('customer.partials.footer')
+    
 
     <script>
         $(document).ready(function() {
@@ -1812,6 +2133,10 @@
                 }
             });
 
+            // ============================================
+            // RESTORE GUEST DATA
+            // ============================================
+
             function restoreGuestData() {
                 if (isLoggedIn) return;
 
@@ -1856,13 +2181,60 @@
             }
 
             function updateTotal() {
+                const subtotal = {{ $subtotal }};
                 const shippingCost = parseInt($('#shipping_cost').val()) || 0;
-                const total = subtotal + shippingCost;
+                const voucherDiscount = parseInt($('#voucher-discount-text').text().replace(/[^0-9]/g, '')) || 0;
+                const total = subtotal + shippingCost - voucherDiscount;
                 $('#total-display').text('Rp ' + formatNumber(total));
             }
 
             function formatNumber(num) {
                 return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+            }
+
+            // ============================================
+            // TOAST NOTIFICATION
+            // ============================================
+
+            function showToast(message, type = 'info') {
+                const colors = {
+                    success: '#22c55e',
+                    error: '#ef4444',
+                    warning: '#f59e0b',
+                    info: '#3b82f6'
+                };
+
+                const toast = $(`
+                    <div class="toast-notification" style="
+                        position: fixed;
+                        bottom: 2vw;
+                        right: 2vw;
+                        padding: 1vw 1.5vw;
+                        background: ${colors[type] || colors.info};
+                        color: white;
+                        border-radius: 0.7vw;
+                        font-size: 0.85vw;
+                        box-shadow: 0 0.2vw 1vw rgba(0,0,0,0.15);
+                        z-index: 9999;
+                        max-width: 25vw;
+                        transform: translateY(120%);
+                        transition: transform 0.3s ease;
+                        font-family: inherit;
+                    ">
+                        ${message}
+                    </div>
+                `);
+
+                $('body').append(toast);
+
+                setTimeout(() => {
+                    toast.css('transform', 'translateY(0)');
+                }, 100);
+
+                setTimeout(() => {
+                    toast.css('transform', 'translateY(120%)');
+                    setTimeout(() => toast.remove(), 300);
+                }, 3000);
             }
 
             // ============================================
@@ -1874,5 +2246,4 @@
 
         });
     </script>
-
 @endsection

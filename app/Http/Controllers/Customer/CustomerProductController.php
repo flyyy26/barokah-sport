@@ -5,19 +5,32 @@ namespace App\Http\Controllers\Customer;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\Wishlist;
 use App\Models\ProductOptionValue;
+use App\Models\ProductVariant;
 use Illuminate\Http\Request;
+use App\Traits\ProductDiscountTrait;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use Intervention\Image\ImageManager; // 🔥 PERUBAHAN
+use Intervention\Image\Drivers\Gd\Driver;
+use Illuminate\Support\Facades\Auth;
 
 class CustomerProductController extends Controller
 {
+    use ProductDiscountTrait;
+
     public function index(Request $request)
     {
-        $query = Product::with(['category', 'images', 'variants'])
-            ->where('is_active', true);
+        $query = Product::with([
+            'category', 
+            'images', 
+            'variants', 
+            'variants.values', 
+            'variants.values.option'
+        ])->where('is_active', true);
 
-        // 🔥 SEARCH - PERBAIKI UNTUK MENCARI PRODUK
+        // 🔥 SEARCH
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
@@ -34,12 +47,21 @@ class CustomerProductController extends Controller
             $query->where('category_id', $request->category);
         }
 
-        // 🔥 GENDER FILTER
+        // 🔥 GENDER FILTER - PERBAIKAN: TAMPILKAN UNISEX JUGA
         if ($request->filled('gender')) {
-            $query->where('gender', $request->gender);
+            $selectedGender = $request->gender;
+            
+            if (in_array($selectedGender, ['pria', 'wanita'])) {
+                $query->where(function($q) use ($selectedGender) {
+                    $q->where('gender', $selectedGender)
+                      ->orWhere('gender', 'unisex');
+                });
+            } else {
+                $query->where('gender', $selectedGender);
+            }
         }
 
-        // 🔥 SIZE FILTER (melalui variants)
+        // 🔥 SIZE FILTER
         if ($request->filled('size')) {
             $query->whereHas('variants', function($q) use ($request) {
                 $q->whereHas('values', function($qq) use ($request) {
@@ -48,8 +70,10 @@ class CustomerProductController extends Controller
             });
         }
 
-        // 🔥 COLOR FILTER (melalui variants)
+        // 🔥 COLOR FILTER
+        $selectedColor = null;
         if ($request->filled('color')) {
+            $selectedColor = $request->color;
             $query->whereHas('variants', function($q) use ($request) {
                 $q->whereHas('values', function($qq) use ($request) {
                     $qq->where('value', $request->color);
@@ -98,19 +122,22 @@ class CustomerProductController extends Controller
 
         $products = $query->paginate(12);
         
-        // 🔥 TAMBAHKAN SEARCH KEYWORD KE PAGINATION
         if ($request->filled('search')) {
             $products->appends(['search' => $request->search]);
         }
 
-        // 🔥 TAMBAHKAN DATA DISKON KE SETIAP PRODUK
+        // 🔥 TAMBAHKAN DATA DISKON DAN GAMBAR VARIAN
         foreach ($products as $product) {
+            if (!$product->relationLoaded('variants')) {
+                $product->load('variants', 'variants.values', 'variants.values.option');
+            }
+            
             $this->attachDiscountData($product);
+            $this->attachVariantImageByColor($product, $selectedColor);
         }
 
         $categories = Category::where('is_active', true)->orderBy('name')->get();
 
-        // 🔥 AMBIL DATA UNTUK FILTER
         $genders = ['pria', 'wanita', 'unisex'];
         
         $sizes = ProductOptionValue::whereHas('option', function($q) {
@@ -125,7 +152,106 @@ class CustomerProductController extends Controller
         })->distinct()->pluck('value')->toArray();
         sort($colors);
 
-        return view('customer.products.index', compact('products', 'categories', 'genders', 'sizes', 'colors'));
+        $selectedGender = $request->filled('gender') ? $request->gender : null;
+
+        return view('customer.products.index', compact('products', 'categories', 'genders', 'sizes', 'colors', 'selectedColor', 'selectedGender'));
+    }
+
+    /**
+     * 🔥 ATTACH VARIANT IMAGE BY COLOR
+     */
+    protected function getThumbnailUrl($path, $width = 300, $height = 300)
+    {
+        if (!$path) {
+            return null;
+        }
+        
+        // Jika path sudah berupa URL lengkap
+        if (filter_var($path, FILTER_VALIDATE_URL)) {
+            return $path;
+        }
+        
+        // Bersihkan path dari /storage/ prefix jika ada
+        $cleanPath = str_replace('/storage/', '', $path);
+        $cleanPath = str_replace('storage/', '', $cleanPath);
+        
+        // Cek apakah file ada
+        if (!Storage::disk('public')->exists($cleanPath)) {
+            return null;
+        }
+        
+        // Generate thumbnail path
+        $thumbnailPath = 'thumbnails/' . $width . 'x' . $height . '/' . $cleanPath;
+        
+        // Cek apakah thumbnail sudah ada
+        if (!Storage::disk('public')->exists($thumbnailPath)) {
+            try {
+                // 🔥 PERUBAHAN UNTUK VERSION 3.x
+                $manager = new ImageManager(new Driver());
+                $image = $manager->read(Storage::disk('public')->path($cleanPath));
+                
+                // Resize dengan maintain aspect ratio dan crop center
+                $image->cover($width, $height);
+                
+                // Simpan thumbnail sebagai WebP
+                Storage::disk('public')->put(
+                    $thumbnailPath, 
+                    $image->toWebp(80)->toString()
+                );
+                
+            } catch (\Exception $e) {
+                // Jika gagal membuat thumbnail, return original
+                return Storage::url($cleanPath);
+            }
+        }
+        
+        return Storage::url($thumbnailPath);
+    }
+
+    /**
+     * 🔥 ATTACH VARIANT IMAGE BY COLOR - DENGAN THUMBNAIL
+     */
+    protected function attachVariantImageByColor($product, $selectedColor)
+    {
+        $displayImage = null;
+        $displayVariant = null;
+        $originalImage = null;
+        
+        if ($selectedColor) {
+            foreach ($product->variants as $variant) {
+                foreach ($variant->values as $value) {
+                    if (strtolower(trim($value->value)) === strtolower(trim($selectedColor))) {
+                        $displayVariant = $variant;
+                        
+                        // Prioritas: Gambar dari option value
+                        if ($value->image) {
+                            $originalImage = $value->image;
+                            $displayImage = $this->getThumbnailUrl($value->image);
+                        } 
+                        // Kedua: Gambar dari variant
+                        elseif ($variant->image) {
+                            $originalImage = $variant->image;
+                            $displayImage = $this->getThumbnailUrl($variant->image);
+                        }
+                        
+                        break 2;
+                    }
+                }
+            }
+        }
+        
+        // Jika tidak ada gambar dari varian, gunakan gambar produk
+        if (!$displayImage) {
+            $firstImage = $product->images->first();
+            if ($firstImage) {
+                $originalImage = $firstImage->image;
+                $displayImage = $this->getThumbnailUrl($firstImage->image);
+            }
+        }
+        
+        $product->display_image = $displayImage;
+        $product->display_image_original = $originalImage;
+        $product->display_variant = $displayVariant;
     }
 
     public function show($slug)
@@ -144,18 +270,30 @@ class CustomerProductController extends Controller
             },
             'variants.variantValues',
             'variants.variantValues.optionValue',
+            'features',
         ])->where('slug', $slug)->firstOrFail();
 
-        // 🔥 TAMBAHKAN DATA DISKON KE PRODUK
         $this->attachDiscountData($product);
 
-        // 🔥 BUILD VARIANT DATA UNTUK JAVASCRIPT
+        // 🔥 CEK APAKAH PRODUK ADA DI WISHLIST
+        $inWishlist = false;
+        $user = Auth::guard('customer')->user();
+        if ($user) {
+            $inWishlist = Wishlist::where('user_id', $user->id)
+                ->where('product_id', $product->id)
+                ->exists();
+        }
+
         $variantData = $product->variants->map(function($variant) {
+            $effectivePrice = $variant->effective_price;
+            $discountPercent = $variant->discount_percent;
+            
             return [
                 'id' => $variant->id,
                 'price' => (float) $variant->price,
                 'discount_price' => $variant->discount_price ? (float) $variant->discount_price : null,
-                'discount_percent' => $variant->discount_percent ?? 0,
+                'effective_price' => $effectivePrice,
+                'discount_percent' => $discountPercent,
                 'stock' => (int) $variant->stock,
                 'weight' => (int) $variant->weight,
                 'image' => $variant->image ? Storage::url($variant->image) : null,
@@ -165,9 +303,51 @@ class CustomerProductController extends Controller
             ];
         })->toArray();
 
+        $minPrice = $product->variants->min('price') ?? 0;
+        $maxPrice = $product->variants->max('price') ?? 0;
+        
+        $effectivePrices = [];
+        foreach ($product->variants as $variant) {
+            $effectivePrices[] = $variant->effective_price;
+        }
+        $minEffective = !empty($effectivePrices) ? min($effectivePrices) : 0;
+        $maxEffective = !empty($effectivePrices) ? max($effectivePrices) : 0;
+        
+        $hasAnyDiscount = $product->has_discount ?? false;
+        $maxDiscountPercent = $product->max_discount_percent ?? 0;
+        $hasProductDiscount = $product->has_product_discount ?? false;
+        $productDiscountPercent = $product->product_discount_percent ?? 0;
+        
+        $defaultDisplayPrice = '';
+        $defaultOriginalPrice = '';
+        $defaultDiscountBadge = '';
+        
+        if ($hasAnyDiscount) {
+            if ($minEffective == $maxEffective) {
+                $defaultDisplayPrice = 'Rp ' . number_format($minEffective, 0, ',', '.');
+            } else {
+                $defaultDisplayPrice = 'Rp ' . number_format($minEffective, 0, ',', '.') . ' - Rp ' . number_format($maxEffective, 0, ',', '.');
+            }
+            
+            if ($minPrice == $maxPrice) {
+                $defaultOriginalPrice = 'Rp ' . number_format($minPrice, 0, ',', '.');
+            } else {
+                $defaultOriginalPrice = 'Rp ' . number_format($minPrice, 0, ',', '.') . ' - Rp ' . number_format($maxPrice, 0, ',', '.');
+            }
+            
+            $defaultDiscountBadge = 'Diskon ' . round($maxDiscountPercent) . '%';
+        } else {
+            if ($minEffective == $maxEffective) {
+                $defaultDisplayPrice = 'Rp ' . number_format($minEffective, 0, ',', '.');
+            } else {
+                $defaultDisplayPrice = 'Rp ' . number_format($minEffective, 0, ',', '.') . ' - Rp ' . number_format($maxEffective, 0, ',', '.');
+            }
+            $defaultOriginalPrice = '';
+            $defaultDiscountBadge = '';
+        }
+
         $firstVariant = $product->variants->first();
 
-        // 🔥 AMBIL DATA WARNA DAN UKURAN DARI OPSI PRODUK
         $colors = [];
         $sizes = [];
         
@@ -180,16 +360,11 @@ class CustomerProductController extends Controller
             }
         }
 
-        // ============================================
-        // 🔥 REKOMENDASI PRODUK - DATA REAL DARI DATABASE
-        // ============================================
-        
         $allProducts = Product::with(['images', 'variants', 'category'])
             ->where('is_active', true)
             ->where('id', '!=', $product->id)
             ->get();
 
-        // 🔥 TAMBAHKAN DATA DISKON KE REKOMENDASI
         foreach ($allProducts as $item) {
             $this->attachDiscountData($item);
         }
@@ -229,13 +404,31 @@ class CustomerProductController extends Controller
             'firstVariant', 
             'recommendedProducts',
             'colors',
-            'sizes'
+            'sizes',
+            'hasAnyDiscount',
+            'maxDiscountPercent',
+            'hasProductDiscount',
+            'productDiscountPercent',
+            'defaultDisplayPrice',
+            'defaultOriginalPrice',
+            'defaultDiscountBadge',
+            'minEffective',
+            'maxEffective',
+            'minPrice',
+            'maxPrice',
+            'inWishlist'
         ));
     }
 
     public function latest(Request $request)
     {
-        $query = Product::with(['category', 'images', 'variants'])
+        $query = Product::with([
+            'category', 
+            'images', 
+            'variants', 
+            'variants.values', 
+            'variants.values.option'
+        ])
             ->where('is_active', true)
             ->where('created_at', '>=', now()->subMonth());
 
@@ -249,9 +442,18 @@ class CustomerProductController extends Controller
             $query->where('category_id', $request->category);
         }
 
-        // 🔥 GENDER FILTER
+        // 🔥 GENDER FILTER - TAMPILKAN UNISEX JUGA
         if ($request->filled('gender')) {
-            $query->where('gender', $request->gender);
+            $selectedGender = $request->gender;
+            
+            if (in_array($selectedGender, ['pria', 'wanita'])) {
+                $query->where(function($q) use ($selectedGender) {
+                    $q->where('gender', $selectedGender)
+                      ->orWhere('gender', 'unisex');
+                });
+            } else {
+                $query->where('gender', $selectedGender);
+            }
         }
 
         // 🔥 SIZE FILTER
@@ -264,7 +466,9 @@ class CustomerProductController extends Controller
         }
 
         // 🔥 COLOR FILTER
+        $selectedColor = null;
         if ($request->filled('color')) {
+            $selectedColor = $request->color;
             $query->whereHas('variants', function($q) use ($request) {
                 $q->whereHas('values', function($qq) use ($request) {
                     $qq->where('value', $request->color);
@@ -294,13 +498,13 @@ class CustomerProductController extends Controller
         switch ($request->sort) {
             case 'price_asc':
                 $query->select('products.*')
-                      ->addSelect(DB::raw('(SELECT MIN(COALESCE(discount_price, price)) FROM product_variants WHERE product_variants.product_id = products.id) as min_price'))
-                      ->orderBy('min_price', 'asc');
+                    ->addSelect(DB::raw('(SELECT MIN(COALESCE(discount_price, price)) FROM product_variants WHERE product_variants.product_id = products.id) as min_price'))
+                    ->orderBy('min_price', 'asc');
                 break;
             case 'price_desc':
                 $query->select('products.*')
-                      ->addSelect(DB::raw('(SELECT MIN(COALESCE(discount_price, price)) FROM product_variants WHERE product_variants.product_id = products.id) as min_price'))
-                      ->orderBy('min_price', 'desc');
+                    ->addSelect(DB::raw('(SELECT MIN(COALESCE(discount_price, price)) FROM product_variants WHERE product_variants.product_id = products.id) as min_price'))
+                    ->orderBy('min_price', 'desc');
                 break;
             case 'name':
                 $query->orderBy('name', 'asc');
@@ -313,9 +517,17 @@ class CustomerProductController extends Controller
 
         $products = $query->paginate(12);
 
-        // 🔥 TAMBAHKAN DATA DISKON
+        if ($request->filled('search')) {
+            $products->appends(['search' => $request->search]);
+        }
+
+        // 🔥 TAMBAHKAN DATA DISKON DAN GAMBAR VARIAN
         foreach ($products as $product) {
+            if (!$product->relationLoaded('variants')) {
+                $product->load('variants', 'variants.values', 'variants.values.option');
+            }
             $this->attachDiscountData($product);
+            $this->attachVariantImageByColor($product, $selectedColor);
         }
 
         $categories = Category::where('is_active', true)->orderBy('name')->get();
@@ -324,27 +536,54 @@ class CustomerProductController extends Controller
         
         $sizes = ProductOptionValue::whereHas('option', function($q) {
             $q->whereRaw('LOWER(name) LIKE ?', ['%ukuran%'])
-              ->orWhereRaw('LOWER(name) LIKE ?', ['%size%']);
+            ->orWhereRaw('LOWER(name) LIKE ?', ['%size%']);
         })->distinct()->pluck('value')->toArray();
         sort($sizes);
 
         $colors = ProductOptionValue::whereHas('option', function($q) {
             $q->whereRaw('LOWER(name) LIKE ?', ['%warna%'])
-              ->orWhereRaw('LOWER(name) LIKE ?', ['%color%']);
+            ->orWhereRaw('LOWER(name) LIKE ?', ['%color%']);
         })->distinct()->pluck('value')->toArray();
         sort($colors);
 
-        return view('customer.products.latest', compact('products', 'categories', 'genders', 'sizes', 'colors'));
+        $selectedGender = $request->filled('gender') ? $request->gender : null;
+
+        return view('customer.products.latest', compact('products', 'categories', 'genders', 'sizes', 'colors', 'selectedColor', 'selectedGender'));
     }
 
     public function promo(Request $request)
     {
-        $query = Product::with(['category', 'images', 'variants'])
+        $query = Product::with([
+            'category', 
+            'images', 
+            'variants', 
+            'variants.values', 
+            'variants.values.option'
+        ])
             ->where('is_active', true)
-            // 🔥 FILTER PRODUK YANG MEMILIKI DISKON
-            ->whereHas('variants', function($q) {
-                $q->whereNotNull('discount_price')
-                  ->whereColumn('discount_price', '<', 'price');
+            ->where(function($q) {
+                $q->whereHas('variants', function($sub) {
+                    $sub->whereNotNull('discount_price')
+                        ->whereColumn('discount_price', '<', 'price');
+                })
+                ->orWhere(function($sub2) {
+                    $sub2->where('has_product_discount', true)
+                        ->whereNotNull('discount_value')
+                        ->where('discount_value', '>', 0);
+                })
+                ->orWhere(function($sub3) {
+                    $sub3->where('is_flash_sale', true)
+                        ->whereNotNull('flash_sale_value')
+                        ->where('flash_sale_value', '>', 0)
+                        ->where(function($dateCheck) {
+                            $dateCheck->whereNull('flash_sale_start_date')
+                                    ->orWhere('flash_sale_start_date', '<=', now());
+                        })
+                        ->where(function($dateCheck) {
+                            $dateCheck->whereNull('flash_sale_end_date')
+                                    ->orWhere('flash_sale_end_date', '>=', now());
+                        });
+                });
             });
 
         // 🔥 SEARCH
@@ -357,9 +596,18 @@ class CustomerProductController extends Controller
             $query->where('category_id', $request->category);
         }
 
-        // 🔥 GENDER FILTER
+        // 🔥 GENDER FILTER - TAMPILKAN UNISEX JUGA
         if ($request->filled('gender')) {
-            $query->where('gender', $request->gender);
+            $selectedGender = $request->gender;
+            
+            if (in_array($selectedGender, ['pria', 'wanita'])) {
+                $query->where(function($q) use ($selectedGender) {
+                    $q->where('gender', $selectedGender)
+                      ->orWhere('gender', 'unisex');
+                });
+            } else {
+                $query->where('gender', $selectedGender);
+            }
         }
 
         // 🔥 SIZE FILTER
@@ -372,7 +620,9 @@ class CustomerProductController extends Controller
         }
 
         // 🔥 COLOR FILTER
+        $selectedColor = null;
         if ($request->filled('color')) {
+            $selectedColor = $request->color;
             $query->whereHas('variants', function($q) use ($request) {
                 $q->whereHas('values', function($qq) use ($request) {
                     $qq->where('value', $request->color);
@@ -402,18 +652,43 @@ class CustomerProductController extends Controller
         switch ($request->sort) {
             case 'discount_desc':
                 $query->select('products.*')
-                      ->addSelect(DB::raw('(SELECT MAX(CASE WHEN discount_price IS NOT NULL AND discount_price < price THEN ((price - discount_price) / price * 100) ELSE 0 END) FROM product_variants WHERE product_variants.product_id = products.id) as max_discount'))
-                      ->orderBy('max_discount', 'desc');
+                    ->addSelect(DB::raw('(
+                        SELECT MAX(
+                            CASE 
+                                WHEN discount_price IS NOT NULL AND discount_price < price 
+                                THEN ((price - discount_price) / price * 100)
+                                WHEN products.has_product_discount = 1 
+                                    AND products.discount_value > 0
+                                THEN 
+                                    CASE 
+                                    WHEN products.discount_type = "percentage" THEN products.discount_value
+                                    WHEN products.discount_type = "fixed" THEN (products.discount_value / price * 100)
+                                    ELSE 0
+                                    END
+                                WHEN products.is_flash_sale = 1 
+                                    AND products.flash_sale_value > 0
+                                    AND (products.flash_sale_start_date IS NULL OR products.flash_sale_start_date <= NOW())
+                                    AND (products.flash_sale_end_date IS NULL OR products.flash_sale_end_date >= NOW())
+                                THEN 
+                                    CASE 
+                                    WHEN products.flash_sale_type = "percentage" THEN products.flash_sale_value
+                                    WHEN products.flash_sale_type = "fixed" THEN (products.flash_sale_value / price * 100)
+                                    ELSE 0
+                                    END
+                                ELSE 0
+                            END
+                        ) FROM product_variants WHERE product_variants.product_id = products.id) as max_discount'))
+                        ->orderBy('max_discount', 'desc');
                 break;
             case 'price_asc':
                 $query->select('products.*')
-                      ->addSelect(DB::raw('(SELECT MIN(COALESCE(discount_price, price)) FROM product_variants WHERE product_variants.product_id = products.id) as min_price'))
-                      ->orderBy('min_price', 'asc');
+                    ->addSelect(DB::raw('(SELECT MIN(COALESCE(discount_price, price)) FROM product_variants WHERE product_variants.product_id = products.id) as min_price'))
+                    ->orderBy('min_price', 'asc');
                 break;
             case 'price_desc':
                 $query->select('products.*')
-                      ->addSelect(DB::raw('(SELECT MIN(COALESCE(discount_price, price)) FROM product_variants WHERE product_variants.product_id = products.id) as min_price'))
-                      ->orderBy('min_price', 'desc');
+                    ->addSelect(DB::raw('(SELECT MIN(COALESCE(discount_price, price)) FROM product_variants WHERE product_variants.product_id = products.id) as min_price'))
+                    ->orderBy('min_price', 'desc');
                 break;
             case 'name':
                 $query->orderBy('name', 'asc');
@@ -426,9 +701,17 @@ class CustomerProductController extends Controller
 
         $products = $query->paginate(12);
 
-        // 🔥 TAMBAHKAN DATA DISKON
+        if ($request->filled('search')) {
+            $products->appends(['search' => $request->search]);
+        }
+
+        // 🔥 TAMBAHKAN DATA DISKON DAN GAMBAR VARIAN
         foreach ($products as $product) {
+            if (!$product->relationLoaded('variants')) {
+                $product->load('variants', 'variants.values', 'variants.values.option');
+            }
             $this->attachDiscountData($product);
+            $this->attachVariantImageByColor($product, $selectedColor);
         }
 
         $categories = Category::where('is_active', true)->orderBy('name')->get();
@@ -437,91 +720,27 @@ class CustomerProductController extends Controller
         
         $sizes = ProductOptionValue::whereHas('option', function($q) {
             $q->whereRaw('LOWER(name) LIKE ?', ['%ukuran%'])
-              ->orWhereRaw('LOWER(name) LIKE ?', ['%size%']);
+            ->orWhereRaw('LOWER(name) LIKE ?', ['%size%']);
         })->distinct()->pluck('value')->toArray();
         sort($sizes);
 
         $colors = ProductOptionValue::whereHas('option', function($q) {
             $q->whereRaw('LOWER(name) LIKE ?', ['%warna%'])
-              ->orWhereRaw('LOWER(name) LIKE ?', ['%color%']);
+            ->orWhereRaw('LOWER(name) LIKE ?', ['%color%']);
         })->distinct()->pluck('value')->toArray();
         sort($colors);
 
-        return view('customer.products.promo', compact('products', 'categories', 'genders', 'sizes', 'colors'));
+        $selectedGender = $request->filled('gender') ? $request->gender : null;
+
+        return view('customer.products.promo', compact('products', 'categories', 'genders', 'sizes', 'colors', 'selectedColor', 'selectedGender'));
     }
 
     /**
-     * 🔥 ATTACH DISCOUNT DATA TO PRODUCT
-     * Menambahkan data diskon ke produk
+     * 🔥 ATTACH DISCOUNT DATA - PAKAI TRAIT
+     * Method ini akan menggunakan trait ProductDiscountTrait
      */
-    private function attachDiscountData($product)
-    {
-        if (!$product || !$product->relationLoaded('variants')) {
-            return;
-        }
-
-        // Cari varian dengan diskon terbaik (diskon terbesar)
-        $bestDiscountVariant = null;
-        $maxDiscountPercent = 0;
-        $hasDiscount = false;
-
-        foreach ($product->variants as $variant) {
-            if ($variant->discount_price && $variant->discount_price < $variant->price) {
-                $discountPercent = round((($variant->price - $variant->discount_price) / $variant->price) * 100);
-                $variant->discount_percent = $discountPercent;
-                
-                if ($discountPercent > $maxDiscountPercent) {
-                    $maxDiscountPercent = $discountPercent;
-                    $bestDiscountVariant = $variant;
-                    $hasDiscount = true;
-                }
-            } else {
-                $variant->discount_percent = 0;
-            }
-        }
-
-        // Tambahkan properti ke product
-        $product->has_discount = $hasDiscount;
-        $product->max_discount_percent = $maxDiscountPercent;
-        $product->best_discount_variant = $bestDiscountVariant;
-
-        // Hitung harga termurah (termasuk diskon)
-        $minEffectivePrice = null;
-        foreach ($product->variants as $variant) {
-            $effectivePrice = $variant->discount_price ?? $variant->price;
-            if ($minEffectivePrice === null || $effectivePrice < $minEffectivePrice) {
-                $minEffectivePrice = $effectivePrice;
-            }
-        }
-        $product->min_effective_price = $minEffectivePrice;
-
-        // Hitung harga tertinggi
-        $maxPrice = null;
-        foreach ($product->variants as $variant) {
-            if ($maxPrice === null || $variant->price > $maxPrice) {
-                $maxPrice = $variant->price;
-            }
-        }
-        $product->max_price = $maxPrice;
-
-        // Label harga dengan diskon
-        if ($hasDiscount && $minEffectivePrice < $maxPrice) {
-            $product->price_label = 'Rp ' . number_format($minEffectivePrice, 0, ',', '.') . 
-                                    ' - Rp ' . number_format($maxPrice, 0, ',', '.');
-            $product->discount_label = 'Diskon ' . $maxDiscountPercent . '%';
-        } elseif ($hasDiscount) {
-            $product->price_label = 'Rp ' . number_format($minEffectivePrice, 0, ',', '.');
-            $product->discount_label = 'Diskon ' . $maxDiscountPercent . '%';
-        } else {
-            if ($minEffectivePrice && $maxPrice && $minEffectivePrice < $maxPrice) {
-                $product->price_label = 'Rp ' . number_format($minEffectivePrice, 0, ',', '.') . 
-                                        ' - Rp ' . number_format($maxPrice, 0, ',', '.');
-            } else {
-                $product->price_label = 'Rp ' . number_format($minEffectivePrice ?? 0, 0, ',', '.');
-            }
-            $product->discount_label = '';
-        }
-
-        return $product;
-    }
+    // protected function attachDiscountData($product)
+    // {
+    //     // Method ini sudah ada di trait ProductDiscountTrait
+    // }
 }

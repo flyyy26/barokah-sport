@@ -7,6 +7,7 @@ use App\Models\OrderItem;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Carbon\Carbon;
 
 class Product extends Model
 {
@@ -22,6 +23,14 @@ class Product extends Model
         'is_active',
         'minimum_stock',
         'restock_threshold',
+        'has_product_discount',
+        'discount_type',
+        'discount_value',
+        'is_flash_sale',
+        'flash_sale_type',
+        'flash_sale_value',
+        'flash_sale_start_date',
+        'flash_sale_end_date',
     ];
 
     protected $casts = [
@@ -30,6 +39,12 @@ class Product extends Model
         'is_active' => 'boolean',
         'minimum_stock' => 'integer',
         'restock_threshold' => 'integer',
+        'has_product_discount' => 'boolean',
+        'discount_value' => 'decimal:2',
+        'is_flash_sale' => 'boolean',
+        'flash_sale_value' => 'decimal:2',
+        'flash_sale_start_date' => 'datetime',
+        'flash_sale_end_date' => 'datetime',
     ];
 
     public function category(): BelongsTo
@@ -101,6 +116,213 @@ class Product extends Model
     {
         $firstVariant = $this->variants->first();
         return $firstVariant ? (float) $firstVariant->price : 0;
+    }
+
+    public function isOnFlashSale(): bool
+    {
+        if (!$this->is_flash_sale || !$this->flash_sale_value || $this->flash_sale_value <= 0) {
+            return false;
+        }
+
+        $now = now();
+        if ($this->flash_sale_start_date && $now->lt($this->flash_sale_start_date)) {
+            return false;
+        }
+
+        if ($this->flash_sale_end_date && $now->gt($this->flash_sale_end_date)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function calculateFlashSaleDiscount(float $price): ?float
+    {
+        if (!$this->isOnFlashSale()) {
+            return null;
+        }
+
+        if ($this->flash_sale_type === 'percentage') {
+            $discountAmount = $price * ($this->flash_sale_value / 100);
+            return max(round($price - $discountAmount, 2), 0);
+        } elseif ($this->flash_sale_type === 'fixed') {
+            return max(round($price - $this->flash_sale_value, 2), 0);
+        }
+
+        return null;
+    }
+
+    public function getFlashSaleDiscountPercent(float $price): float
+    {
+        if (!$this->isOnFlashSale() || $price <= 0) {
+            return 0;
+        }
+
+        if ($this->flash_sale_type === 'percentage') {
+            return (float) $this->flash_sale_value;
+        } elseif ($this->flash_sale_type === 'fixed') {
+            return round(($this->flash_sale_value / $price) * 100, 2);
+        }
+
+        return 0;
+    }
+
+    public function getFlashSaleStatusAttribute(): string
+    {
+        if (!$this->is_flash_sale) {
+            return 'inactive';
+        }
+
+        if (!$this->flash_sale_value || $this->flash_sale_value <= 0) {
+            return 'inactive';
+        }
+
+        $now = now();
+        if ($this->flash_sale_start_date && $now->lt($this->flash_sale_start_date)) {
+            return 'upcoming';
+        }
+        if ($this->flash_sale_end_date && $now->gt($this->flash_sale_end_date)) {
+            return 'expired';
+        }
+
+        return 'active';
+    }
+
+    public function getFlashSaleStatusLabelAttribute(): string
+    {
+        return [
+            'active' => '✅ Aktif',
+            'inactive' => '❌ Tidak Aktif',
+            'upcoming' => '📅 Akan Datang',
+            'expired' => '⏳ Kadaluarsa',
+        ][$this->flash_sale_status] ?? 'Tidak Aktif';
+    }
+
+    public function getFlashSaleStatusColorAttribute(): string
+    {
+        return [
+            'active' => 'green',
+            'inactive' => 'gray',
+            'upcoming' => 'yellow',
+            'expired' => 'red',
+        ][$this->flash_sale_status] ?? 'gray';
+    }
+
+    public function getFlashSaleLabelAttribute(): string
+    {
+        if (!$this->isOnFlashSale()) {
+            return '';
+        }
+
+        if ($this->flash_sale_type === 'percentage') {
+            return 'Flash Sale ' . (float) $this->flash_sale_value . '%';
+        } elseif ($this->flash_sale_type === 'fixed') {
+            return 'Flash Sale Rp ' . number_format($this->flash_sale_value, 0, ',', '.');
+        }
+
+        return '';
+    }
+
+    public function isFlashSaleActive(): bool
+    {
+        return $this->isOnFlashSale();
+    }
+
+    public function isOnProductDiscount(): bool
+    {
+        // Cek apakah fitur diskon produk diaktifkan
+        if (!$this->has_product_discount) {
+            return false;
+        }
+
+        // Cek apakah nilai diskon valid
+        if (!$this->discount_value || $this->discount_value <= 0) {
+            return false;
+        }
+
+        // REMOVE date checks - diskon selalu aktif jika diaktifkan
+        return true;
+    }
+
+    public function calculateProductDiscount(float $price): ?float
+    {
+        if (!$this->isOnProductDiscount()) {
+            return null;
+        }
+
+        if ($this->discount_type === 'percentage') {
+            // Diskon persentase
+            $discountAmount = $price * ($this->discount_value / 100);
+            $result = round($price - $discountAmount, 2);
+            return max($result, 0);
+        } elseif ($this->discount_type === 'fixed') {
+            // Diskon fixed (potongan harga)
+            $result = round($price - $this->discount_value, 2);
+            return max($result, 0);
+        }
+
+        return null;
+    }
+
+    public function getProductDiscountPercent(float $price): float
+    {
+        if (!$this->isOnProductDiscount() || $price <= 0) {
+            return 0;
+        }
+
+        if ($this->discount_type === 'percentage') {
+            return (float) $this->discount_value;
+        } elseif ($this->discount_type === 'fixed') {
+            // Fixed discount dihitung persentasenya dari harga
+            return round(($this->discount_value / $price) * 100, 2);
+        }
+
+        return 0;
+    }
+
+    public function getProductDiscountLabel(): string
+    {
+        if (!$this->isOnProductDiscount()) {
+            return '';
+        }
+
+        if ($this->discount_type === 'percentage') {
+            return 'Diskon ' . (float) $this->discount_value . '%';
+        } elseif ($this->discount_type === 'fixed') {
+            return 'Potongan Rp ' . number_format($this->discount_value, 0, ',', '.');
+        }
+
+        return '';
+    }
+
+    public function getProductDiscountStatusAttribute(): string
+    {
+        if (!$this->has_product_discount) {
+            return 'inactive';
+        }
+
+        if (!$this->discount_value || $this->discount_value <= 0) {
+            return 'inactive';
+        }
+
+        // Always active if discount is set
+        return 'active';
+    }
+
+    public function getProductDiscountStatusLabelAttribute(): string
+    {
+        return [
+            'active' => '✅ Aktif',
+            'inactive' => '❌ Tidak Aktif',
+        ][$this->product_discount_status] ?? 'Tidak Aktif';
+    }
+
+    public function getProductDiscountStatusColorAttribute(): string
+    {
+        return [
+            'active' => 'green',
+            'inactive' => 'gray',
+        ][$this->product_discount_status] ?? 'gray';
     }
 
     /**

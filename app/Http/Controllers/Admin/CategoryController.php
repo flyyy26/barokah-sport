@@ -112,46 +112,66 @@ class CategoryController extends Controller
 
         $category->update($validated);
 
-        // 🔥 UPDATE SIZE GUIDE
-        $existingIds = [];
-        $dimensionLabels = $request->dimension_labels ?? [];
-        
-        if (!empty($validated['size_guides'])) {
-            foreach ($validated['size_guides'] as $index => $guide) {
+        // 🔥 PERBAIKI: UPDATE SIZE GUIDE - HAPUS SEMUA DULU, BARU INSERT ULANG
+        if ($request->has('size_guides') && !empty($request->size_guides)) {
+            
+            // 🔥 1. DAPATKAN LIST SIZE YANG ADA DI REQUEST
+            $newSizes = [];
+            foreach ($request->size_guides as $guide) {
                 if (!empty($guide['size'])) {
-                    $dimensions = [];
-                    if (!empty($guide['dimensions']) && !empty($dimensionLabels)) {
-                        foreach ($dimensionLabels as $labelIndex => $label) {
-                            if (isset($guide['dimensions'][$labelIndex])) {
-                                $dimensions[$label] = (int) $guide['dimensions'][$labelIndex];
-                            }
-                        }
-                    }
-                    
-                    if (!empty($guide['id'])) {
-                        $sizeGuide = SizeGuide::find($guide['id']);
-                        if ($sizeGuide && $sizeGuide->category_id == $category->id) {
-                            $sizeGuide->update([
-                                'size' => $guide['size'],
-                                'dimensions' => !empty($dimensions) ? $dimensions : null,
-                                'sort_order' => $index,
-                            ]);
-                            $existingIds[] = $sizeGuide->id;
-                        }
-                    } else {
-                        $newGuide = $category->sizeGuides()->create([
-                            'size' => $guide['size'],
-                            'dimensions' => !empty($dimensions) ? $dimensions : null,
-                            'sort_order' => $index,
-                            'is_active' => true,
-                        ]);
-                        $existingIds[] = $newGuide->id;
-                    }
+                    $newSizes[] = trim($guide['size']);
                 }
             }
-        }
 
-        $category->sizeGuides()->whereNotIn('id', $existingIds)->delete();
+            // 🔥 2. HAPUS SIZE GUIDE YANG TIDAK ADA DI REQUEST
+            $category->sizeGuides()
+                ->whereNotIn('size', $newSizes)
+                ->delete();
+
+            // 🔥 3. UPDATE ATAU CREATE SIZE GUIDE
+            $dimensionLabels = $request->dimension_labels ?? [];
+            
+            foreach ($request->size_guides as $index => $guide) {
+                if (empty($guide['size'])) {
+                    continue;
+                }
+
+                $size = trim($guide['size']);
+                
+                // Build dimensions array
+                $dimensions = [];
+                if (!empty($guide['dimensions']) && !empty($dimensionLabels)) {
+                    foreach ($dimensionLabels as $labelIndex => $label) {
+                        if (isset($guide['dimensions'][$labelIndex])) {
+                            $dimensions[$label] = (int) $guide['dimensions'][$labelIndex];
+                        }
+                    }
+                }
+
+                // 🔥 4. UPDATE ATAU CREATE DENGAN AMAN
+                $sizeGuide = $category->sizeGuides()->where('size', $size)->first();
+                
+                if ($sizeGuide) {
+                    // Update existing
+                    $sizeGuide->update([
+                        'dimensions' => !empty($dimensions) ? $dimensions : null,
+                        'sort_order' => $index,
+                        'is_active' => true,
+                    ]);
+                } else {
+                    // Create new
+                    $category->sizeGuides()->create([
+                        'size' => $size,
+                        'dimensions' => !empty($dimensions) ? $dimensions : null,
+                        'sort_order' => $index,
+                        'is_active' => true,
+                    ]);
+                }
+            }
+        } else {
+            // 🔥 JIKA TIDAK ADA SIZE GUIDE, HAPUS SEMUA
+            $category->sizeGuides()->delete();
+        }
 
         return redirect()
             ->route('admin.categories.index')

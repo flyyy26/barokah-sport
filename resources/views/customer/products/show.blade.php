@@ -30,64 +30,77 @@
 
             {{-- GAMBAR --}}
             <div class="product_photo_grid">
-                <div class="thumbnail-grid" id="thumbnail-container">
-                    @php
-                        $allThumbnails = [];
-                        $usedImages = [];
+                <div class="thumbnail_grid_layout_container">
+                    <div class="thumbnail_grid_layout">
+                        {{-- Thumbnail Grid --}}
+                        <div class="thumbnail-grid" id="thumbnail-container">
+                            @php
+                                $allThumbnails = [];
+                                $usedImages = [];
 
-                        // 1. Product images
-                        foreach ($product->images as $image) {
-                            $url = Storage::url($image->image);
-                            if (!in_array($url, $usedImages)) {
-                                $usedImages[] = $url;
-                                $allThumbnails[] = [
-                                    'type' => 'product',
-                                    'url' => $url,
-                                    'variant_id' => null,
-                                    'option_value_id' => null,
-                                    'label' => 'Produk',
-                                    'sort' => $image->sort_order ?? 0,
-                                ];
-                            }
-                        }
-
-                        // 2. Option value images (unique)
-                        foreach ($product->options as $option) {
-                            foreach ($option->values as $value) {
-                                if ($value->image) {
-                                    $url = Storage::url($value->image);
+                                // 1. Product images
+                                foreach ($product->images as $image) {
+                                    $url = Storage::url($image->image);
                                     if (!in_array($url, $usedImages)) {
                                         $usedImages[] = $url;
                                         $allThumbnails[] = [
-                                            'type' => 'option',
+                                            'type' => 'product',
                                             'url' => $url,
                                             'variant_id' => null,
-                                            'option_value_id' => $value->id,
-                                            'label' => $value->value,
-                                            'sort' => 100 + ($value->sort_order ?? 0),
+                                            'option_value_id' => null,
+                                            'label' => 'Produk',
+                                            'sort' => $image->sort_order ?? 0,
                                         ];
                                     }
                                 }
-                            }
-                        }
 
-                        usort($allThumbnails, function($a, $b) {
-                            return $a['sort'] <=> $b['sort'];
-                        });
-                    @endphp
+                                // 2. Option value images (unique)
+                                foreach ($product->options as $option) {
+                                    foreach ($option->values as $value) {
+                                        if ($value->image) {
+                                            $url = Storage::url($value->image);
+                                            if (!in_array($url, $usedImages)) {
+                                                $usedImages[] = $url;
+                                                $allThumbnails[] = [
+                                                    'type' => 'option',
+                                                    'url' => $url,
+                                                    'variant_id' => null,
+                                                    'option_value_id' => $value->id,
+                                                    'label' => $value->value,
+                                                    'sort' => 100 + ($value->sort_order ?? 0),
+                                                ];
+                                            }
+                                        }
+                                    }
+                                }
 
-                    @foreach ($allThumbnails as $thumbnail)
-                        <button type="button"
-                                class="image-thumb {{ $loop->first ? 'active' : '' }}"
-                                data-image="{{ $thumbnail['url'] }}"
-                                data-type="{{ $thumbnail['type'] }}"
-                                data-option-value-id="{{ $thumbnail['option_value_id'] }}"
-                                onclick="handleThumbnailClick('{{ $thumbnail['url'] }}', {{ $thumbnail['option_value_id'] ?? 'null' }}, this)">
-                            <img src="{{ $thumbnail['url'] }}"
-                                alt="{{ $product->name }}"
-                                loading="lazy">
+                                usort($allThumbnails, function($a, $b) {
+                                    return $a['sort'] <=> $b['sort'];
+                                });
+                            @endphp
+
+                            @foreach ($allThumbnails as $thumbnail)
+                                <button type="button"
+                                        class="image-thumb {{ $loop->first ? 'active' : '' }}"
+                                        data-image="{{ $thumbnail['url'] }}"
+                                        data-type="{{ $thumbnail['type'] }}"
+                                        data-option-value-id="{{ $thumbnail['option_value_id'] }}"
+                                        onclick="handleThumbnailClick('{{ $thumbnail['url'] }}', {{ $thumbnail['option_value_id'] ?? 'null' }}, this)">
+                                    <img src="{{ $thumbnail['url'] }}"
+                                        alt="{{ $product->name }}"
+                                        loading="lazy">
+                                </button>
+                            @endforeach
+                        </div>
+
+                        {{-- 🔥 SCROLL BUTTONS --}}
+                        <button type="button" class="thumbnail-scroll-btn thumbnail-scroll-btn-up hidden" id="thumbnail-scroll-up" aria-label="Scroll up">
+                            <iconify-icon icon="tabler:chevron-up" width="16" height="16"></iconify-icon>
                         </button>
-                    @endforeach
+                        <button type="button" class="thumbnail-scroll-btn thumbnail-scroll-btn-down hidden" id="thumbnail-scroll-down" aria-label="Scroll down">
+                            <iconify-icon icon="tabler:chevron-down" width="16" height="16"></iconify-icon>
+                        </button>
+                    </div>
                 </div>
 
                 <div class="main-image-container" id="main-image-container">
@@ -238,105 +251,69 @@
                 {{-- Kategori --}}
                 <span class="product_category_badge">{{ $product->category->name ?? 'Tanpa Kategori' }}</span>
 
+                <div class="product_price_display product_price_display_mobile" id="price-display-container">
+                    @if($hasAnyDiscount)
+                        {{-- Ada Diskon - Tampilkan Range Harga dengan Coret --}}
+                        <div class="product_price_box" id="default-price-box">
+                            <span class="price-current discounted" id="display-price">
+                                {{ $defaultDisplayPrice }}
+                            </span>
+                            <span class="price-original" id="original-price-display">
+                                {{ $defaultOriginalPrice }}
+                            </span>
+                        </div>
+                    @else
+                        {{-- Tidak Ada Diskon --}}
+                        <span class="price-current" id="display-price">
+                            {{ $defaultDisplayPrice }}
+                        </span>
+                    @endif
+                </div>
                 {{-- Nama Produk --}}
                 <h1 class="product_name">{{ $product->name }}</h1>
 
                 {{-- Harga --}}
                 @php
                     $firstVariant = $product->variants->first();
-                    $minPrice = $product->variants->min('price');
-                    $maxPrice = $product->variants->max('price');
-                    $minDiscount = $product->variants->min('discount_price');
                     $totalStock = $product->variants->sum('stock');
                     
-                    // 🔥 CEK APAKAH ADA DISKON
-                    $hasAnyDiscount = false;
-                    $bestDiscountVariant = null;
-                    $maxDiscountPercent = 0;
-                    
-                    foreach ($product->variants as $variant) {
-                        if ($variant->discount_price && $variant->discount_price < $variant->price) {
-                            $hasAnyDiscount = true;
-                            $discountPercent = round((($variant->price - $variant->discount_price) / $variant->price) * 100);
-                            if ($discountPercent > $maxDiscountPercent) {
-                                $maxDiscountPercent = $discountPercent;
-                                $bestDiscountVariant = $variant;
-                            }
-                        }
-                    }
-                    
-                    // 🔥 HITUNG HARGA TERMURAH SETELAH DISKON (EFFECTIVE PRICE)
-                    $effectivePrices = [];
-                    $originalPrices = [];
-                    foreach ($product->variants as $variant) {
-                        $effectivePrices[] = $variant->discount_price ?? $variant->price;
-                        $originalPrices[] = $variant->price;
-                    }
-                    $minEffective = !empty($effectivePrices) ? min($effectivePrices) : 0;
-                    $maxEffective = !empty($effectivePrices) ? max($effectivePrices) : 0;
-                    
-                    // 🔥 HITUNG HARGA ORIGINAL TERMURAH DAN TERMAHAL
-                    $minOriginalPrice = !empty($originalPrices) ? min($originalPrices) : 0;
-                    $maxOriginalPrice = !empty($originalPrices) ? max($originalPrices) : 0;
-                    
-                    // 🔥 BUAT STRING HARGA UNTUK DEFAULT
-                    $defaultDisplayPrice = '';
-                    $defaultOriginalPrice = '';
-                    $defaultDiscountBadge = '';
-                    
-                    if ($hasAnyDiscount) {
-                        if ($minEffective == $maxEffective) {
-                            $defaultDisplayPrice = 'Rp ' . number_format($minEffective, 0, ',', '.');
-                        } else {
-                            $defaultDisplayPrice = 'Rp ' . number_format($minEffective, 0, ',', '.') . ' - Rp ' . number_format($maxEffective, 0, ',', '.');
-                        }
-                        
-                        if ($minOriginalPrice == $maxOriginalPrice) {
-                            $defaultOriginalPrice = 'Rp ' . number_format($minOriginalPrice, 0, ',', '.');
-                        } else {
-                            $defaultOriginalPrice = 'Rp ' . number_format($minOriginalPrice, 0, ',', '.') . ' - Rp ' . number_format($maxOriginalPrice, 0, ',', '.');
-                        }
-                        
-                        $defaultDiscountBadge = 'Diskon ' . $maxDiscountPercent . '%';
-                    } else {
-                        if ($minEffective == $maxEffective) {
-                            $defaultDisplayPrice = 'Rp ' . number_format($minEffective, 0, ',', '.');
-                        } else {
-                            $defaultDisplayPrice = 'Rp ' . number_format($minEffective, 0, ',', '.') . ' - Rp ' . number_format($maxEffective, 0, ',', '.');
-                        }
-                        $defaultOriginalPrice = '';
-                        $defaultDiscountBadge = '';
-                    }
+                    // 🔥 DATA DARI CONTROLLER
+                    $hasAnyDiscount = $hasAnyDiscount ?? false;
+                    $maxDiscountPercent = $maxDiscountPercent ?? 0;
+                    $hasProductDiscount = $hasProductDiscount ?? false;
+                    $productDiscountPercent = $productDiscountPercent ?? 0;
+                    $defaultDisplayPrice = $defaultDisplayPrice ?? '';
+                    $defaultOriginalPrice = $defaultOriginalPrice ?? '';
+                    $defaultDiscountBadge = $defaultDiscountBadge ?? '';
+                    $minEffective = $minEffective ?? 0;
+                    $maxEffective = $maxEffective ?? 0;
+                    $minPrice = $minPrice ?? 0;
+                    $maxPrice = $maxPrice ?? 0;
                 @endphp
 
                 <div class="product_price_display" id="price-display-container">
                     @if($hasAnyDiscount)
-                        {{-- Ada Diskon - Tampilkan Range Harga --}}
+                        {{-- Ada Diskon - Tampilkan Range Harga dengan Coret --}}
                         <div class="product_price_box" id="default-price-box">
                             <span class="price-current discounted" id="display-price">
-                                @if($minEffective == $maxEffective)
-                                    Rp {{ number_format($minEffective, 0, ',', '.') }}
-                                @else
-                                    Rp {{ number_format($minEffective, 0, ',', '.') }} - Rp {{ number_format($maxEffective, 0, ',', '.') }}
-                                @endif
+                                {{ $defaultDisplayPrice }}
                             </span>
                             <span class="price-original" id="original-price-display">
-                                @if($minOriginalPrice == $maxOriginalPrice)
-                                    Rp {{ number_format($minOriginalPrice, 0, ',', '.') }}
-                                @else
-                                    Rp {{ number_format($minOriginalPrice, 0, ',', '.') }} - Rp {{ number_format($maxOriginalPrice, 0, ',', '.') }}
-                                @endif
+                                {{ $defaultOriginalPrice }}
                             </span>
-                            <span class="discount-badge">Diskon {{ $maxDiscountPercent }}%</span>
+                            <span class="discount-badge">{{ $defaultDiscountBadge }}</span>
+                            
+                            {{-- 🔥 TAMPILKAN INFO DISKON PRODUK (jika ada) --}}
+                            @if($hasProductDiscount && $productDiscountPercent > 0)
+                                <span class="product-discount-info" style="font-size:0.6vw;color:#16a34a;display:block;margin-top:0.2vw;">
+                                    {{ round($productDiscountPercent) }}%
+                                </span>
+                            @endif
                         </div>
                     @else
                         {{-- Tidak Ada Diskon --}}
                         <span class="price-current" id="display-price">
-                            @if($minEffective == $maxEffective)
-                                Rp {{ number_format($minEffective, 0, ',', '.') }}
-                            @else
-                                Rp {{ number_format($minEffective, 0, ',', '.') }} - Rp {{ number_format($maxEffective, 0, ',', '.') }}
-                            @endif
+                            {{ $defaultDisplayPrice }}
                         </span>
                     @endif
                 </div>
@@ -393,6 +370,172 @@
                         @endforeach
                     </div>
                 @endif
+                
+                <div class="product-accordion product-accordion-mobile">
+                    <div class="accordion-item">
+                        <button class="accordion-header" onclick="toggleAccordion(this)">
+                            Deskripsi Produk
+                            <span class="accordion-icon open">
+                                <iconify-icon icon="tabler:chevron-down"></iconify-icon>
+                            </span>
+                        </button>
+                        <div class="accordion-body open">
+                            <div class="accordion-body-inner product-description">
+                                @if($product->description)
+                                    {!! $product->description !!}
+                                @else
+                                    <p style="color: #94a3b8;">Tidak ada deskripsi untuk produk ini.</p>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item size-guide-accordion">
+                        <button class="accordion-header" onclick="toggleAccordion(this)">
+                            Panduan Ukuran
+                            <span class="accordion-icon open">
+                                <iconify-icon icon="tabler:chevron-down"></iconify-icon>
+                            </span>
+                        </button>
+                        <div class="accordion-body open">
+                            <div class="accordion-body-inner">
+                                @php
+                                    $sizeGuides = $product->category ? $product->category->sizeGuides : collect();
+                                    $dimensionLabels = $product->category ? $product->category->dimension_labels : [];
+                                @endphp
+
+                                @if($sizeGuides->isNotEmpty() && !empty($dimensionLabels))
+                                    <div class="size-guide-table-wrapper">
+                                        <table class="size-guide-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Ukuran</th>
+                                                    @foreach($dimensionLabels as $label)
+                                                        <th>{{ $label }} (cm)</th>
+                                                    @endforeach
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach($sizeGuides as $guide)
+                                                    <tr>
+                                                        <td><strong>{{ $guide->size }}</strong></td>
+                                                        @foreach($dimensionLabels as $label)
+                                                            <td>{{ $guide->dimensions[$label] ?? '-' }}</td>
+                                                        @endforeach
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <div class="size-guide-note">
+                                        <p><strong>Tips memilih ukuran:</strong></p>
+                                        <ul>
+                                            <li>Ukur menggunakan meteran kain pada posisi yang tepat</li>
+                                            <li>Pilih ukuran yang sesuai dengan ukuran tubuh Anda</li>
+                                            <li>Jika di antara dua ukuran, pilih ukuran yang lebih besar</li>
+                                        </ul>
+                                    </div>
+                                @else
+                                    <p style="color: #94a3b8; font-size: 3vw;">Belum ada panduan ukuran untuk kategori ini.</p>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- 2. DETAIL TEKNIS --}}
+                    <div class="accordion-item">
+                        <button class="accordion-header" onclick="toggleAccordion(this)">
+                            Detail Teknis
+                            <span class="accordion-icon open">
+                                <iconify-icon icon="tabler:chevron-down"></iconify-icon>
+                            </span>
+                        </button>
+                        <div class="accordion-body open">
+                            <div class="accordion-body-inner">
+                                <div class="detail-item">
+                                    <span class="label">Kategori</span>
+                                    <span>{{ $product->category->name ?? '-' }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="label">Berat</span>
+                                    <span>{{ $firstVariant?->weight ?? '500' }} gram</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="label">Bahan</span>
+                                    <span>{{ $product->material ?? 'Poliester, Diadora' }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="label">Jenis Kelamin</span>
+                                    <span>{{ $product->gender ? ucfirst($product->gender) : 'Unisex' }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="label">Warna</span>
+                                    <span>
+                                        @if(!empty($colors))
+                                            {{ implode(', ', $colors) }}
+                                        @else
+                                            -
+                                        @endif
+                                    </span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="label">Ukuran</span>
+                                    <span>
+                                        @if(!empty($sizes))
+                                            {{ implode(', ', $sizes) }}
+                                        @else
+                                            -
+                                        @endif
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- 3. FITUR --}}
+                    <div class="accordion-item">
+                        <button class="accordion-header" onclick="toggleAccordion(this)">
+                            Fitur
+                            <span class="accordion-icon open">
+                                <iconify-icon icon="tabler:chevron-down"></iconify-icon>
+                            </span>
+                        </button>
+                        <div class="accordion-body open">
+                            <div class="accordion-body-inner">
+                                @php
+                                    $features = $product->features;
+                                @endphp
+                                @if($features->isNotEmpty())
+                                    <ul>
+                                        @foreach($features as $feature)
+                                            <li>
+                                                • {{ $feature->name }}
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                @else
+                                    <p style="color: #94a3b8;">Belum ada fitur untuk produk ini.</p>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- 4. ULASAN PEMBELI --}}
+                    <div class="accordion-item">
+                        <button class="accordion-header" onclick="toggleAccordion(this)">
+                            Ulasan Pembeli
+                            <span class="accordion-icon open">
+                                <iconify-icon icon="tabler:chevron-down"></iconify-icon>
+                            </span>
+                        </button>
+                        <div class="accordion-body open">
+                            <div class="accordion-body-inner">
+                                <p style="color: #94a3b8;">Belum ada ulasan untuk produk ini.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
 
                 {{-- ============================================ --}}
                 {{-- TOMBOL AKSI --}}
@@ -420,12 +563,13 @@
                                 Pilih Varian
                             </button>
 
+                            {{-- 🔥 WISHLIST BUTTON - DENGAN STATUS ACTIVE --}}
                             <button type="button"
                                     id="wishlist-toggle-product"
-                                    class="btn-wishlist"
+                                    class="btn-wishlist {{ $inWishlist ? 'active' : '' }}"
                                     data-product-id="{{ $product->id }}"
                                     onclick="toggleWishlist({{ $product->id }})">
-                                @if(in_array($product->id, array_keys(session()->get('wishlist', []))))
+                                @if($inWishlist)
                                     ❤️
                                 @else
                                     🤍
@@ -444,6 +588,38 @@
 
                     @if ($totalStock <= 0)
                         <p style="margin-top: 0.5vw; font-size: 0.7vw; color: #ef4444;">Maaf, produk ini sedang habis.</p>
+                    @endif
+                </div>
+
+                <div class="action-buttons-mobile" style="display: none;">
+
+                    {{-- Mobile Buy Now --}}
+                    <button type="button"
+                            class="mobile-btn-buy-now"
+                            id="mobile-buy-now-btn"
+                            onclick="openVariantPopup('buy_now')">
+                        Beli Sekarang
+                    </button>
+                    <button type="button"
+                            class="mobile-btn-add-to-cart"
+                            id="mobile-add-to-cart-btn"
+                            onclick="openVariantPopup('add_to_cart')">
+                        <iconify-icon icon="solar:cart-linear"></iconify-icon>
+                    </button>
+
+                    <button type="button"
+                            class="mobile-btn-wishlist {{ $inWishlist ? 'active' : '' }}"
+                            id="mobile-wishlist-btn"
+                            data-product-id="{{ $product->id }}">
+                        @if($inWishlist)
+                            <iconify-icon icon="solar:heart-bold" style="color: #ef4444;"></iconify-icon>
+                        @else
+                            <iconify-icon icon="solar:heart-linear"></iconify-icon>
+                        @endif
+                    </button>
+
+                    @if ($totalStock <= 0)
+                        <p style="margin-top: 2vw; font-size: 3vw; color: #ef4444; text-align: center;">Maaf, produk ini sedang habis.</p>
                     @endif
                 </div>
 
@@ -513,6 +689,104 @@
                     </ul>
                 </div>
             </div>
+        </div>
+    </div>
+</div>
+
+<div id="variant-popup" class="variant-popup-overlay">
+    <div class="variant-popup">
+        {{-- Handle --}}
+        <div class="variant-popup-handle"></div>
+
+        {{-- Header --}}
+        <div class="variant-popup-header">
+            <h3>Pilih Varian</h3>
+            <button type="button" class="variant-popup-close" onclick="closeVariantPopup()">✕</button>
+        </div>
+
+        {{-- Product Info --}}
+        <div class="variant-popup-product">
+            <div class="variant-popup-product-image">
+                <img id="popup-product-image" src="{{ $product->images->first() ? Storage::url($product->images->first()->image) : '' }}" alt="{{ $product->name }}">
+            </div>
+            <div class="variant-popup-product-info">
+                <div class="product-name">{{ $product->name }}</div>
+                <div class="product-price" id="popup-price-display">
+                    {{ $defaultDisplayPrice }}
+                    @if($hasAnyDiscount)
+                        <span class="original-price">{{ $defaultOriginalPrice }}</span>
+                        <span class="discount-badge">{{ $defaultDiscountBadge }}</span>
+                    @endif
+                </div>
+            </div>
+        </div>
+
+        {{-- Variant Options --}}
+        <div class="variant-popup-options" id="popup-variant-options">
+            @if ($product->options->isNotEmpty())
+                @foreach ($product->options as $option)
+                    <div class="variant-group">
+                        <span class="variant-group-label">{{ $option->name }}</span>
+                        <div class="variant-group-options" data-option-id="{{ $option->id }}">
+                            @php $values = $option->values->sortBy('sort_order'); @endphp
+                            @foreach ($values as $value)
+                                @php
+                                    $hasStock = false;
+                                    foreach ($product->variants as $variant) {
+                                        if ($variant->stock > 0) {
+                                            foreach ($variant->variantValues as $vv) {
+                                                if ($vv->product_option_value_id == $value->id) {
+                                                    $hasStock = true;
+                                                    break 2;
+                                                }
+                                            }
+                                        }
+                                    }
+                                @endphp
+                                <button type="button"
+                                        class="popup-variant-option"
+                                        data-option-id="{{ $option->id }}"
+                                        data-value-id="{{ $value->id }}"
+                                        data-value-name="{{ $value->value }}"
+                                        data-image="{{ $value->image ? Storage::url($value->image) : '' }}"
+                                        {{ !$hasStock ? 'disabled' : '' }}>
+                                    {{ $value->value }}
+                                </button>
+                            @endforeach
+                        </div>
+                    </div>
+                @endforeach
+            @endif
+        </div>
+
+        {{-- Stock Info --}}
+        <div class="variant-popup-stock" id="popup-stock-display">
+            <span class="in-stock">Stok: {{ $product->variants->sum('stock') }}</span>
+        </div>
+
+        {{-- Quantity --}}
+        <div class="variant-popup-quantity">
+            <span class="qty-label">Jumlah</span>
+            <div class="qty-wrapper">
+                <button type="button" class="qty-btn" data-action="decrease" id="popup-qty-decrease">−</button>
+                <input type="number" name="popup_qty" id="popup-qty-input" value="1" min="1"
+                    max="{{ $product->variants->sum('stock') > 0 ? $product->variants->sum('stock') : 1 }}"
+                    class="qty-input">
+                <button type="button" class="qty-btn" data-action="increase" id="popup-qty-increase">+</button>
+            </div>
+        </div>
+
+        {{-- Actions --}}
+        <div class="variant-popup-actions">
+            <button type="button" class="popup-btn-add-to-cart" id="popup-add-to-cart" disabled>
+                Pilih Varian
+            </button>
+            <button type="button" class="popup-btn-buy-now" id="popup-buy-now" disabled>
+                Pilih Varian
+            </button>
+            <button type="button" class="popup-btn-wishlist" id="popup-wishlist">
+                🤍 Tambah ke Wishlist
+            </button>
         </div>
     </div>
 </div>
@@ -640,6 +914,789 @@
     </section>
 @endif
 
+<script>
+        // ============================================ */
+    // 🔥 MOBILE VARIANT POPUP - SHOPEE STYLE */
+    // ============================================ */
+
+    // Popup State
+    var popupSelectedValues = {};
+    var popupCurrentVariant = null;
+    var popupAction = null; // 'add_to_cart' atau 'buy_now'
+
+    // DOM Elements
+    var variantPopup = document.getElementById('variant-popup');
+    var popupOptionsContainer = document.getElementById('popup-variant-options');
+    var popupStockDisplay = document.getElementById('popup-stock-display');
+    var popupPriceDisplay = document.getElementById('popup-price-display');
+    var popupProductImage = document.getElementById('popup-product-image');
+    var popupQtyInput = document.getElementById('popup-qty-input');
+    var popupAddToCartBtn = document.getElementById('popup-add-to-cart');
+    var popupBuyNowBtn = document.getElementById('popup-buy-now');
+    var popupWishlistBtn = document.getElementById('popup-wishlist');
+
+    // ============================================ */
+    // OPEN POPUP - HANYA UNTUK ADD TO CART DAN BUY NOW */
+    // ============================================ */
+
+    function openVariantPopup(action) {
+        // 🔥 JIKA ACTION ADALAH WISHLIST, JANGAN BUKA POPUP
+        if (action === 'wishlist') {
+            console.log('⚠️ Wishlist tidak menggunakan popup, langsung tambahkan');
+            return;
+        }
+        
+        if (!variantPopup) return;
+
+        // Reset state
+        popupSelectedValues = {};
+        popupCurrentVariant = null;
+        popupAction = action;
+
+        // Reset all options
+        document.querySelectorAll('#popup-variant-options .popup-variant-option').forEach(function(btn) {
+            btn.classList.remove('active');
+            // 🔥 PASTIKAN TOMBOL TIDAK DISABLE SAAT RESET
+            btn.disabled = false;
+            btn.classList.remove('disabled');
+        });
+
+        // Reset quantity
+        var totalStock = {{ $product->variants->sum('stock') }};
+        popupQtyInput.value = 1;
+        popupQtyInput.max = totalStock > 0 ? totalStock : 1;
+
+        // 🔥 Sembunyikan tombol yang tidak sesuai dengan action
+        if (action === 'add_to_cart') {
+            popupAddToCartBtn.style.display = 'block';
+            popupBuyNowBtn.style.display = 'none';
+            popupAddToCartBtn.disabled = true;
+            popupAddToCartBtn.textContent = 'Pilih Varian';
+            document.querySelector('.variant-popup-header h3').textContent = 'Pilih Varian';
+        } else if (action === 'buy_now') {
+            popupAddToCartBtn.style.display = 'none';
+            popupBuyNowBtn.style.display = 'block';
+            popupBuyNowBtn.disabled = true;
+            popupBuyNowBtn.textContent = 'Pilih Varian';
+            document.querySelector('.variant-popup-header h3').textContent = 'Pilih Varian';
+        }
+
+        popupWishlistBtn.style.display = 'none';
+
+        // Show popup
+        variantPopup.classList.add('active');
+        document.body.style.overflow = 'hidden';
+
+        // 🔥 UPDATE AVAILABLE VARIANTS - TANPA SELECTED VALUES
+        updatePopupAvailableVariants();
+    }
+
+
+    function closeVariantPopup() {
+        if (!variantPopup) return;
+        variantPopup.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    // ============================================ */
+    // POPUP VARIANT CLICK */
+    // ============================================ */
+
+    document.addEventListener('click', function(e) {
+        var target = e.target.closest('.popup-variant-option');
+        if (!target) return;
+        if (target.disabled) return;
+
+        var optionId = target.dataset.optionId;
+        var valueId = target.dataset.valueId;
+        var image = target.dataset.image || '';
+
+        var group = target.closest('.variant-group-options');
+
+        // 🔥 HAPUS ACTIVE DARI GRUP YANG SAMA
+        group.querySelectorAll('.popup-variant-option').forEach(function(btn) {
+            btn.classList.remove('active');
+        });
+
+        target.classList.add('active');
+        popupSelectedValues[optionId] = parseInt(valueId);
+
+        // 🔥 UPDATE GAMBAR JIKA WARNA
+        var optionName = target.closest('.variant-group').querySelector('.variant-group-label');
+        var isColor = optionName && (
+            optionName.textContent.toLowerCase() === 'warna' ||
+            optionName.textContent.toLowerCase() === 'color'
+        );
+
+        if (isColor && image) {
+            popupProductImage.src = image;
+        }
+
+        // 🔥 CARI VARIAN YANG COCOK
+        var variant = findPopupVariantByValues(popupSelectedValues, true);
+
+        if (variant) {
+            popupCurrentVariant = variant;
+            var totalOptions = document.querySelectorAll('#popup-variant-options .variant-group').length;
+            var selectedCount = Object.keys(popupSelectedValues).length;
+
+            // 🔥 UPDATE HARGA & STOK
+            updatePopupPrice(variant);
+            updatePopupStock(variant);
+
+            // 🔥 UPDATE TOMBOL
+            if (selectedCount === totalOptions) {
+                if (variant.stock > 0) {
+                    if (popupAction === 'add_to_cart') {
+                        popupAddToCartBtn.disabled = false;
+                        popupAddToCartBtn.textContent = 'Tambah ke Keranjang';
+                    } else if (popupAction === 'buy_now') {
+                        popupBuyNowBtn.disabled = false;
+                        popupBuyNowBtn.textContent = 'Beli Sekarang';
+                    }
+                } else {
+                    if (popupAction === 'add_to_cart') {
+                        popupAddToCartBtn.disabled = true;
+                        popupAddToCartBtn.textContent = 'Stok Habis';
+                    } else if (popupAction === 'buy_now') {
+                        popupBuyNowBtn.disabled = true;
+                        popupBuyNowBtn.textContent = 'Stok Habis';
+                    }
+                }
+            } else {
+                if (popupAction === 'add_to_cart') {
+                    popupAddToCartBtn.disabled = true;
+                    popupAddToCartBtn.textContent = 'Pilih Varian';
+                } else if (popupAction === 'buy_now') {
+                    popupBuyNowBtn.disabled = true;
+                    popupBuyNowBtn.textContent = 'Pilih Varian';
+                }
+            }
+
+            // 🔥 UPDATE QTY MAX
+            popupQtyInput.max = variant.stock > 0 ? variant.stock : 1;
+            if (parseInt(popupQtyInput.value) > variant.stock && variant.stock > 0) {
+                popupQtyInput.value = variant.stock;
+            }
+        } else {
+            // 🔥 TIDAK ADA VARIAN YANG COCOK
+            popupCurrentVariant = null;
+            if (popupAction === 'add_to_cart') {
+                popupAddToCartBtn.disabled = true;
+                popupAddToCartBtn.textContent = 'Varian Tidak Tersedia';
+            } else if (popupAction === 'buy_now') {
+                popupBuyNowBtn.disabled = true;
+                popupBuyNowBtn.textContent = 'Varian Tidak Tersedia';
+            }
+            
+            // 🔥 RESET STOK DISPLAY
+            var totalStock = {{ $product->variants->sum('stock') }};
+            popupStockDisplay.innerHTML = totalStock > 0 
+                ? '<span class="in-stock">Stok: ' + totalStock + '</span>' 
+                : '<span class="out-of-stock">Stok Habis</span>';
+        }
+
+        updatePopupAvailableVariants();
+    });
+
+    // ============================================ */
+    // POPUP QUANTITY */
+    // ============================================ */
+
+    document.addEventListener('click', function(e) {
+        var target = e.target.closest('#popup-qty-decrease, #popup-qty-increase');
+        if (!target) return;
+
+        var value = parseInt(popupQtyInput.value) || 1;
+        var max = parseInt(popupQtyInput.max) || 999;
+
+        if (target.id === 'popup-qty-increase' && value < max) {
+            value += 1;
+        } else if (target.id === 'popup-qty-decrease' && value > 1) {
+            value -= 1;
+        }
+        popupQtyInput.value = value;
+    });
+
+    // ============================================ */
+    // POPUP HELPERS */
+    // ============================================ */
+
+    function findPopupVariantByValues(values, allowPartial = false) {
+        var selectedValueIds = Object.values(values).map(Number).sort();
+        var productVariants = @json($variantData ?? []);
+
+        var matchingVariants = productVariants.filter(function(variant) {
+            var variantValueIds = variant.values.map(Number).sort();
+            if (!allowPartial && variantValueIds.length !== selectedValueIds.length) {
+                return false;
+            }
+
+            return selectedValueIds.every(function(valueId) {
+                return variantValueIds.includes(valueId);
+            });
+        });
+
+        return matchingVariants.find(function(variant) {
+            return variant.stock > 0;
+        }) || matchingVariants[0] || null;
+    }
+
+    function updatePopupPrice(variant) {
+        if (!popupPriceDisplay) return;
+
+        var price = variant.effective_price ?? variant.price;
+        var originalPrice = variant.price;
+        var hasDiscount = variant.discount_percent > 0;
+        var discountPercent = variant.discount_percent || 0;
+
+        if (hasDiscount) {
+            var discountBadge = Math.round(discountPercent) + '%';
+            popupPriceDisplay.innerHTML = `
+                Rp ${new Intl.NumberFormat('id-ID').format(price)}
+                <span class="original-price">Rp ${new Intl.NumberFormat('id-ID').format(originalPrice)}</span>
+                <span class="discount-badge">${discountBadge}</span>
+            `;
+        } else {
+            popupPriceDisplay.innerHTML = `
+                Rp ${new Intl.NumberFormat('id-ID').format(price)}
+            `;
+        }
+    }
+
+    function updatePopupStock(variant) {
+        if (!popupStockDisplay) return;
+
+        if (variant.stock > 0) {
+            popupStockDisplay.innerHTML = `<span class="in-stock">Stok: ${variant.stock}</span>`;
+        } else {
+            popupStockDisplay.innerHTML = `<span class="out-of-stock">Stok Habis</span>`;
+        }
+    }
+
+    function updatePopupAvailableVariants() {
+        var selectedCount = Object.keys(popupSelectedValues).length;
+        var hasSelectedValues = selectedCount > 0;
+        var productVariants = @json($variantData ?? []);
+
+        console.log('🔄 Updating popup variants, selectedCount:', selectedCount);
+
+        document.querySelectorAll('#popup-variant-options .variant-group-options').forEach(function(group) {
+            var optionId = group.dataset.optionId;
+            var buttons = group.querySelectorAll('.popup-variant-option');
+
+            buttons.forEach(function(button) {
+                var valueId = parseInt(button.dataset.valueId);
+
+                // 🔥 CEK APAKAH VALUE INI ADA DI VARIAN MANAPUN
+                var hasAnyVariant = false;
+                var hasStockForValue = false;
+
+                for (var i = 0; i < productVariants.length; i++) {
+                    var variant = productVariants[i];
+                    if (variant.values.includes(valueId)) {
+                        hasAnyVariant = true;
+                        if (variant.stock > 0) {
+                            hasStockForValue = true;
+                            break;
+                        }
+                    }
+                }
+
+                // 🔥 JIKA TIDAK ADA VARIAN SAMA SEKALI, DISABLE
+                if (!hasAnyVariant) {
+                    button.disabled = true;
+                    button.classList.add('disabled');
+                    return;
+                }
+
+                // 🔥 JIKA BELUM ADA YANG DIPILIH, AKTIFKAN SEMUA YANG ADA STOK
+                if (!hasSelectedValues) {
+                    if (hasStockForValue) {
+                        button.disabled = false;
+                        button.classList.remove('disabled');
+                    } else {
+                        button.disabled = true;
+                        button.classList.add('disabled');
+                    }
+                    return;
+                }
+
+                // 🔥 JIKA SUDAH ADA YANG DIPILIH, CEK KOMBINASI
+                var tempValues = Object.assign({}, popupSelectedValues);
+                tempValues[optionId] = valueId;
+
+                var variant = findPopupVariantByValues(tempValues, true);
+                var isAvailable = variant && variant.stock > 0;
+
+                if (!isAvailable && variant) {
+                    button.disabled = true;
+                    button.classList.add('disabled');
+                } else if (!isAvailable) {
+                    button.disabled = true;
+                    button.classList.add('disabled');
+                } else {
+                    button.disabled = false;
+                    button.classList.remove('disabled');
+                }
+            });
+
+            // 🔥 JIKA BELUM ADA YANG DIPILIH, JANGAN PAKSA PILIH
+            if (!hasSelectedValues) {
+                return;
+            }
+
+        });
+    }
+
+    // ============================================ */
+    // POPUP ADD TO CART */
+    // ============================================ */
+
+    document.getElementById('popup-add-to-cart')?.addEventListener('click', function() {
+        if (this.disabled) return;
+
+        var variant = popupCurrentVariant;
+        if (!variant) return;
+
+        var quantity = parseInt(popupQtyInput.value) || 1;
+
+        if (quantity > variant.stock) {
+            showToast('Stok tidak mencukupi! Stok tersedia: ' + variant.stock, 'error');
+            return;
+        }
+
+        var productId = {{ $product->id }};
+
+        checkLoginStatus().then(function(isLoggedIn) {
+            if (!isLoggedIn) {
+                window._pendingProductId = productId;
+                window._pendingVariantId = variant.id;
+                window._pendingQuantity = quantity;
+                openLoginPopup('add_to_cart', function() {
+                    if (window._pendingProductId) {
+                        window.addToCartFromShowPage(
+                            window._pendingProductId,
+                            window._pendingVariantId,
+                            window._pendingQuantity
+                        );
+                        window._pendingProductId = null;
+                        window._pendingVariantId = null;
+                        window._pendingQuantity = null;
+                        closeVariantPopup();
+                    }
+                });
+                return;
+            }
+
+            window.addToCartFromShowPage(productId, variant.id, quantity);
+            closeVariantPopup();
+        });
+    });
+
+    // ============================================ */
+    // POPUP BUY NOW - LANGSUNG KE CHECKOUT */
+    // ============================================ */
+
+    document.getElementById('popup-buy-now')?.addEventListener('click', function() {
+        if (this.disabled) return;
+
+        var variant = popupCurrentVariant;
+        if (!variant) return;
+
+        var quantity = parseInt(popupQtyInput.value) || 1;
+
+        if (quantity > variant.stock) {
+            showToast('Stok tidak mencukupi! Stok tersedia: ' + variant.stock, 'error');
+            return;
+        }
+
+        var csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+        this.disabled = true;
+        this.textContent = '⏳ Memproses...';
+
+        fetch('{{ route("customer.buy-now") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                product_id: {{ $product->id }},
+                variant_id: variant.id,
+                quantity: quantity
+            })
+        })
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+            if (data.success) {
+                window.location.href = data.redirect || '{{ route("customer.checkout.index") }}';
+            } else {
+                showToast(data.message || 'Gagal memproses pesanan', 'error');
+                document.getElementById('popup-buy-now').disabled = false;
+                document.getElementById('popup-buy-now').textContent = 'Beli Sekarang';
+            }
+        })
+        .catch(function() {
+            showToast('Terjadi kesalahan. Silakan coba lagi.', 'error');
+            document.getElementById('popup-buy-now').disabled = false;
+            document.getElementById('popup-buy-now').textContent = 'Beli Sekarang';
+        });
+
+        closeVariantPopup();
+    });
+
+    // ============================================ */
+    // 🔥 FUNCTION UNTUK WISHLIST - GLOBAL SCOPE */
+    // ============================================ */
+
+    // 🔥 toggleWishlistDirect - DIBUAT GLOBAL
+    window.toggleWishlistDirect = function(productId) {
+        var csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+        var btn = document.getElementById('wishlist-toggle-product');
+        var mobileBtn = document.getElementById('mobile-wishlist-btn');
+        var previousInWishlist = mobileBtn
+            ? mobileBtn.classList.contains('active')
+            : (btn ? btn.classList.contains('active') : false);
+        var optimisticInWishlist = !previousInWishlist;
+
+        if (btn) {
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+        }
+
+        if (mobileBtn) {
+            mobileBtn.disabled = true;
+            mobileBtn.style.opacity = '0.5';
+        }
+
+        // Update the icon immediately; the server response remains authoritative.
+        updateAllWishlistButtons(productId, optimisticInWishlist);
+
+        fetch(window.customerRoutes.wishlistAdd, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ product_id: productId })
+        })
+        .then(function(response) {
+            if (response.status === 401) {
+                updateAllWishlistButtons(productId, previousInWishlist);
+                window._pendingProductId = productId;
+                openLoginPopup('add_to_wishlist', function() {
+                    if (window._pendingProductId) {
+                        window.toggleWishlistDirect(window._pendingProductId);
+                        window._pendingProductId = null;
+                    }
+                });
+                throw new Error('Unauthorized');
+            }
+            return response.json();
+        })
+        .then(function(data) {
+            if (data.success) {
+                // 🔥 UPDATE SEMUA TOMBOL (DESKTOP & MOBILE)
+                updateAllWishlistButtons(productId, data.in_wishlist);
+
+                if (data.in_wishlist) {
+                    showToast('❤️ ' + data.message, 'success');
+                    
+                    if (typeof loadWishlistPopup === 'function') {
+                        setTimeout(function() {
+                            loadWishlistPopup();
+                            var popup = document.getElementById('wishlist-popup');
+                            if (popup) {
+                                popup.classList.add('active');
+                                document.body.classList.add('popup-open');
+                            }
+                        }, 400);
+                    }
+                } else {
+                    showToast('💔 ' + data.message, 'info');
+                }
+
+                // UPDATE WISHLIST COUNT DI NAVBAR
+                var wishlistCount = document.getElementById('wishlist-count');
+                if (wishlistCount) {
+                    wishlistCount.textContent = data.count || 0;
+                    wishlistCount.style.display = (data.count > 0) ? 'inline-flex' : 'none';
+                }
+                
+                if (typeof window.updateNavbarWishlistCount === 'function') {
+                    window.updateNavbarWishlistCount(data.count);
+                }
+                
+            } else {
+                updateAllWishlistButtons(productId, previousInWishlist);
+                showToast(data.message || 'Gagal mengubah status wishlist', 'error');
+            }
+        })
+        .catch(function(error) {
+            updateAllWishlistButtons(productId, previousInWishlist);
+            if (error.message !== 'Unauthorized') {
+                console.error('Error:', error);
+                showToast('Terjadi kesalahan', 'error');
+            }
+        })
+        .finally(function() {
+            if (btn) {
+                btn.disabled = false;
+                btn.style.opacity = '1';
+            }
+            if (mobileBtn) {
+                mobileBtn.disabled = false;
+                mobileBtn.style.opacity = '1';
+            }
+        });
+    };
+
+    // 🔥 FUNCTION UPDATE ALL WISHLIST BUTTONS - GLOBAL
+    function updateAllWishlistButtons(productId, inWishlist) {
+        // 1. Update semua tombol dengan class .add_to_wishlist_btn
+        var allButtons = document.querySelectorAll('.add_to_wishlist_btn[data-product-id="' + productId + '"]');
+        allButtons.forEach(function(btn) {
+            if (inWishlist) {
+                btn.innerHTML = '<iconify-icon icon="solar:heart-bold" style="color: #ef4444;"></iconify-icon>';
+                btn.classList.add('active');
+                btn.dataset.inWishlist = 'true';
+            } else {
+                btn.innerHTML = '<iconify-icon icon="solar:heart-linear"></iconify-icon>';
+                btn.classList.remove('active');
+                btn.dataset.inWishlist = 'false';
+            }
+        });
+        
+        // 2. Update tombol desktop utama
+        var mainBtn = document.getElementById('wishlist-toggle-product');
+        if (mainBtn) {
+            if (inWishlist) {
+                mainBtn.classList.add('active');
+                mainBtn.innerHTML = '<iconify-icon icon="solar:heart-bold" style="color: #ef4444;"></iconify-icon>';
+            } else {
+                mainBtn.classList.remove('active');
+                mainBtn.innerHTML = '<iconify-icon icon="solar:heart-linear"></iconify-icon>';
+            }
+        }
+
+        // 3. Update tombol mobile wishlist
+        var mobileBtn = document.getElementById('mobile-wishlist-btn');
+        if (mobileBtn) {
+            if (inWishlist) {
+                mobileBtn.classList.add('active');
+                mobileBtn.innerHTML = '<iconify-icon icon="solar:heart-bold" style="color: #ef4444;"></iconify-icon>';
+            } else {
+                mobileBtn.classList.remove('active');
+                mobileBtn.innerHTML = '<iconify-icon icon="solar:heart-linear"></iconify-icon>';
+            }
+        }
+    }
+
+    // 🔥 FUNCTION CHECK WISHLIST STATUS - GLOBAL
+    function checkWishlistStatus() {
+        var productId = {{ $product->id }};
+        var wishlistData = @json(session('wishlist', []));
+
+        if (wishlistData[productId]) {
+            // Desktop button
+            var btn = document.getElementById('wishlist-toggle-product');
+            if (btn) {
+                btn.classList.add('active');
+                btn.innerHTML = '❤️';
+            }
+            
+            // 🔥 MOBILE BUTTON - DIPERBAIKI
+            var mobileBtn = document.getElementById('mobile-wishlist-btn');
+            if (mobileBtn) {
+                mobileBtn.classList.add('active');
+                mobileBtn.innerHTML = '<iconify-icon icon="solar:heart-bold" style="color: #ef4444;"></iconify-icon>';
+            }
+        } else {
+            // Desktop button
+            var btn = document.getElementById('wishlist-toggle-product');
+            if (btn) {
+                btn.classList.remove('active');
+                btn.innerHTML = '🤍';
+            }
+            
+            // 🔥 MOBILE BUTTON - DIPERBAIKI
+            var mobileBtn = document.getElementById('mobile-wishlist-btn');
+            if (mobileBtn) {
+                mobileBtn.classList.remove('active');
+                mobileBtn.innerHTML = '<iconify-icon icon="solar:heart-linear"></iconify-icon>';
+            }
+        }
+    }
+
+    // ============================================ */
+    // 🔥 MOBILE - WISHLIST (LANGSUNG TAMBAH, TANPA POPUP) */
+    // ============================================ */
+
+    // 🔥 FUNCTION UNTUK WISHLIST MOBILE - LANGSUNG TANPA POPUP
+    function handleMobileWishlist() {
+        var productId = {{ $product->id }};
+        
+        checkLoginStatus().then(function(isLoggedIn) {
+            if (!isLoggedIn) {
+                window._pendingProductId = productId;
+                openLoginPopup('add_to_wishlist', function() {
+                    if (window._pendingProductId) {
+                        window.toggleWishlistDirect(window._pendingProductId);
+                        window._pendingProductId = null;
+                    }
+                });
+                return;
+            }
+            
+            // LANGSUNG TAMBAH KE WISHLIST - TANPA POPUP
+            window.toggleWishlistDirect(productId);
+        });
+    }
+
+    // ============================================ */
+    // 🔥 MOBILE BUTTONS EVENT LISTENERS */
+    // ============================================ */
+
+    // 🔥 MOBILE - BELI SEKARANG (BUKA POPUP BUY NOW)
+    document.getElementById('mobile-buy-now-btn')?.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        // Buka popup dengan action 'buy_now'
+        openVariantPopup('buy_now');
+    });
+
+    // 🔥 MOBILE - TAMBAH KE KERANJANG (BUKA POPUP ADD TO CART)
+    document.getElementById('mobile-add-to-cart-btn')?.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        // Buka popup dengan action 'add_to_cart'
+        openVariantPopup('add_to_cart');
+    });
+
+    // 🔥 MOBILE - WISHLIST (LANGSUNG TAMBAH, TANPA POPUP) - MENGGUNAKAN handleMobileWishlist
+    document.getElementById('mobile-wishlist-btn')?.addEventListener('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // 🔥 CEK APAKAH SUDAH DI WISHLIST
+    var isActive = this.classList.contains('active');
+    
+    // LANGSUNG TAMBAH/HAPUS KE WISHLIST - TANPA POPUP
+    handleMobileWishlist();
+});
+
+    // ============================================ */
+    // OVERRIDE DESKTOP BUTTONS FOR MOBILE */
+    // ============================================ */
+
+    // Check if mobile (max-width: 768px)
+    function isMobile() {
+        return window.innerWidth <= 768;
+    }
+
+    // 🔥 DESKTOP - BELI SEKARANG (DI OVERRIDE UNTUK MOBILE)
+    document.querySelector('.btn-buy-now')?.addEventListener('click', function(e) {
+        if (isMobile()) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Cek apakah sudah ada varian yang dipilih di desktop
+            var variantId = document.getElementById('selected-variant')?.value;
+            if (variantId) {
+                // Jika sudah ada varian, langsung beli
+                window.buyNow();
+                return;
+            }
+            
+            // Jika belum ada varian, buka popup buy_now
+            openVariantPopup('buy_now');
+        }
+    });
+
+    // 🔥 DESKTOP - TAMBAH KE KERANJANG (DI OVERRIDE UNTUK MOBILE)
+    document.querySelector('.btn-add-to-cart')?.addEventListener('click', function(e) {
+        if (isMobile()) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Cek apakah sudah ada varian yang dipilih di desktop
+            var variantId = document.getElementById('selected-variant')?.value;
+            if (variantId) {
+                // Jika sudah ada varian, submit form
+                var form = document.getElementById('add-to-cart-form');
+                if (form) {
+                    form.submit();
+                }
+                return;
+            }
+            
+            // Jika belum ada varian, buka popup add_to_cart
+            openVariantPopup('add_to_cart');
+        }
+    });
+
+    // 🔥 DESKTOP - WISHLIST (DI OVERRIDE UNTUK MOBILE - LANGSUNG TAMBAH)
+    document.getElementById('wishlist-toggle-product')?.addEventListener('click', function(e) {
+        if (isMobile()) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            var productId = {{ $product->id }};
+            
+            checkLoginStatus().then(function(isLoggedIn) {
+                if (!isLoggedIn) {
+                    window._pendingProductId = productId;
+                    openLoginPopup('add_to_wishlist', function() {
+                        if (window._pendingProductId) {
+                            window.toggleWishlistDirect(window._pendingProductId);
+                            window._pendingProductId = null;
+                        }
+                    });
+                    return;
+                }
+                
+                // LANGSUNG TAMBAH KE WISHLIST - TANPA POPUP
+                window.toggleWishlistDirect(productId);
+            });
+        }
+    });
+
+    // ============================================ */
+    // CLOSE POPUP ON OVERLAY CLICK */
+    // ============================================ */
+
+    variantPopup?.addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeVariantPopup();
+        }
+    });
+
+    // ============================================ */
+    // KEYBOARD ESCAPE */
+    // ============================================ */
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeVariantPopup();
+        }
+    });
+
+    // ============================================ */
+    // 🔥 CHECK LOGIN STATUS - GLOBAL */
+    // ============================================ */
+
+    window.checkLoginStatus = function() {
+        return new Promise(function(resolve) {
+            var loggedIn = document.querySelector('meta[name="customer-logged-in"]')?.content === 'true';
+            resolve(loggedIn);
+        });
+    };
+</script>
+
 
 {{-- ============================================ --}}
 {{-- JAVASCRIPT --}}
@@ -678,6 +1735,145 @@ document.addEventListener('DOMContentLoaded', function() {
     let previousSelectedValues = {};
     let previousVariantId = null;
     let previousIsVariantSelected = false;
+
+    function initThumbnailScroll() {
+        const thumbnailContainer = document.getElementById('thumbnail-container');
+        const scrollUpBtn = document.getElementById('thumbnail-scroll-up');
+        const scrollDownBtn = document.getElementById('thumbnail-scroll-down');
+
+        console.log('🔄 initThumbnailScroll called');
+        console.log('📦 thumbnailContainer:', thumbnailContainer);
+        console.log('⬆️ scrollUpBtn:', scrollUpBtn);
+        console.log('⬇️ scrollDownBtn:', scrollDownBtn);
+
+        if (!thumbnailContainer) {
+            console.log('❌ thumbnailContainer not found');
+            return;
+        }
+
+        // Fungsi untuk mengecek apakah perlu scroll buttons
+        function checkScrollButtons() {
+            if (!thumbnailContainer) return;
+
+            const scrollHeight = thumbnailContainer.scrollHeight;
+            const clientHeight = thumbnailContainer.clientHeight;
+            const scrollTop = thumbnailContainer.scrollTop;
+
+            console.log('📊 Scroll check:', { scrollHeight, clientHeight, scrollTop });
+
+            // Sembunyikan jika konten tidak lebih tinggi dari container
+            if (scrollHeight <= clientHeight + 2) {
+                if (scrollUpBtn) scrollUpBtn.classList.add('hidden');
+                if (scrollDownBtn) scrollDownBtn.classList.add('hidden');
+                return;
+            }
+
+            // Tampilkan/sembunyikan tombol berdasarkan posisi scroll
+            if (scrollUpBtn) {
+                if (scrollTop <= 2) {
+                    scrollUpBtn.classList.add('hidden');
+                } else {
+                    scrollUpBtn.classList.remove('hidden');
+                }
+            }
+
+            if (scrollDownBtn) {
+                if (scrollTop + clientHeight >= scrollHeight - 2) {
+                    scrollDownBtn.classList.add('hidden');
+                } else {
+                    scrollDownBtn.classList.remove('hidden');
+                }
+            }
+        }
+
+        // Scroll up
+        if (scrollUpBtn) {
+            // Hapus event listener lama jika ada
+            scrollUpBtn.removeEventListener('click', scrollUpBtn._clickHandler);
+            
+            scrollUpBtn._clickHandler = function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('⬆️ Scroll up clicked');
+                thumbnailContainer.scrollBy({
+                    top: -(thumbnailContainer.clientHeight * 0.8),
+                    behavior: 'smooth'
+                });
+            };
+            scrollUpBtn.addEventListener('click', scrollUpBtn._clickHandler);
+        }
+
+        // Scroll down
+        if (scrollDownBtn) {
+            // Hapus event listener lama jika ada
+            scrollDownBtn.removeEventListener('click', scrollDownBtn._clickHandler);
+            
+            scrollDownBtn._clickHandler = function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('⬇️ Scroll down clicked');
+                thumbnailContainer.scrollBy({
+                    top: thumbnailContainer.clientHeight * 0.8,
+                    behavior: 'smooth'
+                });
+            };
+            scrollDownBtn.addEventListener('click', scrollDownBtn._clickHandler);
+        }
+
+        // Update buttons on scroll
+        thumbnailContainer.removeEventListener('scroll', thumbnailContainer._scrollHandler);
+        thumbnailContainer._scrollHandler = function() {
+            checkScrollButtons();
+        };
+        thumbnailContainer.addEventListener('scroll', thumbnailContainer._scrollHandler);
+
+        // Update buttons on window resize
+        window.removeEventListener('resize', window._thumbnailResizeHandler);
+        window._thumbnailResizeHandler = function() {
+            checkScrollButtons();
+        };
+        window.addEventListener('resize', window._thumbnailResizeHandler);
+
+        // Initial check setelah render
+        setTimeout(function() {
+            checkScrollButtons();
+        }, 500);
+
+        // Juga check ketika thumbnail container berubah (misal setelah image load)
+        if (window.ResizeObserver) {
+            if (thumbnailContainer._resizeObserver) {
+                thumbnailContainer._resizeObserver.disconnect();
+            }
+            thumbnailContainer._resizeObserver = new ResizeObserver(function() {
+                checkScrollButtons();
+            });
+            thumbnailContainer._resizeObserver.observe(thumbnailContainer);
+        }
+
+        // Check when images load
+        const images = thumbnailContainer.querySelectorAll('img');
+        let imagesLoaded = 0;
+        if (images.length > 0) {
+            images.forEach(function(img) {
+                if (img.complete) {
+                    imagesLoaded++;
+                } else {
+                    img.addEventListener('load', function() {
+                        imagesLoaded++;
+                        if (imagesLoaded === images.length) {
+                            setTimeout(checkScrollButtons, 200);
+                        }
+                    });
+                }
+            });
+            if (imagesLoaded === images.length) {
+                setTimeout(checkScrollButtons, 300);
+            }
+        }
+
+        // Simpan fungsi untuk dipanggil nanti
+        window.checkThumbnailScroll = checkScrollButtons;
+    }
 
     // ============================================
     // FUNGSI RESET KE HARGA DEFAULT
@@ -1073,19 +2269,24 @@ document.addEventListener('DOMContentLoaded', function() {
         selectedVariantInput.value = variant.id;
         isVariantSelected = true;
 
-        var price = variant.discount_price ?? variant.price;
+        // 🔥 GUNakan effective_price dan discount_percent dari variant (SUDAH INCLUDE DISKON PRODUK)
+        var price = variant.effective_price ?? variant.price;
         var originalPrice = variant.price;
-        var hasDiscount = variant.discount_price && variant.discount_price < variant.price;
-        var discountPercent = 0;
+        var hasDiscount = variant.discount_percent > 0;
+        var discountPercent = variant.discount_percent || 0;
         var isOutOfStock = variant.stock <= 0;
-        
-        if (hasDiscount) {
-            discountPercent = Math.round(((originalPrice - price) / originalPrice) * 100);
-        }
 
         // 🔥 UPDATE HARGA DENGAN CORET
         if (priceContainer) {
             if (hasDiscount) {
+                var discountBadge = Math.round(discountPercent) + '%';
+                
+                // 🔥 TAMBAHKAN INFO DISKON PRODUK JIKA ADA
+                var productDiscountInfo = '';
+                if ({{ $hasProductDiscount ? 'true' : 'false' }} && {{ $productDiscountPercent ?? 0 }} > 0) {
+                    productDiscountInfo = '<span class="product-discount-info" style="font-size:0.6vw;color:#16a34a;display:block;margin-top:0.2vw;">' + Math.round({{ $productDiscountPercent ?? 0 }}) + '%</span>';
+                }
+                
                 priceContainer.innerHTML = `
                     <div class="product_price_box">
                         <span class="price-current discounted" id="display-price">
@@ -1095,7 +2296,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         <span class="price-original" id="original-price-display">
                             Rp ${new Intl.NumberFormat('id-ID').format(originalPrice)}
                         </span>
-                        <span class="discount-badge">Diskon ${discountPercent}%</span>
+                        <span class="discount-badge">${discountBadge}</span>
+                        ${productDiscountInfo}
                     </div>
                 `;
             } else {
@@ -1462,6 +2664,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
         const btn = document.getElementById('wishlist-toggle-product');
 
+        // 🔥 CEK LOGIN STATUS
         checkLoginStatus().then(isLoggedIn => {
             if (!isLoggedIn) {
                 window._pendingProductId = productId;
@@ -1511,6 +2714,7 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(data => {
             if (data.success) {
+                // 🔥 UPDATE STATUS WISHLIST
                 if (data.in_wishlist) {
                     if (btn) {
                         btn.classList.add('active');
@@ -1536,6 +2740,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     showToast('💔 ' + data.message, 'info');
                 }
 
+                // 🔥 UPDATE WISHLIST COUNT DI NAVBAR
                 const wishlistCount = document.getElementById('wishlist-count');
                 if (wishlistCount) {
                     wishlistCount.textContent = data.count || 0;
@@ -1545,6 +2750,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (typeof window.updateNavbarWishlistCount === 'function') {
                     window.updateNavbarWishlistCount(data.count);
                 }
+                
+                // 🔥 UPDATE ALL WISHLIST BUTTONS UNTUK PRODUK YANG SAMA
+                updateAllWishlistButtons(productId, data.in_wishlist);
+                
             } else {
                 showToast(data.message || 'Gagal menambahkan ke wishlist', 'error');
             }
@@ -1563,6 +2772,61 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    function updateAllWishlistButtons(productId, inWishlist) {
+        // Update semua tombol wishlist di halaman (termasuk recommended products)
+        const allButtons = document.querySelectorAll(`.add_to_wishlist_btn[data-product-id="${productId}"]`);
+        
+        allButtons.forEach(function(btn) {
+            if (inWishlist) {
+                btn.innerHTML = '<iconify-icon icon="solar:heart-bold" style="color: #ef4444;"></iconify-icon>';
+                btn.classList.add('active');
+                btn.dataset.inWishlist = 'true';
+            } else {
+                btn.innerHTML = '<iconify-icon icon="solar:heart-linear"></iconify-icon>';
+                btn.classList.remove('active');
+                btn.dataset.inWishlist = 'false';
+            }
+        });
+        
+        // Update tombol di product show
+        const mainBtn = document.getElementById('wishlist-toggle-product');
+        if (mainBtn) {
+            if (inWishlist) {
+                mainBtn.classList.add('active');
+                mainBtn.innerHTML = '❤️';
+            } else {
+                mainBtn.classList.remove('active');
+                mainBtn.innerHTML = '🤍';
+            }
+        }
+    }
+
+    function checkWishlistStatus() {
+        const productId = {{ $product->id }};
+        const inWishlist = {{ $inWishlist ? 'true' : 'false' }};
+        
+        const btn = document.getElementById('wishlist-toggle-product');
+        if (btn) {
+            if (inWishlist) {
+                btn.classList.add('active');
+                btn.innerHTML = '❤️';
+            } else {
+                btn.classList.remove('active');
+                btn.innerHTML = '🤍';
+            }
+        }
+    }
+
+    function checkLoginStatus() {
+        return new Promise(function(resolve) {
+            const loggedIn = document.querySelector('meta[name="customer-logged-in"]')?.content === 'true';
+            resolve(loggedIn);
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(checkWishlistStatus, 400);
+    });
 
     // ============================================
     // SHARE PRODUCT
@@ -1612,26 +2876,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
             var group = this.closest('[data-option-id]');
             
-            // 🔥 HAPUS ACTIVE CLASS DARI SEMUA TOMBOL DI GRUP YANG SAMA
+            // HAPUS ACTIVE CLASS DARI SEMUA TOMBOL DI GRUP YANG SAMA
             group.querySelectorAll('.variant-option').forEach(function(btn) {
                 btn.classList.remove('active');
             });
 
             this.classList.add('active');
-
-            // 🔥 UPDATE SELECTED VALUES
             selectedValues[optionId] = parseInt(valueId);
 
-            // 🔥 UPDATE AVAILABLE VARIANTS DULU
             updateAvailableVariants();
 
-            // 🔥 CEK APAKAH ADA KOMBINASI YANG LENGKAP
             var totalOptions = document.querySelectorAll('.variant-options').length;
             var selectedCount = Object.keys(selectedValues).length;
             
-            console.log('Selected values:', selectedValues, 'Total options:', totalOptions);
-            
-            // 🔥 CARI VARIAN YANG COCOK
+            // CARI VARIAN YANG COCOK
             var variant = null;
             if (selectedCount === totalOptions) {
                 variant = findVariantByValues(selectedValues, false);
@@ -1640,20 +2898,27 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             if (variant) {
-                // 🔥 UPDATE VARIAN SELECTED
                 selectedVariantInput.value = variant.id;
                 currentVariantId = variant.id;
                 isVariantSelected = true;
                 
-                // 🔥 UPDATE HARGA
-                var price = variant.discount_price ?? variant.price;
+                // 🔥 GUNAKAN EFFECTIVE_PRICE DAN DISCOUNT_PERCENT
+                var price = variant.effective_price ?? variant.price;
                 var originalPrice = variant.price;
-                var hasDiscount = variant.discount_price && variant.discount_price < variant.price;
+                var hasDiscount = variant.discount_percent > 0;
+                var discountPercent = variant.discount_percent || 0;
                 var isOutOfStock = variant.stock <= 0;
                 
                 if (priceContainer) {
                     if (hasDiscount) {
-                        var discountPercent = Math.round(((originalPrice - price) / originalPrice) * 100);
+                        var discountBadge = Math.round(discountPercent) + '%';
+                        
+                        // 🔥 TAMBAHKAN INFO DISKON PRODUK
+                        var productDiscountInfo = '';
+                        if ({{ $hasProductDiscount ? 'true' : 'false' }} && {{ $productDiscountPercent ?? 0 }} > 0) {
+                            productDiscountInfo = '<span class="product-discount-info" style="font-size:0.6vw;color:#16a34a;display:block;margin-top:0.2vw;">' + Math.round({{ $productDiscountPercent ?? 0 }}) + '%</span>';
+                        }
+                        
                         priceContainer.innerHTML = `
                             <div class="product_price_box">
                                 <span class="price-current discounted" id="display-price">
@@ -1663,7 +2928,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <span class="price-original" id="original-price-display">
                                     Rp ${new Intl.NumberFormat('id-ID').format(originalPrice)}
                                 </span>
-                                <span class="discount-badge">Diskon ${discountPercent}%</span>
+                                <span class="discount-badge">${discountBadge}</span>
+                                ${productDiscountInfo}
                             </div>
                         `;
                     } else {
@@ -1757,7 +3023,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 window._pendingQuantity = quantity;
                 openLoginPopup('add_to_cart', function() {
                     if (window._pendingProductId) {
-                        addToCartFromShowPage(
+                        window.addToCartFromShowPage(
                             window._pendingProductId, 
                             window._pendingVariantId, 
                             window._pendingQuantity
@@ -1770,11 +3036,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            addToCartFromShowPage(productId, variantId, quantity);
+            window.addToCartFromShowPage(productId, variantId, quantity);
         });
     });
 
-    function addToCartFromShowPage(productId, variantId, quantity) {
+    window.addToCartFromShowPage = function(productId, variantId, quantity) {
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
         const btn = document.getElementById('add-to-cart-btn');
 
@@ -1803,7 +3069,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 window._pendingQuantity = quantity;
                 openLoginPopup('add_to_cart', function() {
                     if (window._pendingProductId) {
-                        addToCartFromShowPage(
+                        window.addToCartFromShowPage(
                             window._pendingProductId, 
                             window._pendingVariantId, 
                             window._pendingQuantity
@@ -1857,7 +3123,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 btn.textContent = 'Tambah ke Keranjang';
             }
         });
-    }
+    };
 
     // ============================================
     // CHECK WISHLIST STATUS
@@ -2026,9 +3292,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     })();
 
-    document.addEventListener('DOMContentLoaded', function() {
-        initAccordionState();
-    });
+    initAccordionState();
+    initThumbnailScroll();
 
     window.addEventListener('resize', function() {
         document.querySelectorAll('.accordion-body.open').forEach(function(body) {

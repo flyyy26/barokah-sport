@@ -14,10 +14,11 @@ class CaraPesanController extends Controller
     {
         $setting = Setting::first();
         
-        // Ambil FAQ terkait cara pesan jika ada
+        // 🔥 AMBIL FAQ TERKAIT CARA PESAN - BATASI 10
         $faqs = Faq::with('category')
             ->active()
             ->ordered()
+            ->limit(10) // 🔥 BATASI 10 DATA
             ->get();
         
         $categories = FaqCategory::active()

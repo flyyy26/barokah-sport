@@ -4,672 +4,6 @@
 
 @section('content')
 
-<style>
-    /* ============================================
-       CATALOG CONTAINER
-       ============================================ */
-    .catalog-container {
-        width: 100%;
-        margin: 0 auto;
-        border-top: 0.1vw solid #076694;
-    }
-
-    .catalog-header {
-        margin-bottom: 1.5vw;
-    }
-
-    .catalog-header h1 {
-        font-size: 2.3vw;
-        font-weight: 700;
-        color: #0f172a;
-        margin: 0;
-        font-family: heading, sans-serif;
-        text-transform: uppercase;
-    }
-
-    .catalog-header p {
-        font-size: 0.85vw;
-        color: #94a3b8;
-        margin-top: 0.2vw;
-    }
-
-    /* ============================================
-       FILTER ROW
-       ============================================ */
-    .katalog_top_container {
-        width: 100%;
-        padding: 1.3vw 7.54vw;
-        background: #f9fafb;
-    }
-
-    .filter-row {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 0.8vw;
-        background: #ffffff;
-        border: 0.1vw solid #e2e8f0;
-        border-radius: 0.8vw;
-        padding: 0.8vw 1.2vw;
-    }
-
-    .filter-row .filter-label {
-        font-size: 0.75vw;
-        font-weight: 600;
-        color: #475569;
-        margin-right: 0.2vw;
-        white-space: nowrap;
-    }
-
-    /* ============================================
-       CUSTOM SELECT
-       ============================================ */
-    .custom-select-wrapper {
-        position: relative;
-        display: inline-block;
-        min-width: 8vw;
-    }
-
-    .custom-select-wrapper .custom-select-trigger {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0.4vw .8vw 0.4vw 0.8vw;
-        border: 0.1vw solid #e2e8f0;
-        border-radius: 0.5vw;
-        font-size: 0.75vw;
-        color: #0f172a;
-        background: #f8fafc;
-        cursor: pointer;
-        transition: border-color 0.2s;
-        user-select: none;
-        min-height: 2.2vw;
-        gap: 0.5vw;
-    }
-
-    .custom-select-wrapper .custom-select-trigger:hover {
-        border-color: #94a3b8;
-    }
-
-    .custom-select-wrapper .custom-select-trigger.open {
-        border-color: #076694;
-        box-shadow: 0 0 0 0.15vw rgba(7, 102, 148, 0.2);
-    }
-
-    .custom-select-wrapper .custom-select-trigger .trigger-text {
-        flex: 1;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .custom-select-wrapper .custom-select-trigger .trigger-arrow {
-        font-size: 0.6vw;
-        color: #94a3b8;
-        transition: transform 0.3s ease;
-        flex-shrink: 0;
-    }
-
-    .custom-select-wrapper .custom-select-trigger.open .trigger-arrow {
-        transform: rotate(180deg);
-    }
-
-    .custom-select-wrapper .custom-select-dropdown {
-        position: absolute;
-        top: calc(100% + 0.2vw);
-        left: 0;
-        right: 0;
-        background: #ffffff;
-        border: 0.1vw solid #e2e8f0;
-        border-radius: 0.5vw;
-        box-shadow: 0 0.5vw 2vw rgba(0, 0, 0, 0.1);
-        max-height: 20vw;
-        overflow-y: auto;
-        z-index: 999;
-        display: none;
-        min-width: 12vw;
-    }
-
-    .custom-select-wrapper .custom-select-dropdown.open {
-        display: block;
-    }
-
-    .custom-select-wrapper .custom-select-dropdown::-webkit-scrollbar {
-        width: 0.2vw;
-    }
-
-    .custom-select-wrapper .custom-select-dropdown::-webkit-scrollbar-track {
-        background: #f1f5f9;
-        border-radius: 0.2vw;
-    }
-
-    .custom-select-wrapper .custom-select-dropdown::-webkit-scrollbar-thumb {
-        background: #cbd5e1;
-        border-radius: 0.2vw;
-    }
-
-    .custom-select-wrapper .custom-select-dropdown .dropdown-item {
-        padding: 0.4vw 1vw;
-        font-size: 0.75vw;
-        color: #0f172a;
-        cursor: pointer;
-        transition: background 0.15s;
-        display: flex;
-        align-items: center;
-        gap: 0.4vw;
-    }
-
-    .custom-select-wrapper .custom-select-dropdown .dropdown-item:hover {
-        background: #f1f5f9;
-    }
-
-    .custom-select-wrapper .custom-select-dropdown .dropdown-item.active {
-        background: #eff6ff;
-        color: #076694;
-        font-weight: 600;
-    }
-
-    .custom-select-wrapper .custom-select-dropdown .dropdown-item .check-icon {
-        margin-left: auto;
-        color: #076694;
-        font-size: 0.7vw;
-        opacity: 0;
-    }
-
-    .custom-select-wrapper .custom-select-dropdown .dropdown-item.active .check-icon {
-        opacity: 1;
-    }
-
-    .custom-select-wrapper .custom-select-dropdown .dropdown-divider {
-        height: 0.05vw;
-        background: #e2e8f0;
-        margin: 0.2vw 0;
-    }
-
-    /* ============================================
-       FILTER DIVIDER
-       ============================================ */
-    .filter-divider {
-        width: 0.05vw;
-        height: 1.8vw;
-        background: #e2e8f0;
-        flex-shrink: 0;
-    }
-
-    .filter-reset {
-        font-size: 0.7vw;
-        color: #ef4444;
-        text-decoration: none;
-        font-weight: 500;
-        transition: color 0.2s;
-        white-space: nowrap;
-    }
-
-    .filter-reset:hover {
-        color: #dc2626;
-        text-decoration: underline;
-    }
-
-    .filter-count {
-        font-size: 0.75vw;
-        color: #94a3b8;
-        margin-left: auto;
-        white-space: nowrap;
-    }
-
-    /* ============================================
-       PRODUCT GRID
-       ============================================ */
-    .product-grid {
-        display: grid;
-        grid-template-columns: repeat(5, 1fr);
-        grid-gap:2.3vw;
-        padding: 2vw 7.54vw;
-        padding-bottom:5vw;
-    }
-
-    /* ============================================
-       PRODUCT CARD
-       ============================================ */
-    .product-card {
-        background: #ffffff;
-        border: 0.1vw solid #e2e8f0;
-        border-radius: 0.8vw;
-        padding: 0.8vw;
-        transition: all 0.3s ease;
-        position: relative;
-    }
-
-    .product-card:hover {
-        box-shadow: 0 0.3vw 1.5vw rgba(0, 0, 0, 0.08);
-        transform: translateY(-0.2vw);
-    }
-
-    .product-card .product-image {
-        aspect-ratio: 1;
-        overflow: hidden;
-        border-radius: 0.5vw;
-        background: #f8fafc;
-        position: relative;
-    }
-
-    .product-card .product-image img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        transition: transform 0.3s ease;
-    }
-    .product_badge{
-        position: absolute;
-        right: .6vw;
-        top: .6vw;
-        z-index: 2;
-        font-size: .65vw;
-        background-color: #DE161F;
-        color: white;
-        padding: .3vw .7vw;
-        border-radius: 100vw;
-    }
-    .discount_badge{
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        z-index: 2;
-        font-size: .65vw;
-        background-color: #DE161F;
-        color: white;
-        padding: .3vw .7vw;
-        text-align:center;
-        width: 100%;
-    }
-
-    .product-card:hover .product-image img {
-        transform: scale(1.05);
-    }
-
-    .product-card .product-image .placeholder {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        height: 100%;
-        font-size: 3vw;
-        color: #cbd5e1;
-    }
-
-    .product-card .product-badge {
-        position: absolute;
-        top: 0.5vw;
-        left: 0.5vw;
-        padding: 0.15vw 0.6vw;
-        border-radius: 0.3vw;
-        font-size: 0.55vw;
-        font-weight: 700;
-        text-transform: uppercase;
-        color: #ffffff;
-        z-index: 2;
-    }
-
-    .product-card .product-badge.discount {
-        background: #ef4444;
-    }
-
-    .product-card .product-badge.featured {
-        background: #f59e0b;
-    }
-
-    .product-card .product-badge.best-seller {
-        background: #8b5cf6;
-    }
-
-    .product-card .product-content {
-        padding-top: 0.6vw;
-    }
-
-    .product-card .product-category {
-        font-size: 0.6vw;
-        color: #94a3b8;
-        margin-bottom: 0.1vw;
-    }
-
-    .product-card .product-name {
-        font-size: 0.85vw;
-        font-weight: 600;
-        color: #0f172a;
-        margin: 0;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .product-card .product-price {
-        display: flex;
-        align-items: center;
-        gap: 0.4vw;
-        flex-wrap: wrap;
-        margin-top: 0.3vw;
-    }
-
-    .product-card .product-price .price-current {
-        font-size: 0.9vw;
-        font-weight: 700;
-        color: #076694;
-    }
-
-    .product-card .product-price .price-current.discounted {
-        color: #ef4444;
-    }
-
-    .product-card .product-price .price-original {
-        font-size: 0.65vw;
-        color: #94a3b8;
-        text-decoration: line-through;
-    }
-
-    .product-card .product-actions {
-        display: flex;
-        gap: 0.3vw;
-        margin-top: 0.5vw;
-        padding-top: 0.5vw;
-        border-top: 0.05vw solid #f1f5f9;
-    }
-
-    .product-card .product-actions .btn-buy {
-        flex: 1;
-        padding: 0.4vw 0.8vw;
-        border-radius: 0.4vw;
-        border: none;
-        background: #076694;
-        color: #ffffff;
-        font-size: 0.6vw;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        text-transform: uppercase;
-        letter-spacing: 0.05vw;
-    }
-
-    .product-card .product-actions .btn-buy:hover {
-        background: #055a7a;
-    }
-
-    .product-card .product-actions .btn-cart {
-        padding: 0.4vw 0.6vw;
-        border-radius: 0.4vw;
-        border: 0.1vw solid #e2e8f0;
-        background: #ffffff;
-        color: #0f172a;
-        font-size: 0.8vw;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .product-card .product-actions .btn-cart:hover {
-        border-color: #076694;
-        background: #f0f9ff;
-    }
-
-    .product-card .product-actions .btn-wishlist {
-        padding: 0.4vw 0.6vw;
-        border-radius: 0.4vw;
-        border: 0.1vw solid #e2e8f0;
-        background: #ffffff;
-        color: #94a3b8;
-        font-size: 0.8vw;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .product-card .product-actions .btn-wishlist:hover {
-        border-color: #ef4444;
-        background: #fef2f2;
-        color: #ef4444;
-    }
-
-    .product-card .product-actions .btn-wishlist.active {
-        color: #ef4444;
-        border-color: #ef4444;
-    }
-
-    /* ============================================
-       PAGINATION
-       ============================================ */
-    .pagination-wrapper {
-        margin-top: 2vw;
-        display: flex;
-        justify-content: center;
-        padding-bottom: 2vw;
-    }
-
-    .empty-state {
-        grid-column: 1 / -1;
-        text-align: center;
-        padding: 4vw 0;
-        color: #94a3b8;
-    }
-
-    .empty-state .empty-icon {
-        font-size: 4vw;
-        margin-bottom: 1vw;
-    }
-
-    .empty-state p {
-        font-size: 1.2vw;
-    }
-
-    /* ============================================
-       RESPONSIVE
-       ============================================ */
-    @media (max-width: 1200px) {
-        .product-grid {
-            grid-template-columns: repeat(3, 1fr);
-        }
-    }
-
-    @media (max-width: 1024px) {
-        .katalog_top_container {
-            padding: 1.5vw 3vw;
-        }
-
-        .filter-row {
-            padding: 1vw 1.5vw;
-            gap: 1vw;
-        }
-
-        .custom-select-wrapper {
-            min-width: 10vw;
-        }
-    }
-
-    @media (max-width: 768px) {
-        .katalog_top_container {
-            padding: 2vw 3vw;
-        }
-
-        .catalog-header h1 {
-            font-size: 2.8vw;
-        }
-
-        .catalog-header p {
-            font-size: 1.4vw;
-        }
-
-        .filter-row {
-            padding: 1.2vw 1.8vw;
-            gap: 1.2vw;
-            flex-wrap: wrap;
-        }
-
-        .filter-row .filter-label {
-            font-size: 1.2vw;
-        }
-
-        .custom-select-wrapper {
-            min-width: 14vw;
-        }
-
-        .custom-select-wrapper .custom-select-trigger {
-            font-size: 1.2vw;
-            padding: 0.6vw 2.5vw 0.6vw 1.2vw;
-            min-height: 3vw;
-        }
-
-        .custom-select-wrapper .custom-select-dropdown .dropdown-item {
-            font-size: 1.2vw;
-            padding: 0.6vw 1.2vw;
-        }
-
-        .filter-divider {
-            height: 2.5vw;
-        }
-
-        .filter-count {
-            font-size: 1.2vw;
-        }
-
-        .filter-reset {
-            font-size: 1.2vw;
-        }
-
-        .product-grid {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 1.5vw;
-            padding: 2vw 3vw;
-        }
-
-        .product_layout_content h5 {
-            font-size: 1.2vw;
-        }
-
-        .product_layout_price .price-discount,
-        .product_layout_price p {
-            font-size: 1.3vw;
-        }
-
-        .product_layout_button .buy_now_btn {
-            font-size: 0.9vw;
-            padding: 0.6vw 1.2vw;
-        }
-    }
-
-    @media (max-width: 480px) {
-        .katalog_top_container {
-            padding: 2vw 2vw;
-        }
-
-        .catalog-header h1 {
-            font-size: 3.6vw;
-        }
-
-        .catalog-header p {
-            font-size: 1.8vw;
-        }
-
-        .filter-row {
-            padding: 1.5vw 2vw;
-            gap: 1.5vw;
-            border-radius: 1vw;
-        }
-
-        .filter-row .filter-label {
-            font-size: 1.6vw;
-        }
-
-        .custom-select-wrapper {
-            min-width: 20vw;
-            flex: 1;
-        }
-
-        .custom-select-wrapper .custom-select-trigger {
-            font-size: 1.6vw;
-            padding: 0.8vw 3.5vw 0.8vw 1.5vw;
-            min-height: 4vw;
-            border-radius: 0.8vw;
-        }
-
-        .custom-select-wrapper .custom-select-dropdown .dropdown-item {
-            font-size: 1.6vw;
-            padding: 0.8vw 1.5vw;
-        }
-
-        .custom-select-wrapper .custom-select-dropdown {
-            min-width: 100%;
-            border-radius: 0.8vw;
-        }
-
-        .filter-divider {
-            display: none;
-        }
-
-        .filter-count {
-            font-size: 1.6vw;
-            width: 100%;
-            text-align: center;
-            margin-top: 0.5vw;
-        }
-
-        .filter-reset {
-            font-size: 1.6vw;
-        }
-
-        .product-grid {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 2vw;
-            padding: 2vw 2vw;
-        }
-
-        .product_layout_box {
-            padding: 1.2vw;
-            border-radius: 1.2vw;
-        }
-
-        .product_layout_content h5 {
-            font-size: 1.6vw;
-        }
-
-        .product_layout_price .price-discount,
-        .product_layout_price p {
-            font-size: 1.8vw;
-        }
-
-        .product_layout_price .price-original {
-            font-size: 1.2vw;
-        }
-
-        .product_layout_button {
-            gap: 0.5vw;
-            flex-wrap: wrap;
-        }
-
-        .product_layout_button .buy_now_btn {
-            font-size: 1.2vw;
-            padding: 0.8vw 1.5vw;
-        }
-
-        .product_layout_button .add_to_cart_btn,
-        .product_layout_button .add_to_wishlist_btn {
-            font-size: 1.2vw;
-            padding: 0.6vw 0.8vw;
-        }
-    }
-
-    @media (max-width: 360px) {
-        .product-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .custom-select-wrapper {
-            min-width: 100%;
-        }
-    }
-</style>
-
 <div class="catalog-container">
     <div class="katalog_top_container">
         <div class="catalog-header">
@@ -835,114 +169,302 @@
 
             <span class="filter-count">{{ $products->total() }} produk</span>
         </form>
+        <button type="button" class="filter-toggle-btn" onclick="openFilterPopup()">
+            <iconify-icon icon="tabler:filter"></iconify-icon>
+            Filter Produk
+            <span class="filter-badge" id="filter-badge" style="display:none;">0</span>
+        </button>
+    </div>
+    <div id="filter-popup" class="filter-popup-overlay">
+        <div class="filter-popup">
+            {{-- Handle --}}
+            <div class="filter-popup-handle"></div>
+
+            {{-- Header --}}
+            <div class="filter-popup-header">
+                <h3>Filter Produk</h3>
+                <button type="button" class="filter-popup-close" onclick="closeFilterPopup()">✕</button>
+            </div>
+
+            {{-- Filter Body --}}
+            <div id="filter-popup-body">
+                {{-- KATEGORI --}}
+                <div class="filter-popup-group">
+                    <span class="filter-group-label">Kategori</span>
+                    <div class="filter-options" data-filter="category">
+                        <div class="filter-option active" data-value="">Semua</div>
+                        @foreach ($categories as $category)
+                            <div class="filter-option {{ request('category') == $category->id ? 'active' : '' }}" 
+                                data-value="{{ $category->id }}">
+                                {{ $category->name }}
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+
+                {{-- GENDER --}}
+                <div class="filter-popup-group">
+                    <span class="filter-group-label">Gender</span>
+                    <div class="filter-options" data-filter="gender">
+                        <div class="filter-option active" data-value="">Semua</div>
+                        @foreach ($genders as $gender)
+                            <div class="filter-option {{ request('gender') == $gender ? 'active' : '' }}" 
+                                data-value="{{ $gender }}">
+                                {{ ucfirst($gender) }}
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+
+                {{-- UKURAN --}}
+                <div class="filter-popup-group">
+                    <span class="filter-group-label">Ukuran</span>
+                    <div class="filter-options" data-filter="size">
+                        <div class="filter-option active" data-value="">Semua</div>
+                        @foreach ($sizes as $size)
+                            <div class="filter-option {{ request('size') == $size ? 'active' : '' }}" 
+                                data-value="{{ $size }}">
+                                {{ $size }}
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+
+                {{-- WARNA --}}
+                <div class="filter-popup-group">
+                    <span class="filter-group-label">Warna</span>
+                    <div class="filter-options" data-filter="color">
+                        <div class="filter-option active" data-value="">Semua</div>
+                        @foreach ($colors as $color)
+                            <div class="filter-option {{ request('color') == $color ? 'active' : '' }}" 
+                                data-value="{{ $color }}">
+                                {{ $color }}
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+
+                {{-- URUTKAN --}}
+                <div class="filter-popup-group">
+                    <span class="filter-group-label">Urutkan</span>
+                    <div class="filter-options" data-filter="sort">
+                        @php
+                            $sortOptions = [
+                                'newest' => 'Terbaru',
+                                'price_asc' => 'Harga: Rendah → Tinggi',
+                                'price_desc' => 'Harga: Tinggi → Rendah',
+                                'name' => 'Nama (A-Z)'
+                            ];
+                        @endphp
+                        @foreach ($sortOptions as $value => $label)
+                            <div class="filter-option {{ request('sort', 'newest') == $value ? 'active' : '' }}" 
+                                data-value="{{ $value }}">
+                                {{ $label }}
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+
+            {{-- Actions --}}
+            <div class="filter-popup-actions">
+                <button type="button" class="btn-reset-filter" onclick="resetAllFilters()">
+                    Reset
+                </button>
+                <button type="button" class="btn-apply-filter" onclick="applyFilters()">
+                    Terapkan Filter
+                </button>
+            </div>
+        </div>
     </div>
 
     {{-- ============================================ --}}
     {{-- PRODUCT GRID --}}
     {{-- ============================================ --}}
-    <div class="product-grid">
-        @forelse ($products as $product)
-            @php
-                // 🔥 HITUNG DISKON TERBESAR
-                $maxDiscount = 0;
-                foreach ($product->variants as $variant) {
-                    if ($variant->discount_price && $variant->discount_price < $variant->price) {
-                        $discount = round((($variant->price - $variant->discount_price) / $variant->price) * 100);
+    <div class="product_layout">
+        <div class="product_layout_grid">
+            @forelse ($products as $product)
+                @php
+                    // 🔥 AMBIL DATA DISKON DARI PRODUCT (sudah dihitung di controller)
+                    $hasDiscount = $product->has_discount ?? false;
+                    $maxDiscountPercent = $product->max_discount_percent ?? 0;
+                    $hasProductDiscount = $product->has_product_discount ?? false;
+                    $productDiscountPercent = $product->product_discount_percent ?? 0;
+                    $badgeLabel = $product->badge_label ?? null;
+                    $discountLabel = $product->discount_label ?? '';
+                    $priceLabel = $product->price_label ?? '';
+                    
+                    // 🔥 HITUNG MAKSIMAL DISKON
+                    $maxDiscount = 0;
+                    foreach ($product->variants as $variant) {
+                        $discount = $variant->discount_percent ?? 0;
                         if ($discount > $maxDiscount) {
                             $maxDiscount = $discount;
                         }
                     }
-                }
-                
-                // 🔥 AMBIL DATA DARI attachDiscountData
-                $hasDiscount = $product->has_discount ?? false;
-                $displayPrice = $product->display_price ?? '';
-                $originalPriceDisplay = $product->original_price_display ?? null;
-                $discountLabel = $product->discount_label ?? null;
-            @endphp
-            <div class="product_layout_box" data-product-id="{{ $product->id }}">
-                <div class="product_layout_img">
-                    <a href="{{ route('customer.products.show', $product->slug) }}">
-                        <img src="{{ Storage::url($product->images->first()->image) }}" 
-                            alt="{{ $product->name }}">
-                        @if($product->isOutOfStock())
-                        <span class="product_badge out-of-stock">HABIS</span>
-                        @endif
-                        @if($maxDiscount > 0)
-                            <span class="discount_badge">Diskon {{ $maxDiscount }}%</span>
-                        @endif
-                    </a>
-                </div>
-                <div class="product_layout_content">
-                    <h5>{{ $product->name }}</h5>
-                    <div class="product_layout_price">
-                        @php
-                            $prices = [];
-                            foreach ($product->variants as $variant) {
-                                $prices[] = $variant->discount_price ? (float) $variant->discount_price : (float) $variant->price;
-                            }
-                            $minEffective = min($prices);
-                            $maxEffective = max($prices);
-                            
-                            $minPrice = $product->variants->min('price');
-                            $maxPrice = $product->variants->max('price');
-                            
-                            $hasDiscount = $product->variants->contains(function($v) {
-                                return $v->discount_price !== null && $v->discount_price < $v->price;
-                            });
-                        @endphp
+                    
+                    // Jika tidak ada diskon dari varian, cek diskon produk
+                    if ($maxDiscount == 0 && $hasProductDiscount) {
+                        $maxDiscount = $productDiscountPercent;
+                    }
+                    
+                    // 🔥 AMBIL HARGA TERMURAH (SUDAH TERMASUK DISKON) - PAKAI DARI CONTROLLER
+                    $minEffectivePrice = $product->min_effective_price ?? null;
+                    $maxOriginalPrice = $product->max_price ?? null;
+                    
+                    // 🔥 HITUNG HARGA ASLI (TANPA DISKON) UNTUK PERBANDINGAN
+                    $minOriginalPrice = $product->variants->min('price') ?? 0;
+                    $maxOriginalPrice = $product->variants->max('price') ?? 0;
+                    
+                    // 🔥 FORMAT HARGA DISKON
+                    $discountedPriceDisplay = '';
+                    $originalPriceDisplay = '';
+                    
+                    if ($minEffectivePrice !== null && $maxOriginalPrice !== null) {
+                        // Harga setelah diskon
+                        if ($minEffectivePrice == $maxOriginalPrice) {
+                            $discountedPriceDisplay = 'Rp ' . number_format($minEffectivePrice, 0, ',', '.');
+                        } else {
+                            $discountedPriceDisplay = 'Rp ' . number_format($minEffectivePrice, 0, ',', '.') . ' - Rp ' . number_format($maxOriginalPrice, 0, ',', '.');
+                        }
                         
-                        @if($hasDiscount)
-                            <div class="product_layout_price_box">
-                                @if($minEffective == $maxEffective)
-                                    <p class="price-discount">Rp {{ number_format($minEffective, 0, ',', '.') }}</p>
-                                @else
-                                    <p class="price-discount">Rp {{ number_format($minEffective, 0, ',', '.') }} - Rp {{ number_format($maxEffective, 0, ',', '.') }}</p>
-                                @endif
-                                @if($minPrice == $maxPrice)
-                                    <span class="price-original">Rp {{ number_format($minPrice, 0, ',', '.') }}</span>
-                                @else
-                                    <span class="price-original">Rp {{ number_format($minPrice, 0, ',', '.') }} - Rp {{ number_format($maxPrice, 0, ',', '.') }}</span>
-                                @endif
-                            </div>
-                        @else
-                            @if($minEffective == $maxEffective)
-                                <p>Rp {{ number_format($minEffective, 0, ',', '.') }}</p>
+                        // Harga asli (coret)
+                        if ($minOriginalPrice == $maxOriginalPrice) {
+                            $originalPriceDisplay = 'Rp ' . number_format($minOriginalPrice, 0, ',', '.');
+                        } else {
+                            $originalPriceDisplay = 'Rp ' . number_format($minOriginalPrice, 0, ',', '.') . ' - Rp ' . number_format($maxOriginalPrice, 0, ',', '.');
+                        }
+                    } else {
+                        // Fallback: hitung manual
+                        $prices = [];
+                        foreach ($product->variants as $variant) {
+                            $prices[] = $variant->effective_price ?? $variant->price;
+                        }
+                        $minEffective = min($prices);
+                        $maxEffective = max($prices);
+                        $discountedPriceDisplay = 'Rp ' . number_format($minEffective, 0, ',', '.');
+                        if ($minEffective != $maxEffective) {
+                            $discountedPriceDisplay .= ' - Rp ' . number_format($maxEffective, 0, ',', '.');
+                        }
+                        
+                        $originalPrices = $product->variants->pluck('price')->toArray();
+                        $minOrig = min($originalPrices);
+                        $maxOrig = max($originalPrices);
+                        $originalPriceDisplay = 'Rp ' . number_format($minOrig, 0, ',', '.');
+                        if ($minOrig != $maxOrig) {
+                            $originalPriceDisplay .= ' - Rp ' . number_format($maxOrig, 0, ',', '.');
+                        }
+                    }
+                    
+                    // 🔥 STATUS STOK
+                    $isOutOfStock = $product->isOutOfStock();
+                    $totalStock = $product->variants->sum('stock');
+                    
+                    // 🔥 TENTUKAN GAMBAR THUMBNAIL - PERBAIKAN DISINI
+                    $thumbnailImage = null;
+                    
+                    // Cek apakah ada display_image dari controller (untuk filter warna)
+                    if (isset($product->display_image) && $product->display_image) {
+                        $thumbnailImage = $product->display_image;
+                    } 
+                    // Jika tidak ada, gunakan gambar produk pertama
+                    elseif ($product->images->isNotEmpty()) {
+                        $thumbnailImage = Storage::url($product->images->first()->image);
+                    }
+                @endphp
+                <div class="product_layout_box" data-product-id="{{ $product->id }}">
+                    <div class="product_layout_img">
+                        {{-- SKELETON LOADING --}}
+                        <div class="skeleton-image" id="skeleton-{{ $product->id }}">
+                            <div class="skeleton" style="width:100%;height:100%;"></div>
+                        </div>
+                        
+                        <a href="{{ route('customer.products.show', $product->slug) }}">
+                            @if($thumbnailImage)
+                                <img 
+                                    src="{{ $thumbnailImage }}" 
+                                    alt="{{ $product->name }} - {{ $selectedColor ?? 'default' }}"
+                                    loading="lazy"
+                                    width="300"
+                                    height="300"
+                                    decoding="async"
+                                    class="loading"
+                                    onload="this.classList.remove('loading'); this.classList.add('loaded'); document.getElementById('skeleton-{{ $product->id }}').classList.add('hidden');"
+                                    onerror="this.onerror=null; this.src='{{ asset('images/placeholder.png') }}'; this.classList.remove('loading'); this.classList.add('loaded'); document.getElementById('skeleton-{{ $product->id }}').classList.add('hidden');">
+                            @elseif($product->images->isNotEmpty())
+                                <img 
+                                    src="{{ Storage::url($product->images->first()->image) }}" 
+                                    alt="{{ $product->name }}"
+                                    loading="lazy"
+                                    width="300"
+                                    height="300"
+                                    decoding="async"
+                                    class="loading"
+                                    onload="this.classList.remove('loading'); this.classList.add('loaded'); document.getElementById('skeleton-{{ $product->id }}').classList.add('hidden');"
+                                    onerror="this.onerror=null; this.src='{{ asset('images/placeholder.png') }}'; this.classList.remove('loading'); this.classList.add('loaded'); document.getElementById('skeleton-{{ $product->id }}').classList.add('hidden');">
                             @else
-                                <p>Rp {{ number_format($minEffective, 0, ',', '.') }} - Rp {{ number_format($maxEffective, 0, ',', '.') }}</p>
+                                <div class="placeholder">
+                                    <iconify-icon icon="mdi:image-off-outline"></iconify-icon>
+                                </div>
+                                <script>
+                                    document.getElementById('skeleton-{{ $product->id }}')?.classList.add('hidden');
+                                </script>
                             @endif
-                        @endif
+                            
+                            {{-- BADGE HABIS --}}
+                            @if($isOutOfStock)
+                                <span class="product_badge out-of-stock">HABIS</span>
+                            @endif
+
+                            {{-- BADGE DISKON --}}
+                            @if($maxDiscount > 0)
+                                <span class="discount_badge">Diskon {{ round($maxDiscount) }}%</span>
+                            @endif
+                        </a>
+                    </div>
+                    <div class="product_layout_content">
+                        <h5>{{ $product->name }}</h5>
+                        <div class="product_layout_price">
+                            @if($hasDiscount && $originalPriceDisplay)
+                                <div class="product_layout_price_box">
+                                    <p class="price-discount">{{ $discountedPriceDisplay }}</p>
+                                    <span class="price-original">{{ $originalPriceDisplay }}</span>
+                                </div>
+                            @else
+                                <p>{{ $discountedPriceDisplay }}</p>
+                            @endif
+                        </div>
+                    </div>
+                    <div class="product_layout_button">
+                        <button class="buy_now_btn {{ $product->isOutOfStock() ? 'disabled' : '' }}" 
+                                onclick="{{ $product->isOutOfStock() ? '' : 'buyNow(' . $product->id . ')' }}"
+                                {{ $product->isOutOfStock() ? 'disabled' : '' }}>
+                            {{ $product->isOutOfStock() ? 'HABIS' : 'BELI SEKARANG' }}
+                        </button>
+                        <button class="add_to_cart_btn {{ $product->isOutOfStock() ? 'disabled' : '' }}" 
+                                onclick="{{ $product->isOutOfStock() ? '' : 'addToCart(' . $product->id . ')' }}"
+                                {{ $product->isOutOfStock() ? 'disabled' : '' }}>
+                            <iconify-icon icon="solar:cart-linear"></iconify-icon>
+                        </button>
+                        <button class="add_to_wishlist_btn" 
+                                data-product-id="{{ $product->id }}"
+                                data-in-wishlist="{{ in_array($product->id, array_keys(session()->get('wishlist', []))) ? 'true' : 'false' }}"
+                                onclick="addToWishlist({{ $product->id }})">
+                            @if(in_array($product->id, array_keys(session()->get('wishlist', []))))
+                                <iconify-icon icon="solar:heart-bold" style="color: #ef4444;"></iconify-icon>
+                            @else
+                                <iconify-icon icon="solar:heart-linear"></iconify-icon>
+                            @endif
+                        </button>
                     </div>
                 </div>
-                <div class="product_layout_button">
-                    <button class="buy_now_btn {{ $product->isOutOfStock() ? 'disabled' : '' }}" 
-                            onclick="{{ $product->isOutOfStock() ? '' : 'buyNow(' . $product->id . ')' }}"
-                            {{ $product->isOutOfStock() ? 'disabled' : '' }}>
-                        {{ $product->isOutOfStock() ? 'HABIS' : 'BELI SEKARANG' }}
-                    </button>
-                    <button class="add_to_cart_btn {{ $product->isOutOfStock() ? 'disabled' : '' }}" 
-                            onclick="{{ $product->isOutOfStock() ? '' : 'addToCart(' . $product->id . ')' }}"
-                            {{ $product->isOutOfStock() ? 'disabled' : '' }}>
-                        <iconify-icon icon="solar:cart-linear"></iconify-icon>
-                    </button>
-                    <button class="add_to_wishlist_btn" 
-                            data-product-id="{{ $product->id }}"
-                            data-in-wishlist="{{ in_array($product->id, array_keys(session()->get('wishlist', []))) ? 'true' : 'false' }}"
-                            onclick="addToWishlist({{ $product->id }})">
-                        @if(in_array($product->id, array_keys(session()->get('wishlist', []))))
-                            <iconify-icon icon="solar:heart-bold" style="color: #ef4444;"></iconify-icon>
-                        @else
-                            <iconify-icon icon="solar:heart-linear"></iconify-icon>
-                        @endif
-                    </button>
+            @empty
+                <div class="empty_state">
+                    <div class="empty-icon">🔍</div>
+                    <p>Belum ada produk yang tersedia.</p>
                 </div>
-            </div>
-        @empty
-            <div class="empty-state">
-                <div class="empty-icon"></div>
-                <p>Belum ada produk yang tersedia.</p>
-            </div>
-        @endforelse
+            @endforelse
+        </div>
     </div>
 
     {{-- PAGINATION --}}
@@ -953,6 +475,230 @@
     @endif
 
 </div>
+
+<script>
+    var filterState = {
+        category: '{{ request('category') ?? '' }}',
+        gender: '{{ request('gender') ?? '' }}',
+        size: '{{ request('size') ?? '' }}',
+        color: '{{ request('color') ?? '' }}',
+        sort: '{{ request('sort', 'newest') }}'
+    };
+
+    var initialFilterState = Object.assign({}, filterState);
+
+    // 🔥 BUKA POPUP FILTER
+    function openFilterPopup() {
+        var popup = document.getElementById('filter-popup');
+        if (!popup) return;
+        
+        // Sync state dari URL
+        syncFilterStateFromURL();
+        
+        // Reset aktifasi berdasarkan state
+        applyFilterStateToPopup();
+        
+        popup.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    // 🔥 TUTUP POPUP FILTER
+    function closeFilterPopup() {
+        var popup = document.getElementById('filter-popup');
+        if (!popup) return;
+        
+        popup.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    // 🔥 SYNC FILTER STATE DARI URL
+    function syncFilterStateFromURL() {
+        var urlParams = new URLSearchParams(window.location.search);
+        
+        filterState.category = urlParams.get('category') || '';
+        filterState.gender = urlParams.get('gender') || '';
+        filterState.size = urlParams.get('size') || '';
+        filterState.color = urlParams.get('color') || '';
+        filterState.sort = urlParams.get('sort') || 'newest';
+    }
+
+    // 🔥 APPLY FILTER STATE KE POPUP
+    function applyFilterStateToPopup() {
+        var groups = document.querySelectorAll('.filter-popup-group .filter-options');
+        
+        groups.forEach(function(group) {
+            var filterName = group.dataset.filter;
+            var selectedValue = filterState[filterName] || '';
+            
+            var options = group.querySelectorAll('.filter-option');
+            options.forEach(function(option) {
+                option.classList.remove('active');
+                if (option.dataset.value === selectedValue) {
+                    option.classList.add('active');
+                }
+            });
+        });
+    }
+
+    // 🔥 UPDATE FILTER BADGE
+    function updateFilterBadge() {
+        var badge = document.getElementById('filter-badge');
+        if (!badge) return;
+        
+        var count = 0;
+        if (filterState.category) count++;
+        if (filterState.gender) count++;
+        if (filterState.size) count++;
+        if (filterState.color) count++;
+        
+        if (count > 0) {
+            badge.textContent = count;
+            badge.style.display = 'inline';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+
+    // 🔥 EVENT LISTENER UNTUK FILTER OPTIONS (DI POPUP)
+    document.addEventListener('click', function(e) {
+        var target = e.target.closest('.filter-popup-group .filter-option');
+        if (!target) return;
+        
+        var group = target.closest('.filter-options');
+        if (!group) return;
+        
+        var filterName = group.dataset.filter;
+        
+        // Hapus active dari semua di group yang sama
+        var options = group.querySelectorAll('.filter-option');
+        options.forEach(function(opt) {
+            opt.classList.remove('active');
+        });
+        
+        target.classList.add('active');
+        
+        // Update state
+        filterState[filterName] = target.dataset.value;
+        
+        // Update badge
+        updateFilterBadge();
+    });
+
+    // 🔥 APPLY FILTERS - SUBMIT FORM
+    function applyFilters() {
+        var form = document.getElementById('filter-form');
+        if (!form) return;
+        
+        // Hapus input filter lama
+        var filterNames = ['category', 'gender', 'size', 'color', 'sort'];
+        filterNames.forEach(function(name) {
+            var oldInput = form.querySelector('input[name="' + name + '"]');
+            if (oldInput) {
+                oldInput.remove();
+            }
+        });
+        
+        // Tambahkan input baru berdasarkan state
+        if (filterState.category) {
+            var input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'category';
+            input.value = filterState.category;
+            form.appendChild(input);
+        }
+        
+        if (filterState.gender) {
+            var input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'gender';
+            input.value = filterState.gender;
+            form.appendChild(input);
+        }
+        
+        if (filterState.size) {
+            var input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'size';
+            input.value = filterState.size;
+            form.appendChild(input);
+        }
+        
+        if (filterState.color) {
+            var input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'color';
+            input.value = filterState.color;
+            form.appendChild(input);
+        }
+        
+        if (filterState.sort && filterState.sort !== 'newest') {
+            var input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'sort';
+            input.value = filterState.sort;
+            form.appendChild(input);
+        }
+        
+        // Tutup popup
+        closeFilterPopup();
+        
+        // Submit form
+        form.submit();
+    }
+
+    // 🔥 RESET ALL FILTERS
+    function resetAllFilters() {
+        filterState = {
+            category: '',
+            gender: '',
+            size: '',
+            color: '',
+            sort: 'newest'
+        };
+        
+        // Update UI
+        var groups = document.querySelectorAll('.filter-popup-group .filter-options');
+        groups.forEach(function(group) {
+            var filterName = group.dataset.filter;
+            var options = group.querySelectorAll('.filter-option');
+            options.forEach(function(option) {
+                option.classList.remove('active');
+                if (option.dataset.value === '') {
+                    option.classList.add('active');
+                }
+            });
+        });
+        
+        // Update badge
+        updateFilterBadge();
+    }
+
+    // 🔥 CLOSE POPUP ON OVERLAY CLICK
+    document.getElementById('filter-popup')?.addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeFilterPopup();
+        }
+    });
+
+    // 🔥 ESCAPE KEY
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeFilterPopup();
+        }
+    });
+
+    // 🔥 INIT - Update badge
+    document.addEventListener('DOMContentLoaded', function() {
+        syncFilterStateFromURL();
+        updateFilterBadge();
+        
+        // Jika ada parameter filter, tampilkan badge
+        var hasFilter = filterState.category || filterState.gender || filterState.size || filterState.color;
+        if (hasFilter) {
+            updateFilterBadge();
+        }
+    });
+</script>
 
 {{-- ============================================ --}}
 {{-- JAVASCRIPT - CUSTOM SELECT --}}

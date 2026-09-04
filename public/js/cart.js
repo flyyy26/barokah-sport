@@ -555,7 +555,11 @@ function updateCartCount(count) {
 
 function updateWishlistIcon(productId, inWishlist = null) {
     // Cari SEMUA tombol wishlist untuk produk ini
-    const allButtons = document.querySelectorAll(`.add_to_wishlist_btn[data-product-id="${productId}"]`);
+    const allButtons = document.querySelectorAll(
+        `.add_to_wishlist_btn[data-product-id="${productId}"], ` +
+        `#wishlist-toggle-product[data-product-id="${productId}"], ` +
+        `#mobile-wishlist-btn[data-product-id="${productId}"]`
+    );
     
     console.log(`❤️ Updating ${allButtons.length} wishlist buttons for product ${productId}`);
     

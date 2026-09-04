@@ -11,6 +11,7 @@ class Banner extends Model
         'title',
         'subtitle',
         'image',
+        'image_mobile',
         'button_text',
         'button_url',
         'sort_order',
@@ -40,5 +41,21 @@ class Banner extends Model
                   ->orWhere('ends_at', '>=', now());
             })
             ->orderBy('sort_order');
+    }
+
+    /**
+     * Get image URL untuk desktop
+     */
+    public function getImageUrlAttribute(): string
+    {
+        return $this->image ? asset('storage/' . $this->image) : asset('images/default-banner.jpg');
+    }
+
+    /**
+     * Get image URL untuk mobile
+     */
+    public function getImageMobileUrlAttribute(): string
+    {
+        return $this->image_mobile ? asset('storage/' . $this->image_mobile) : $this->image_url;
     }
 }

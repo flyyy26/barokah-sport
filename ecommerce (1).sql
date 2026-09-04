@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 23, 2026 at 05:35 AM
+-- Generation Time: Sep 04, 2026 at 11:45 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -163,9 +163,10 @@ INSERT INTO `article_likes` (`id`, `article_id`, `user_id`, `created_at`, `updat
 
 CREATE TABLE `banners` (
   `id` bigint(20) UNSIGNED NOT NULL,
-  `title` varchar(255) NOT NULL,
+  `title` varchar(255) DEFAULT NULL,
   `subtitle` varchar(255) DEFAULT NULL,
   `image` varchar(255) NOT NULL,
+  `image_mobile` varchar(255) DEFAULT NULL,
   `button_text` varchar(255) DEFAULT NULL,
   `button_url` varchar(255) DEFAULT NULL,
   `sort_order` int(10) UNSIGNED NOT NULL DEFAULT 0,
@@ -180,9 +181,9 @@ CREATE TABLE `banners` (
 -- Dumping data for table `banners`
 --
 
-INSERT INTO `banners` (`id`, `title`, `subtitle`, `image`, `button_text`, `button_url`, `sort_order`, `is_active`, `starts_at`, `ends_at`, `created_at`, `updated_at`) VALUES
-(3, 'Performa dan Gaya  dalam Satu Pilihan.', 'Tampil sporty dengan jaket dan celana olahraga yang nyaman, stylish, dan siap menemani setiap aktivitas.', 'banners/MiPQQjeVvn1ZgGGcbHcFBeGM58DDQwjkvEoQLvGv.webp', 'Belanja Sekarang', '/produk', 1, 1, '2026-08-20 01:00:00', '2026-08-23 01:00:00', '2026-08-20 01:00:14', '2026-08-20 01:04:52'),
-(5, 'Koleksi Terbaru Barokah Sport', 'Temukan jaket terbaru dari kami', 'banners/IQLTRMLwi2UK0kvkKC6ZgsGGeHrT1L6UFYV3NnE7.png', 'Belanja Sekarang', '/products', 2, 1, '2026-08-21 15:48:00', '2026-08-21 15:51:00', '2026-08-21 15:48:32', '2026-08-21 15:49:34');
+INSERT INTO `banners` (`id`, `title`, `subtitle`, `image`, `image_mobile`, `button_text`, `button_url`, `sort_order`, `is_active`, `starts_at`, `ends_at`, `created_at`, `updated_at`) VALUES
+(3, 'Performa dan Gaya  dalam Satu Pilihan.', 'Tampil sporty dengan jaket dan celana olahraga yang nyaman, stylish, dan siap menemani setiap aktivitas.', 'banners/MiPQQjeVvn1ZgGGcbHcFBeGM58DDQwjkvEoQLvGv.webp', 'banners/mobile/mddz5sKzETaKBQqMkYijil4OPO8Jvez94I12ZrVZ.webp', 'Belanja Sekarang', '/produk', 1, 1, '2026-08-20 01:00:00', '2027-10-23 01:00:00', '2026-08-20 01:00:14', '2026-09-03 11:29:03'),
+(5, 'Koleksi Terbaru Barokah Sport', 'Temukan jaket terbaru dari kami', 'banners/IQLTRMLwi2UK0kvkKC6ZgsGGeHrT1L6UFYV3NnE7.png', 'banners/mobile/3lKJYf6vI54jbpaNTjbyFfpI4g81U3ZVptx3fy83.png', 'Belanja Sekarang', '/products', 2, 1, '2026-08-21 15:48:00', '2026-08-21 15:51:00', '2026-08-21 15:48:32', '2026-09-03 11:29:10');
 
 -- --------------------------------------------------------
 
@@ -223,6 +224,13 @@ CREATE TABLE `carts` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `carts`
+--
+
+INSERT INTO `carts` (`id`, `user_id`, `product_id`, `variant_id`, `quantity`, `created_at`, `updated_at`) VALUES
+(77, 4, 66, 1241, 1, '2026-09-04 19:52:58', '2026-09-04 19:52:58');
 
 -- --------------------------------------------------------
 
@@ -91952,7 +91960,16 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (58, '2026_08_22_234712_create_user_addresses_table', 42),
 (59, '2026_08_23_060242_add_minimum_stock_to_products_table', 43),
 (60, '2026_08_23_061632_create_stock_histories_table', 44),
-(61, '2026_08_23_091311_add_discount_fields_to_products_table', 45);
+(61, '2026_08_23_091311_add_discount_fields_to_products_table', 45),
+(62, '2026_08_24_010917_add_product_discount_fields_to_products_table', 46),
+(63, '2026_08_24_075433_add_flash_sale_columns_to_products_table', 47),
+(64, '2026_08_24_084133_create_vouchers_table', 48),
+(65, '2026_08_24_085300_add_is_public_to_vouchers_table', 49),
+(66, '2026_08_26_112634_remove_discount_dates_from_products_table', 50),
+(67, '2026_09_02_230723_create_promo_bars_table', 51),
+(68, '2026_09_03_180445_add_image_mobile_to_banners', 52),
+(69, '2026_09_03_190000_make_banner_title_nullable', 53),
+(70, '2026_09_05_011100_drop_foreign_key_and_index_from_size_guides', 54);
 
 -- --------------------------------------------------------
 
@@ -92072,6 +92089,14 @@ CREATE TABLE `products` (
   `is_active` tinyint(1) NOT NULL DEFAULT 1,
   `minimum_stock` int(11) NOT NULL DEFAULT 5,
   `restock_threshold` int(11) NOT NULL DEFAULT 10,
+  `has_product_discount` tinyint(1) NOT NULL DEFAULT 0,
+  `discount_type` enum('percentage','fixed') DEFAULT NULL,
+  `discount_value` decimal(10,2) DEFAULT NULL,
+  `is_flash_sale` tinyint(1) NOT NULL DEFAULT 0,
+  `flash_sale_type` enum('percentage','fixed') DEFAULT NULL,
+  `flash_sale_value` decimal(12,2) DEFAULT NULL,
+  `flash_sale_start_date` datetime DEFAULT NULL,
+  `flash_sale_end_date` datetime DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -92080,9 +92105,14 @@ CREATE TABLE `products` (
 -- Dumping data for table `products`
 --
 
-INSERT INTO `products` (`id`, `category_id`, `name`, `slug`, `description`, `gender`, `material`, `is_featured`, `is_best_seller`, `is_active`, `minimum_stock`, `restock_threshold`, `created_at`, `updated_at`) VALUES
-(42, 14, 'tes', 'tes', '<p>tes</p>', 'unisex', 'Poliester, Diadora', 0, 0, 1, 5, 10, '2026-08-23 03:28:22', '2026-08-23 03:28:22'),
-(43, 14, 'HM Barokah - Celana Olahraga Panjang Laki Laki Perempuan Celana Training Unisex Untuk Olahraga Senam Jogging Running Gym Cycling', 'hm-barokah-celana-olahraga-panjang-laki-laki-perempuan-celana-training-unisex-untuk-olahraga-senam-jogging-running-gym-cycling', '<p>tess</p>', 'unisex', 'Poliester, Diadora', 0, 0, 1, 5, 10, '2026-08-23 03:31:52', '2026-08-23 03:31:52');
+INSERT INTO `products` (`id`, `category_id`, `name`, `slug`, `description`, `gender`, `material`, `is_featured`, `is_best_seller`, `is_active`, `minimum_stock`, `restock_threshold`, `has_product_discount`, `discount_type`, `discount_value`, `is_flash_sale`, `flash_sale_type`, `flash_sale_value`, `flash_sale_start_date`, `flash_sale_end_date`, `created_at`, `updated_at`) VALUES
+(42, 14, 'tes', 'tes', '<p>tes</p>', 'unisex', 'Poliester, Diadora', 0, 0, 1, 5, 10, 0, NULL, NULL, 0, NULL, NULL, NULL, NULL, '2026-08-23 03:28:22', '2026-08-23 03:28:22'),
+(43, 14, 'HM Barokah - Celana Olahraga Panjang Laki Laki Perempuan Celana Training Unisex Untuk Olahraga Senam Jogging Running Gym Cycling', 'hm-barokah-celana-olahraga-panjang-laki-laki-perempuan-celana-training-unisex-untuk-olahraga-senam-jogging-running-gym-cycling', '<p>tess</p>', 'unisex', 'Poliester, Diadora', 0, 0, 1, 5, 10, 0, 'percentage', NULL, 0, 'percentage', NULL, '2026-08-26 13:31:00', '2026-08-29 13:31:00', '2026-08-23 03:31:52', '2026-08-26 06:32:09'),
+(45, 7, 'celana trening', 'celana-trening', '<p>trening</p>', 'unisex', 'poliester', 0, 1, 1, 5, 10, 1, 'percentage', 20.00, 0, NULL, NULL, NULL, NULL, '2026-08-23 17:42:52', '2026-09-03 09:14:19'),
+(66, 14, 'HM Barokah - Celana Olahraga Panjang Laki Laki Perempuan Celana Training Unisex Untuk Olahraga Senam Jogging', 'hm-barokah-celana-olahraga-panjang-laki-laki-perempuan-celana-training-unisex-untuk-olahraga-senam-jogging', '<p>Celana Olahraga : Nyaman, Hangat, dan Tampilan Sporty</p><p><br></p><p>Isi Paket : Celana Training Olahraga</p><p>Material Celana : Ddora</p><p><br></p><p>Fitur dan Keunggulan Produk</p><p>Kehangatan Optimal: Bahan Diadora cenderung tebal dengan permukaan dalam yang berbulu halus</p><p>(fleece-like). Ini menjebak panas tubuh, menjadikannya pilihan ideal untuk pemanasan (warming up)</p><p>olahraga di pagi hari, atau saat cuaca dingin.</p><p><br></p><p>Tampilan Sporty: Permukaan luar kain sedikit mengkilap (glossy) dan rapat, memberikan kesan sporty</p><p> yang rapi dan elegan, tidak terlihat lusuh.</p><p><br></p><p>Kekuatan dan Keawetan: Serat kain yang kuat memastikan celana tahan lama</p><p> dan tidak mudah melar atau sobek, cocok untuk gerakan kaki yang dinamis.</p><p><br></p><p>Tabel ukuran berdasarkan BB dan TB </p><p>M : 50 kg / 165 cm</p><p>L : 55 kg / 170 cm</p><p>XL : 60 kg / 175 cm</p><p>XXL : 70 kg / 180 cm</p><p>3XL : 80 kg / 190 cm</p><p><br></p><p>Produk ini dirancang untuk memberikan kenyamanan.Terbuat</p><p>dari bahan berkualitas tinggi dan menawarkan keunggulan dalam hal ketahanan dan</p><p>keleluasaan bergerak.</p><p><br></p><p>Fitur tambahan seperti saku dengan resleting memudahkan Anda</p><p>menyimpan barang-barang kecil dengan aman. Setiap detail, mulai dari jahitan</p><p>mencerminkan kualitas adalah pilihan sempurna untuk Anda yang mengutamakan</p><p>gaya, kenyamanan, dan performa dalam setiap aktivitas.</p><p><br></p><p>Cocok Digunakan Untuk</p><p><br></p><p>Olahraga harian</p><p>Gym dan fitness</p><p>Jogging dan running</p><p>Bersepeda cycling</p><p>Seragam tim atau komunitas</p><p>Tampilan casual sporty</p><p><br></p><p>Dapatkan kenyamanan dan kualitas terbaik untuk menunjang</p><p>aktivitas olahraga Anda. Jangan lewatkan kesempatan memiliki setelan olahraga</p><p>yang stylish dan fungsional ini.</p><p><br></p><p>Pesan sekarang dan rasakan bedanya ketika berolahraga dengan</p><p>perlengkapan yang tepat!</p>', 'unisex', 'weghwsgwe', 0, 0, 1, 5, 10, 0, NULL, NULL, 0, NULL, NULL, NULL, NULL, '2026-08-24 00:30:31', '2026-09-04 15:38:13'),
+(69, 10, 'tes', 'tes-1', 'tes', 'wanita', 'poliester', 1, 0, 1, 5, 10, 0, 'percentage', NULL, 0, 'percentage', NULL, '2026-09-03 15:23:00', '2026-09-06 15:23:00', '2026-09-03 08:24:49', '2026-09-03 08:24:49'),
+(70, 9, 'tes2', 'tes2', 'tss', 'unisex', 'Poliester, Diadora', 0, 0, 1, 5, 10, 0, 'percentage', NULL, 0, 'percentage', NULL, '2026-09-03 21:00:00', '2026-09-06 21:00:00', '2026-09-03 14:01:57', '2026-09-03 14:01:57'),
+(71, 10, 'tes again', 'tes-again', 'tesss', 'unisex', 'sdsdgs', 0, 0, 1, 5, 10, 0, 'percentage', NULL, 0, 'percentage', NULL, '2026-09-03 21:08:00', '2026-09-06 21:08:00', '2026-09-03 14:09:16', '2026-09-03 14:09:16');
 
 -- --------------------------------------------------------
 
@@ -92108,7 +92138,22 @@ INSERT INTO `product_features` (`id`, `product_id`, `feature_id`, `created_at`, 
 (34, 42, 3, '2026-08-23 03:28:22', '2026-08-23 03:28:22'),
 (35, 43, 7, '2026-08-23 03:31:52', '2026-08-23 03:31:52'),
 (36, 43, 8, '2026-08-23 03:31:52', '2026-08-23 03:31:52'),
-(37, 43, 3, '2026-08-23 03:31:52', '2026-08-23 03:31:52');
+(37, 43, 3, '2026-08-23 03:31:52', '2026-08-23 03:31:52'),
+(38, 45, 7, '2026-08-23 17:42:52', '2026-08-23 17:42:52'),
+(39, 45, 8, '2026-08-23 17:42:52', '2026-08-23 17:42:52'),
+(40, 45, 3, '2026-08-23 17:42:52', '2026-08-23 17:42:52'),
+(92, 66, 7, '2026-08-24 00:30:31', '2026-08-24 00:30:31'),
+(93, 66, 8, '2026-08-24 00:30:31', '2026-08-24 00:30:31'),
+(94, 66, 3, '2026-08-24 00:30:31', '2026-08-24 00:30:31'),
+(101, 69, 8, '2026-09-03 08:24:50', '2026-09-03 08:24:50'),
+(102, 69, 3, '2026-09-03 08:24:50', '2026-09-03 08:24:50'),
+(103, 69, 2, '2026-09-03 08:24:50', '2026-09-03 08:24:50'),
+(104, 69, 1, '2026-09-03 08:24:50', '2026-09-03 08:24:50'),
+(105, 70, 8, '2026-09-03 14:01:57', '2026-09-03 14:01:57'),
+(106, 70, 2, '2026-09-03 14:01:57', '2026-09-03 14:01:57'),
+(107, 70, 1, '2026-09-03 14:01:57', '2026-09-03 14:01:57'),
+(108, 71, 8, '2026-09-03 14:09:16', '2026-09-03 14:09:16'),
+(109, 71, 3, '2026-09-03 14:09:16', '2026-09-03 14:09:16');
 
 -- --------------------------------------------------------
 
@@ -92131,7 +92176,23 @@ CREATE TABLE `product_images` (
 
 INSERT INTO `product_images` (`id`, `product_id`, `image`, `sort_order`, `created_at`, `updated_at`) VALUES
 (63, 42, 'products/gHn1jI77ablJPQqSKwxZscRAS0BTjeIrFLK8BQwD.jpg', 0, '2026-08-23 03:28:22', '2026-08-23 03:28:22'),
-(64, 43, 'products/iWKGJRVTmRgBMxASqzXrFGz2SWzOEluCnKVKGYiU.png', 0, '2026-08-23 03:31:52', '2026-08-23 03:31:52');
+(66, 45, 'products/gXT5Rp2zcOu7AiXhl9sZchiq4lrWRaoUnX0TetxP.jpg', 0, '2026-08-23 17:42:52', '2026-08-23 17:42:52'),
+(67, 45, 'products/uhIepkZ3kGzkbAlkQ0o83umykuILEveqjDspmdWC.jpg', 1, '2026-08-23 17:44:16', '2026-08-23 17:44:16'),
+(122, 66, 'products/Lv9M4HNy1KxVtFSFIFVLANnJPseU3Dsq9vAyGZmh.jpg', 0, '2026-08-24 00:30:31', '2026-08-24 00:30:31'),
+(123, 66, 'products/bcXu3MAqrbnrqn2hIuPWiParUYqo7yxUARwzMivK.jpg', 1, '2026-08-24 00:30:31', '2026-08-24 00:30:31'),
+(124, 66, 'products/D4cq5EuH83EDPQCOUHfqeM0cY57ne9g8ynB1TnMz.jpg', 2, '2026-08-24 00:30:31', '2026-08-24 00:30:31'),
+(131, 43, 'products/ilQig8f4j80HWK6pZsXhKaj3ITTNMkvfoy98QiwH.jpg', 1, '2026-08-26 06:32:09', '2026-08-26 06:32:09'),
+(132, 69, 'products/hPga4IKuop09EZHPkig2FRhVQlJfbeBY6Y07yz1B.jpg', 0, '2026-09-03 08:24:50', '2026-09-03 08:24:50'),
+(133, 70, 'products/NSC2Xsm73U7BIvW1yryK4yx7DwfHmD6otEpql5Dy.png', 0, '2026-09-03 14:01:57', '2026-09-03 14:01:57'),
+(134, 71, 'products/ROHMIljg5YOm0XmsPXKQwQSuuDkPVQCVeOIxvrjn.png', 0, '2026-09-03 14:09:16', '2026-09-03 14:09:16'),
+(135, 66, 'products/BQ7x0rH5LCmDsW5ECg4BdLQ1bxKpJDgnqDIdkHUt.jpg', 3, '2026-09-03 17:29:16', '2026-09-03 17:29:16'),
+(136, 66, 'products/9Ksx6DSb2HNEgw8f9I1RGMTTGbOM1URINJFbXeu1.jpg', 4, '2026-09-03 17:29:16', '2026-09-03 17:29:16'),
+(137, 66, 'products/MOwBqrcjlIwQyvxsyjQSQLqJIJm4B6wIPhtAfiao.jpg', 5, '2026-09-03 17:29:16', '2026-09-03 17:29:16'),
+(138, 66, 'products/P2MnfTw9StB1lrtN0ffPWxamFkTlwa30lx4buA7q.jpg', 6, '2026-09-03 17:29:16', '2026-09-03 17:29:16'),
+(139, 66, 'products/QvE84BjJSpkDtQFOOuptX5vPrZLzGhCJANoHX2h3.jpg', 7, '2026-09-03 17:29:16', '2026-09-03 17:29:16'),
+(140, 66, 'products/iJWe1bG2S3un3I2Ohti8KimE5s9nfylDIuDF0WdM.jpg', 8, '2026-09-03 17:29:16', '2026-09-03 17:29:16'),
+(141, 66, 'products/aT9ZrBK1PEi2b0lCqJxGSnPoGjY4S6q1puxOvzeI.jpg', 9, '2026-09-03 17:29:16', '2026-09-03 17:29:16'),
+(142, 66, 'products/TkC96L7jaA7znkNfy03eDkFp3FkoCsF8CcZh1tVj.jpg', 10, '2026-09-03 17:29:16', '2026-09-03 17:29:16');
 
 -- --------------------------------------------------------
 
@@ -92155,8 +92216,18 @@ CREATE TABLE `product_options` (
 INSERT INTO `product_options` (`id`, `product_id`, `name`, `sort_order`, `created_at`, `updated_at`) VALUES
 (168, 42, 'Warna', 0, '2026-08-23 03:28:22', '2026-08-23 03:28:22'),
 (169, 42, 'Ukuran', 1, '2026-08-23 03:28:22', '2026-08-23 03:28:22'),
-(172, 43, 'Ukuran', 0, '2026-08-23 03:32:46', '2026-08-23 03:32:46'),
-(173, 43, 'Warna', 1, '2026-08-23 03:32:46', '2026-08-23 03:32:46');
+(248, 43, 'Ukuran', 0, '2026-08-26 06:32:10', '2026-08-26 06:32:10'),
+(249, 43, 'Warna', 1, '2026-08-26 06:32:10', '2026-08-26 06:32:10'),
+(252, 69, 'Warna', 0, '2026-09-03 08:24:50', '2026-09-03 08:24:50'),
+(253, 69, 'Ukuran', 1, '2026-09-03 08:24:50', '2026-09-03 08:24:50'),
+(274, 45, 'Ukuran', 0, '2026-09-03 09:14:19', '2026-09-03 09:14:19'),
+(275, 45, 'Warna', 1, '2026-09-03 09:14:19', '2026-09-03 09:14:19'),
+(276, 70, 'Warna', 0, '2026-09-03 14:01:57', '2026-09-03 14:01:57'),
+(277, 70, 'Ukuran', 1, '2026-09-03 14:01:57', '2026-09-03 14:01:57'),
+(278, 71, 'Warna', 0, '2026-09-03 14:09:16', '2026-09-03 14:09:16'),
+(279, 71, 'Ukuran', 1, '2026-09-03 14:09:16', '2026-09-03 14:09:16'),
+(294, 66, 'Ukuran', 0, '2026-09-04 15:38:13', '2026-09-04 15:38:13'),
+(295, 66, 'Warna', 1, '2026-09-04 15:38:13', '2026-09-04 15:38:13');
 
 -- --------------------------------------------------------
 
@@ -92183,11 +92254,29 @@ INSERT INTO `product_option_values` (`id`, `product_option_id`, `value`, `image`
 (596, 169, 'S', NULL, 0, '2026-08-23 03:28:22', '2026-08-23 03:28:22'),
 (597, 169, 'M', NULL, 1, '2026-08-23 03:28:22', '2026-08-23 03:28:22'),
 (598, 169, 'L', NULL, 2, '2026-08-23 03:28:22', '2026-08-23 03:28:22'),
-(604, 172, 'S', NULL, 0, '2026-08-23 03:32:46', '2026-08-23 03:32:46'),
-(605, 172, 'M', NULL, 1, '2026-08-23 03:32:46', '2026-08-23 03:32:46'),
-(606, 172, 'L', NULL, 2, '2026-08-23 03:32:46', '2026-08-23 03:32:46'),
-(607, 172, 'XL', NULL, 3, '2026-08-23 03:32:46', '2026-08-23 03:32:46'),
-(608, 173, 'Hitam', NULL, 0, '2026-08-23 03:32:46', '2026-08-23 03:32:46');
+(755, 248, 'S', NULL, 0, '2026-08-26 06:32:10', '2026-08-26 06:32:10'),
+(756, 248, 'M', NULL, 1, '2026-08-26 06:32:10', '2026-08-26 06:32:10'),
+(757, 248, 'L', NULL, 2, '2026-08-26 06:32:10', '2026-08-26 06:32:10'),
+(758, 248, 'XL', NULL, 3, '2026-08-26 06:32:10', '2026-08-26 06:32:10'),
+(759, 249, 'Hitam', NULL, 0, '2026-08-26 06:32:10', '2026-08-26 06:32:10'),
+(764, 252, 'Merah', 'products/option-values/LZyajMLHNLcmlLAhsYp0BpaiTsnqRRo1MzBMzaQA.jpg', 0, '2026-09-03 08:24:50', '2026-09-03 08:24:50'),
+(765, 253, 'S', NULL, 0, '2026-09-03 08:24:50', '2026-09-03 08:24:50'),
+(766, 253, 'M', NULL, 1, '2026-09-03 08:24:50', '2026-09-03 08:24:50'),
+(827, 274, 'M', NULL, 0, '2026-09-03 09:14:19', '2026-09-03 09:14:19'),
+(828, 274, 'L', NULL, 1, '2026-09-03 09:14:19', '2026-09-03 09:14:19'),
+(829, 274, 'XL', NULL, 2, '2026-09-03 09:14:19', '2026-09-03 09:14:19'),
+(830, 274, 'XXL', NULL, 3, '2026-09-03 09:14:19', '2026-09-03 09:14:19'),
+(831, 275, 'Hitam', 'products/option-values/1SDz4zGtrW1Yrbnx5gWsIH3XmCKQfiBs5PV2JDUc.jpg', 0, '2026-09-03 09:14:19', '2026-09-03 09:14:19'),
+(832, 275, 'Merah', 'products/option-values/Cz0kb11oWfc1brLLHKYnGOgOTSvCDDBZ8k5doEgf.jpg', 1, '2026-09-03 09:14:19', '2026-09-03 09:14:19'),
+(833, 276, 'Merah', NULL, 0, '2026-09-03 14:01:57', '2026-09-03 14:01:57'),
+(834, 277, 'S', NULL, 0, '2026-09-03 14:01:57', '2026-09-03 14:01:57'),
+(835, 277, 'M', NULL, 1, '2026-09-03 14:01:57', '2026-09-03 14:01:57'),
+(836, 278, 'Biru', NULL, 0, '2026-09-03 14:09:16', '2026-09-03 14:09:16'),
+(837, 279, 'S', NULL, 0, '2026-09-03 14:09:16', '2026-09-03 14:09:16'),
+(866, 294, 'S', NULL, 0, '2026-09-04 15:38:13', '2026-09-04 15:38:13'),
+(867, 295, 'Merah', NULL, 0, '2026-09-04 15:38:13', '2026-09-04 15:38:13'),
+(868, 295, 'Kuning', NULL, 1, '2026-09-04 15:38:13', '2026-09-04 15:38:13'),
+(869, 295, 'Hijau', NULL, 2, '2026-09-04 15:38:13', '2026-09-04 15:38:13');
 
 -- --------------------------------------------------------
 
@@ -92236,10 +92325,26 @@ INSERT INTO `product_variants` (`id`, `product_id`, `sku`, `price`, `discount_pr
 (978, 42, '457457', 90000.00, NULL, 100, 500, 1, '2026-08-23 03:28:22', '2026-08-23 03:28:22'),
 (979, 42, '768768', 90000.00, NULL, 100, 500, 1, '2026-08-23 03:28:22', '2026-08-23 03:28:22'),
 (980, 42, '868543', 90000.00, NULL, 100, 500, 1, '2026-08-23 03:28:22', '2026-08-23 03:28:22'),
-(985, 43, '2352626', 90000.00, 54000.00, 50, 500, 1, '2026-08-23 03:32:46', '2026-08-23 03:32:46'),
-(986, 43, '4574578', 90000.00, NULL, 50, 500, 1, '2026-08-23 03:32:46', '2026-08-23 03:32:46'),
-(987, 43, '2363737', 90000.00, NULL, 50, 500, 1, '2026-08-23 03:32:46', '2026-08-23 03:32:46'),
-(988, 43, '6346373', 90000.00, NULL, 50, 500, 1, '2026-08-23 03:32:46', '2026-08-23 03:32:46');
+(1120, 43, '2352626', 90000.00, 54000.00, 50, 500, 1, '2026-08-26 06:32:10', '2026-08-26 06:32:10'),
+(1121, 43, '4574578', 90000.00, NULL, 50, 500, 1, '2026-08-26 06:32:10', '2026-08-26 06:32:10'),
+(1122, 43, '2363737', 90000.00, 63000.00, 50, 500, 1, '2026-08-26 06:32:10', '2026-08-26 06:32:10'),
+(1123, 43, '6346373', 90000.00, 72000.00, 50, 500, 1, '2026-08-26 06:32:10', '2026-08-26 06:32:10'),
+(1127, 69, '657568568', 50000.00, NULL, 20, 500, 1, '2026-09-03 08:24:50', '2026-09-03 08:24:50'),
+(1128, 69, '5686797897', 50000.00, NULL, 20, 500, 1, '2026-09-03 08:24:50', '2026-09-03 08:24:50'),
+(1209, 45, '999991', 90000.00, NULL, 50, 500, 1, '2026-09-03 09:14:19', '2026-09-03 09:14:19'),
+(1210, 45, '888882', 90000.00, NULL, 50, 1000, 1, '2026-09-03 09:14:19', '2026-09-03 09:14:19'),
+(1211, 45, '999992', 90000.00, NULL, 50, 500, 1, '2026-09-03 09:14:19', '2026-09-03 09:14:19'),
+(1212, 45, '888883', 90000.00, NULL, 50, 1000, 1, '2026-09-03 09:14:19', '2026-09-03 09:14:19'),
+(1213, 45, '999993', 90000.00, NULL, 50, 500, 1, '2026-09-03 09:14:19', '2026-09-03 09:14:19'),
+(1214, 45, '888884', 90000.00, NULL, 50, 1000, 1, '2026-09-03 09:14:19', '2026-09-03 09:14:19'),
+(1215, 45, '999994', 90000.00, NULL, 50, 500, 1, '2026-09-03 09:14:19', '2026-09-03 09:14:19'),
+(1216, 45, '888885', 90000.00, NULL, 50, 1000, 1, '2026-09-03 09:14:19', '2026-09-03 09:14:19'),
+(1217, 70, '7685458584', 50000.00, NULL, 50, 500, 1, '2026-09-03 14:01:57', '2026-09-03 14:01:57'),
+(1218, 70, '7568434645', 50000.00, NULL, 50, 500, 1, '2026-09-03 14:01:57', '2026-09-03 14:01:57'),
+(1219, 71, '34647374', 50000.00, NULL, 50, 500, 1, '2026-09-03 14:09:16', '2026-09-03 14:09:16'),
+(1241, 66, '325235626', 90000.00, 72000.00, 50, 500, 1, '2026-09-04 15:38:13', '2026-09-04 15:38:13'),
+(1242, 66, '346346347', 90000.00, 63000.00, 50, 500, 1, '2026-09-04 15:38:13', '2026-09-04 15:38:13'),
+(1243, 66, '654747457', 90000.00, 81000.00, 50, 1000, 1, '2026-09-04 15:38:13', '2026-09-04 15:38:13');
 
 -- --------------------------------------------------------
 
@@ -92266,14 +92371,68 @@ INSERT INTO `product_variant_values` (`id`, `product_variant_id`, `product_optio
 (1794, 979, 597, '2026-08-23 03:28:22', '2026-08-23 03:28:22'),
 (1795, 980, 595, '2026-08-23 03:28:22', '2026-08-23 03:28:22'),
 (1796, 980, 598, '2026-08-23 03:28:22', '2026-08-23 03:28:22'),
-(1805, 985, 604, '2026-08-23 03:32:46', '2026-08-23 03:32:46'),
-(1806, 985, 608, '2026-08-23 03:32:46', '2026-08-23 03:32:46'),
-(1807, 986, 605, '2026-08-23 03:32:46', '2026-08-23 03:32:46'),
-(1808, 986, 608, '2026-08-23 03:32:46', '2026-08-23 03:32:46'),
-(1809, 987, 606, '2026-08-23 03:32:46', '2026-08-23 03:32:46'),
-(1810, 987, 608, '2026-08-23 03:32:46', '2026-08-23 03:32:46'),
-(1811, 988, 607, '2026-08-23 03:32:46', '2026-08-23 03:32:46'),
-(1812, 988, 608, '2026-08-23 03:32:46', '2026-08-23 03:32:46');
+(2052, 1120, 755, '2026-08-26 06:32:10', '2026-08-26 06:32:10'),
+(2053, 1120, 759, '2026-08-26 06:32:10', '2026-08-26 06:32:10'),
+(2054, 1121, 756, '2026-08-26 06:32:10', '2026-08-26 06:32:10'),
+(2055, 1121, 759, '2026-08-26 06:32:10', '2026-08-26 06:32:10'),
+(2056, 1122, 757, '2026-08-26 06:32:10', '2026-08-26 06:32:10'),
+(2057, 1122, 759, '2026-08-26 06:32:10', '2026-08-26 06:32:10'),
+(2058, 1123, 758, '2026-08-26 06:32:10', '2026-08-26 06:32:10'),
+(2059, 1123, 759, '2026-08-26 06:32:10', '2026-08-26 06:32:10'),
+(2066, 1127, 764, '2026-09-03 08:24:50', '2026-09-03 08:24:50'),
+(2067, 1127, 765, '2026-09-03 08:24:50', '2026-09-03 08:24:50'),
+(2068, 1128, 764, '2026-09-03 08:24:50', '2026-09-03 08:24:50'),
+(2069, 1128, 766, '2026-09-03 08:24:50', '2026-09-03 08:24:50'),
+(2230, 1209, 827, '2026-09-03 09:14:19', '2026-09-03 09:14:19'),
+(2231, 1209, 831, '2026-09-03 09:14:19', '2026-09-03 09:14:19'),
+(2232, 1210, 827, '2026-09-03 09:14:19', '2026-09-03 09:14:19'),
+(2233, 1210, 832, '2026-09-03 09:14:19', '2026-09-03 09:14:19'),
+(2234, 1211, 828, '2026-09-03 09:14:19', '2026-09-03 09:14:19'),
+(2235, 1211, 831, '2026-09-03 09:14:19', '2026-09-03 09:14:19'),
+(2236, 1212, 828, '2026-09-03 09:14:19', '2026-09-03 09:14:19'),
+(2237, 1212, 832, '2026-09-03 09:14:19', '2026-09-03 09:14:19'),
+(2238, 1213, 829, '2026-09-03 09:14:19', '2026-09-03 09:14:19'),
+(2239, 1213, 831, '2026-09-03 09:14:19', '2026-09-03 09:14:19'),
+(2240, 1214, 829, '2026-09-03 09:14:19', '2026-09-03 09:14:19'),
+(2241, 1214, 832, '2026-09-03 09:14:19', '2026-09-03 09:14:19'),
+(2242, 1215, 830, '2026-09-03 09:14:19', '2026-09-03 09:14:19'),
+(2243, 1215, 831, '2026-09-03 09:14:19', '2026-09-03 09:14:19'),
+(2244, 1216, 830, '2026-09-03 09:14:19', '2026-09-03 09:14:19'),
+(2245, 1216, 832, '2026-09-03 09:14:19', '2026-09-03 09:14:19'),
+(2246, 1217, 833, '2026-09-03 14:01:57', '2026-09-03 14:01:57'),
+(2247, 1217, 834, '2026-09-03 14:01:57', '2026-09-03 14:01:57'),
+(2248, 1218, 833, '2026-09-03 14:01:57', '2026-09-03 14:01:57'),
+(2249, 1218, 835, '2026-09-03 14:01:57', '2026-09-03 14:01:57'),
+(2250, 1219, 836, '2026-09-03 14:09:16', '2026-09-03 14:09:16'),
+(2251, 1219, 837, '2026-09-03 14:09:16', '2026-09-03 14:09:16'),
+(2294, 1241, 866, '2026-09-04 15:38:13', '2026-09-04 15:38:13'),
+(2295, 1241, 867, '2026-09-04 15:38:13', '2026-09-04 15:38:13'),
+(2296, 1242, 866, '2026-09-04 15:38:13', '2026-09-04 15:38:13'),
+(2297, 1242, 868, '2026-09-04 15:38:13', '2026-09-04 15:38:13'),
+(2298, 1243, 866, '2026-09-04 15:38:13', '2026-09-04 15:38:13'),
+(2299, 1243, 869, '2026-09-04 15:38:13', '2026-09-04 15:38:13');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `promo_bars`
+--
+
+CREATE TABLE `promo_bars` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `text_left` text DEFAULT NULL,
+  `text_right` text DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `promo_bars`
+--
+
+INSERT INTO `promo_bars` (`id`, `text_left`, `text_right`, `is_active`, `created_at`, `updated_at`) VALUES
+(1, 'GRATIS ONGKIR UNTUK PESANAN DI ATAS Rp750.000', 'DISKON 20% UNTUK PESANAN PERTAMA | KODE: BAROKAH01', 1, '2026-09-02 16:14:47', '2026-09-02 16:17:11');
 
 -- --------------------------------------------------------
 
@@ -92295,10 +92454,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('2QvP2iKuLfUxcyBik95RltGqvqs4ErCk6cUAdoCU', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoieXF6b3kyckJHa0I2UUVrQnlSbUJuOUR0REN2Q1luekg2OEE1QmdWVyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1787449572),
-('6acS3M61z4jeyQOX9TWW5dDRpGSJORmRMIliq7hs', 3, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', 'YTo5OntzOjY6Il90b2tlbiI7czo0MDoiTDFSUDJXOHdzWEE4VkVFdm44ZVdDYmtvbmlYdWlvYXYyRDI2ZVNScCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Mzc6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9hZG1pbi9kYXNoYm9hcmQiO3M6NToicm91dGUiO3M6MTU6ImFkbWluLmRhc2hib2FyZCI7fXM6NTU6ImxvZ2luX2N1c3RvbWVyXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MztzOjM6InVybCI7YToxOntzOjg6ImludGVuZGVkIjtzOjM3OiJodHRwOi8vMTI3LjAuMC4xOjgwMDAvYWRtaW4vZGFzaGJvYXJkIjt9czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MztzOjE1OiJvbGRfY2FydF9iYWNrdXAiO2E6MDp7fXM6NDoiY2FydCI7YToxOntpOjA7YTo5OntzOjEwOiJwcm9kdWN0X2lkIjtpOjQyO3M6MTA6InZhcmlhbnRfaWQiO2k6OTgwO3M6MTI6InByb2R1Y3RfbmFtZSI7czozOiJ0ZXMiO3M6MTI6InZhcmlhbnRfbmFtZSI7czo5OiJIaXRhbSAvIEwiO3M6NToicHJpY2UiO3M6ODoiOTAwMDAuMDAiO3M6ODoicXVhbnRpdHkiO2k6MTtzOjY6IndlaWdodCI7aTo1MDA7czo1OiJpbWFnZSI7czo1MzoicHJvZHVjdHMvZ0huMWpJNzdhYmxKUFFxU0t3eFpzY1JBUzBCVGplSXJGTEs4QlF3RC5qcGciO3M6NDoic2x1ZyI7czozOiJ0ZXMiO319czoxMDoiaXNfYnV5X25vdyI7YjoxO30=', 1787456001),
-('glHQV337IDztbqlN4PF5Q79N9WLE3WlntoCzCaUN', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoiSXNwbWo1SG1wcHFLeHdiVU5RN1lsWFhDOFJYWTl6dUd0ME9SOEtOWiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1787449345),
-('KgLHIx1cYXpP62FqN3rGuulXBxNNai6ZArkLURwB', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoiSVNOclhhS1NGbUdMdzVTWVlaMGpxeHI3Q0xJU2pLZ0tXZFFLczNLMSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1787449155);
+('Xp4UZYKIBHzyO3HIPgwVDheljXcBkID5oAwIDbJS', 3, '127.0.0.1', 'Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Mobile Safari/537.36', 'YTo5OntzOjY6Il90b2tlbiI7czo0MDoiSkN0ZWo0VGdSQlMyNFR3VlJqT1hSU3VxT1lZN1JqbVltWGx0NE5SeCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzY6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC93aXNobGlzdC9wb3B1cCI7czo1OiJyb3V0ZSI7czoyMzoiY3VzdG9tZXIud2lzaGxpc3QucG9wdXAiO31zOjU1OiJsb2dpbl9jdXN0b21lcl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjQ7czoxNToib2xkX2NhcnRfYmFja3VwIjthOjE6e2k6MDthOjEwOntzOjEwOiJwcm9kdWN0X2lkIjtpOjY2O3M6MTA6InZhcmlhbnRfaWQiO2k6MTI0MTtzOjEyOiJwcm9kdWN0X25hbWUiO3M6MTA4OiJITSBCYXJva2FoIC0gQ2VsYW5hIE9sYWhyYWdhIFBhbmphbmcgTGFraSBMYWtpIFBlcmVtcHVhbiBDZWxhbmEgVHJhaW5pbmcgVW5pc2V4IFVudHVrIE9sYWhyYWdhIFNlbmFtIEpvZ2dpbmciO3M6MTI6InZhcmlhbnRfbmFtZSI7czo5OiJTIC8gTWVyYWgiO3M6NToicHJpY2UiO2Q6NzIwMDA7czoxNDoib3JpZ2luYWxfcHJpY2UiO3M6ODoiOTAwMDAuMDAiO3M6ODoicXVhbnRpdHkiO2k6MTtzOjY6IndlaWdodCI7aTo1MDA7czo1OiJpbWFnZSI7czo1MzoicHJvZHVjdHMvTHY5TTRITnkxS3hWdEZTRklGVkxBTm5KUHNlVTNEc3E5dkF5R1ptaC5qcGciO3M6NDoic2x1ZyI7czoxMDY6ImhtLWJhcm9rYWgtY2VsYW5hLW9sYWhyYWdhLXBhbmphbmctbGFraS1sYWtpLXBlcmVtcHVhbi1jZWxhbmEtdHJhaW5pbmctdW5pc2V4LXVudHVrLW9sYWhyYWdhLXNlbmFtLWpvZ2dpbmciO319czoxMDoiaXNfYnV5X25vdyI7YjoxO3M6MzoidXJsIjthOjE6e3M6ODoiaW50ZW5kZWQiO3M6Mzg6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9hZG1pbi9jYXRlZ29yaWVzIjt9czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MztzOjQ6ImNhcnQiO2E6MTp7aTowO2E6MTA6e3M6MTA6InByb2R1Y3RfaWQiO2k6NjY7czoxMDoidmFyaWFudF9pZCI7aToxMjQxO3M6MTI6InByb2R1Y3RfbmFtZSI7czoxMDg6IkhNIEJhcm9rYWggLSBDZWxhbmEgT2xhaHJhZ2EgUGFuamFuZyBMYWtpIExha2kgUGVyZW1wdWFuIENlbGFuYSBUcmFpbmluZyBVbmlzZXggVW50dWsgT2xhaHJhZ2EgU2VuYW0gSm9nZ2luZyI7czoxMjoidmFyaWFudF9uYW1lIjtzOjk6IlMgLyBNZXJhaCI7czo1OiJwcmljZSI7ZDo3MjAwMDtzOjE0OiJvcmlnaW5hbF9wcmljZSI7czo4OiI5MDAwMC4wMCI7czo4OiJxdWFudGl0eSI7aToxO3M6Njoid2VpZ2h0IjtpOjUwMDtzOjU6ImltYWdlIjtzOjUzOiJwcm9kdWN0cy9MdjlNNEhOeTFLeFZ0RlNGSUZWTEFObkpQc2VVM0RzcTl2QXlHWm1oLmpwZyI7czo0OiJzbHVnIjtzOjEwNjoiaG0tYmFyb2thaC1jZWxhbmEtb2xhaHJhZ2EtcGFuamFuZy1sYWtpLWxha2ktcGVyZW1wdWFuLWNlbGFuYS10cmFpbmluZy11bmlzZXgtdW50dWstb2xhaHJhZ2Etc2VuYW0tam9nZ2luZyI7fX19', 1788558306);
 
 -- --------------------------------------------------------
 
@@ -92394,14 +92550,11 @@ INSERT INTO `size_guides` (`id`, `category_id`, `size`, `dimensions`, `sort_orde
 (9, 7, 'XL', '{\"Lebar Pinggang\": 36, \"Panjang\": 104, \"Lebar Paha\": 29}', 3, 1, '2026-08-19 18:52:58', '2026-08-19 18:52:58'),
 (10, 7, 'XXL', '{\"Lebar Pinggang\": 38, \"Panjang\": 107, \"Lebar Paha\": 30}', 4, 1, '2026-08-19 18:52:58', '2026-08-19 18:52:58'),
 (11, 7, '3XL', '{\"Lebar Pinggang\": 40, \"Panjang\": 110, \"Lebar Paha\": 31}', 5, 1, '2026-08-19 18:52:58', '2026-08-19 18:52:58'),
-(22, 14, 'S', '{\"Lebar Dada\": 57, \"Panjang Lengan\": 58, \"Panjang Badan\": 68}', 0, 1, '2026-08-19 20:14:58', '2026-08-19 20:14:58'),
-(23, 14, 'M', '{\"Lebar Dada\": 61, \"Panjang Lengan\": 59, \"Panjang Badan\": 70}', 1, 1, '2026-08-19 20:14:58', '2026-08-19 20:14:58'),
-(24, 14, 'L', '{\"Lebar Dada\": 65, \"Panjang Lengan\": 60, \"Panjang Badan\": 72}', 2, 1, '2026-08-19 20:14:58', '2026-08-19 20:14:58'),
-(25, 14, 'XL', '{\"Lebar Dada\": 69, \"Panjang Lengan\": 61, \"Panjang Badan\": 74}', 3, 1, '2026-08-19 20:14:58', '2026-08-19 20:14:58'),
-(26, 14, 'XXL', '{\"Lebar Dada\": 73, \"Panjang Lengan\": 62, \"Panjang Badan\": 76}', 4, 1, '2026-08-19 20:14:58', '2026-08-19 20:14:58'),
-(27, 14, '3XL', '{\"Lebar Dada\": 77, \"Panjang Lengan\": 63, \"Panjang Badan\": 78}', 5, 1, '2026-08-19 20:14:58', '2026-08-19 20:14:58'),
-(28, 14, '4XL', '{\"Lebar Dada\": 81, \"Panjang Lengan\": 64, \"Panjang Badan\": 80}', 6, 1, '2026-08-19 20:14:58', '2026-08-19 20:14:58'),
-(29, 14, '5XL', '{\"Lebar Dada\": 85, \"Panjang Lengan\": 65, \"Panjang Badan\": 82}', 7, 1, '2026-08-19 20:14:58', '2026-08-19 20:14:58'),
+(23, 14, 'M', '{\"Panjang Bawahan\":94,\"Lingkar Pinggang\":86}', 0, 1, '2026-08-19 20:14:58', '2026-09-04 18:14:02'),
+(24, 14, 'L', '{\"Panjang Bawahan\":96,\"Lingkar Pinggang\":88}', 1, 1, '2026-08-19 20:14:58', '2026-09-04 18:14:02'),
+(25, 14, 'XL', '{\"Panjang Bawahan\":98,\"Lingkar Pinggang\":90}', 2, 1, '2026-08-19 20:14:58', '2026-09-04 18:14:02'),
+(26, 14, 'XXL', '{\"Panjang Bawahan\":100,\"Lingkar Pinggang\":92}', 3, 1, '2026-08-19 20:14:58', '2026-09-04 18:14:02'),
+(27, 14, '3XL', '{\"Panjang Bawahan\":102,\"Lingkar Pinggang\":94}', 4, 1, '2026-08-19 20:14:58', '2026-09-04 18:14:02'),
 (37, 10, 'S', '{\"Lebar Dada\":10,\"Panjang Lengan\":10,\"Panjang Badan\":10}', 0, 1, '2026-08-21 18:05:52', '2026-08-21 18:05:52'),
 (38, 10, 'M', '{\"Lebar Dada\":10,\"Panjang Lengan\":10,\"Panjang Badan\":10}', 1, 1, '2026-08-21 18:05:52', '2026-08-21 18:05:52'),
 (39, 10, 'L', '{\"Lebar Dada\":10,\"Panjang Lengan\":10,\"Panjang Badan\":10}', 2, 1, '2026-08-21 18:05:52', '2026-08-21 18:05:52'),
@@ -92491,7 +92644,7 @@ CREATE TABLE `users` (
 
 INSERT INTO `users` (`id`, `name`, `email`, `role`, `email_verified_at`, `password`, `remember_token`, `created_at`, `updated_at`) VALUES
 (3, 'Super Admin', 'admin@ecommerce.com', 'admin', NULL, '$2y$12$52AZlaZmHVId3rmxrkTJou7fPtVaCdE8FL9NZISQ5hrqBlcm/ySr2', NULL, '2026-08-09 18:28:08', '2026-08-09 18:28:08'),
-(4, 'Muhamad Rafli Repmihar Augst', 'mraflyyy26@gmail.com', 'customer', NULL, '$2y$12$VLfOVRL4hejEtIaGRxRskOWorjpgWhGm/yLHPuPKJ9NdGiLdBDacK', 'usCpHUgyP5E7cEOMssuVD3HQEchDcNRinYVfOmWpH6gO2lvHMaeP7DsLkPPG', '2026-08-21 20:17:30', '2026-08-21 20:17:30'),
+(4, 'Muhamad Rafli Repmihar Augst', 'mraflyyy26@gmail.com', 'customer', NULL, '$2y$12$VLfOVRL4hejEtIaGRxRskOWorjpgWhGm/yLHPuPKJ9NdGiLdBDacK', 'ImUDDOvI2TS7IS3aktVy3778feAm7NsEkKooPl3JsBVsrx4tto4rXJbtvu9e', '2026-08-21 20:17:30', '2026-08-21 20:17:30'),
 (5, 'Arum Hikmah Widi', 'arumhikmahwidi@gmail.com', 'customer', NULL, '$2y$12$bpyuEXd7osragGuukwyVGekWJcqzepbst.Ei.KJH83RDDFoScmKR2', NULL, '2026-08-22 17:58:05', '2026-08-22 17:58:05'),
 (6, 'Muhamad Abdul', 'muhamadabdul@gmail.com', 'customer', NULL, '$2y$12$bJf4yqrapImLI7eVgkWKmubMTEGkQWTh7yw58MVA8LaOYAovVKdlC', NULL, '2026-08-22 18:16:57', '2026-08-22 18:16:57');
 
@@ -92519,6 +92672,56 @@ CREATE TABLE `user_addresses` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `vouchers`
+--
+
+CREATE TABLE `vouchers` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `code` varchar(255) NOT NULL,
+  `description` text DEFAULT NULL,
+  `terms_and_conditions` text DEFAULT NULL,
+  `discount_type` enum('fixed','percentage') NOT NULL,
+  `discount_value` decimal(12,2) NOT NULL,
+  `max_discount_amount` decimal(12,2) DEFAULT NULL,
+  `min_transaction_amount` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `usage_limit` int(10) UNSIGNED DEFAULT NULL,
+  `used_count` int(10) UNSIGNED NOT NULL DEFAULT 0,
+  `limit_per_user` int(10) UNSIGNED NOT NULL DEFAULT 1,
+  `start_date` datetime NOT NULL,
+  `end_date` datetime NOT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `is_public` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `vouchers`
+--
+
+INSERT INTO `vouchers` (`id`, `name`, `code`, `description`, `terms_and_conditions`, `discount_type`, `discount_value`, `max_discount_amount`, `min_transaction_amount`, `usage_limit`, `used_count`, `limit_per_user`, `start_date`, `end_date`, `is_active`, `is_public`, `created_at`, `updated_at`) VALUES
+(1, 'DISKON GAJIHAN 100RB', 'PAYDAY100K', NULL, '1. Berlaku untuk seluruh produk', 'fixed', 100000.00, NULL, 300000.00, 3, 0, 1, '2026-08-26 08:06:00', '2026-08-27 08:06:00', 1, 1, '2026-08-26 01:08:41', '2026-08-26 01:08:41');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `voucher_usages`
+--
+
+CREATE TABLE `voucher_usages` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `voucher_id` bigint(20) UNSIGNED NOT NULL,
+  `user_id` bigint(20) UNSIGNED NOT NULL,
+  `order_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `discount_applied` decimal(12,2) NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `wishlists`
 --
 
@@ -92529,6 +92732,14 @@ CREATE TABLE `wishlists` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `wishlists`
+--
+
+INSERT INTO `wishlists` (`id`, `user_id`, `product_id`, `created_at`, `updated_at`) VALUES
+(61, 4, 66, '2026-09-04 18:19:16', '2026-09-04 18:19:16'),
+(62, 4, 70, '2026-09-04 20:21:53', '2026-09-04 20:21:53');
 
 --
 -- Indexes for dumped tables
@@ -92788,6 +92999,12 @@ ALTER TABLE `product_variant_values`
   ADD KEY `product_variant_values_product_option_value_id_foreign` (`product_option_value_id`);
 
 --
+-- Indexes for table `promo_bars`
+--
+ALTER TABLE `promo_bars`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Indexes for table `sessions`
 --
 ALTER TABLE `sessions`
@@ -92813,7 +93030,7 @@ ALTER TABLE `sizes`
 --
 ALTER TABLE `size_guides`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `size_guides_category_id_size_unique` (`category_id`,`size`);
+  ADD KEY `size_guides_category_id_foreign` (`category_id`);
 
 --
 -- Indexes for table `stock_histories`
@@ -92844,6 +93061,22 @@ ALTER TABLE `users`
 ALTER TABLE `user_addresses`
   ADD PRIMARY KEY (`id`),
   ADD KEY `user_addresses_user_id_foreign` (`user_id`);
+
+--
+-- Indexes for table `vouchers`
+--
+ALTER TABLE `vouchers`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `vouchers_code_unique` (`code`);
+
+--
+-- Indexes for table `voucher_usages`
+--
+ALTER TABLE `voucher_usages`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `voucher_usages_voucher_id_foreign` (`voucher_id`),
+  ADD KEY `voucher_usages_user_id_foreign` (`user_id`),
+  ADD KEY `voucher_usages_order_id_foreign` (`order_id`);
 
 --
 -- Indexes for table `wishlists`
@@ -92891,13 +93124,13 @@ ALTER TABLE `article_likes`
 -- AUTO_INCREMENT for table `banners`
 --
 ALTER TABLE `banners`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `carts`
 --
 ALTER TABLE `carts`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=43;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=78;
 
 --
 -- AUTO_INCREMENT for table `categories`
@@ -92957,7 +93190,7 @@ ALTER TABLE `marketplaces`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=62;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=71;
 
 --
 -- AUTO_INCREMENT for table `orders`
@@ -92981,31 +93214,31 @@ ALTER TABLE `privacy_policies`
 -- AUTO_INCREMENT for table `products`
 --
 ALTER TABLE `products`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=44;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=72;
 
 --
 -- AUTO_INCREMENT for table `product_features`
 --
 ALTER TABLE `product_features`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=38;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=110;
 
 --
 -- AUTO_INCREMENT for table `product_images`
 --
 ALTER TABLE `product_images`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=65;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=143;
 
 --
 -- AUTO_INCREMENT for table `product_options`
 --
 ALTER TABLE `product_options`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=174;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=296;
 
 --
 -- AUTO_INCREMENT for table `product_option_values`
 --
 ALTER TABLE `product_option_values`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=609;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=870;
 
 --
 -- AUTO_INCREMENT for table `product_sizes`
@@ -93017,13 +93250,19 @@ ALTER TABLE `product_sizes`
 -- AUTO_INCREMENT for table `product_variants`
 --
 ALTER TABLE `product_variants`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=989;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1244;
 
 --
 -- AUTO_INCREMENT for table `product_variant_values`
 --
 ALTER TABLE `product_variant_values`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1813;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2300;
+
+--
+-- AUTO_INCREMENT for table `promo_bars`
+--
+ALTER TABLE `promo_bars`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `settings`
@@ -93041,13 +93280,13 @@ ALTER TABLE `sizes`
 -- AUTO_INCREMENT for table `size_guides`
 --
 ALTER TABLE `size_guides`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=55;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=56;
 
 --
 -- AUTO_INCREMENT for table `stock_histories`
 --
 ALTER TABLE `stock_histories`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `terms`
@@ -93068,10 +93307,22 @@ ALTER TABLE `user_addresses`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `vouchers`
+--
+ALTER TABLE `vouchers`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT for table `voucher_usages`
+--
+ALTER TABLE `voucher_usages`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `wishlists`
 --
 ALTER TABLE `wishlists`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=63;
 
 --
 -- Constraints for dumped tables
@@ -93202,6 +93453,14 @@ ALTER TABLE `stock_histories`
 --
 ALTER TABLE `user_addresses`
   ADD CONSTRAINT `user_addresses_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `voucher_usages`
+--
+ALTER TABLE `voucher_usages`
+  ADD CONSTRAINT `voucher_usages_order_id_foreign` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `voucher_usages_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `voucher_usages_voucher_id_foreign` FOREIGN KEY (`voucher_id`) REFERENCES `vouchers` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `wishlists`

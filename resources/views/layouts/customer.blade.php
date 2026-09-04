@@ -26,10 +26,265 @@
     
     {{-- CSS --}}
     <link rel="stylesheet" href="{{ asset('css/style.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/navbar.css') }}">
     <link rel="stylesheet" href="{{ asset('css/popup.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/product_show.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/cart-page.css') }}">
     <link rel="stylesheet" href="{{ asset('css/product.css') }}">
     <link rel="stylesheet" href="{{ asset('css/variant-modal.css') }}">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+
+    <style>
+        /* ============================================
+           VOUCHER POPUP (Right Side Slide)
+           ============================================ */
+        .voucher-popup-overlay {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            background: rgba(0, 0, 0, 0.5) !important;
+            z-index: 99998 !important;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .voucher-popup-overlay.active {
+            opacity: 1 !important;
+            visibility: visible !important;
+            pointer-events: auto !important;
+        }
+
+        .voucher-popup {
+            position: fixed !important;
+            top: 0 !important;
+            right: 0 !important;
+            width: 420px !important;
+            max-width: 90vw !important;
+            height: 100vh !important;
+            background: #ffffff !important;
+            z-index: 99999 !important;
+            transform: translateX(100%) !important;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            box-shadow: -4px 0 25px rgba(0, 0, 0, 0.2) !important;
+            display: flex !important;
+            flex-direction: column !important;
+        }
+
+        .voucher-popup.active {
+            transform: translateX(0) !important;
+        }
+
+        .voucher-popup-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.5vw 1.5vw 1vw;
+            border-bottom: 0.1vw solid #e2e8f0;
+            flex-shrink: 0;
+        }
+
+        .voucher-popup-header h2 {
+            font-size: 1.2vw;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .voucher-popup-header .close-popup {
+            background: none;
+            border: none;
+            font-size: 1.5vw;
+            color: #94a3b8;
+            cursor: pointer;
+            padding: 0.2vw 0.5vw;
+            border-radius: 0.3vw;
+            transition: all 0.2s;
+            line-height: 1;
+        }
+
+        .voucher-popup-header .close-popup:hover {
+            color: #0f172a;
+            background: #f1f5f9;
+        }
+
+        .voucher-popup-body {
+            padding: 1.5vw;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        /* Voucher Input in Popup */
+        .popup-voucher-input-group {
+            display: flex;
+            gap: 0.5vw;
+            margin-bottom: 1vw;
+        }
+
+        .popup-voucher-input {
+            flex: 1;
+            padding: 0.7vw 1vw;
+            border: 0.1vw solid #e2e8f0;
+            border-radius: 0.7vw;
+            font-size: 0.8vw;
+            color: #0f172a;
+            background: #ffffff;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            font-family: inherit;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .popup-voucher-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 0.2vw rgba(59, 130, 246, 0.1);
+        }
+
+        .popup-btn-apply {
+            padding: 0.7vw 1.5vw;
+            background: #0f172a;
+            color: #ffffff;
+            border: none;
+            border-radius: 0.7vw;
+            font-size: 0.8vw;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            white-space: nowrap;
+        }
+
+        .popup-btn-apply:hover {
+            background: #1e293b;
+        }
+
+        .popup-btn-apply:active {
+            transform: scale(0.97);
+        }
+
+        .popup-btn-apply:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Voucher List in Popup */
+        .popup-voucher-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.6vw;
+        }
+
+        .popup-voucher-list .list-title {
+            font-size: 0.8vw;
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 0.2vw;
+        }
+
+        .popup-voucher-item {
+            padding: 0.8vw 1vw;
+            border: 0.1vw solid #e2e8f0;
+            border-radius: 0.7vw;
+            background: #ffffff;
+            transition: all 0.2s ease;
+        }
+
+        .popup-voucher-item.applicable {
+            border-color: #86efac;
+            background: #f0fdf4;
+        }
+
+        .popup-voucher-item.applicable:hover {
+            border-color: #22c55e;
+            box-shadow: 0 0.1vw 0.4vw rgba(34, 197, 94, 0.15);
+        }
+
+        .popup-voucher-item.not-applicable {
+            opacity: 0.5;
+        }
+
+        .popup-voucher-item .item-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5vw;
+        }
+
+        .popup-voucher-item .item-info {
+            display: flex;
+            align-items: center;
+            gap: 0.6vw;
+            flex-wrap: wrap;
+            flex: 1;
+        }
+
+        .popup-voucher-item .item-code {
+            font-family: monospace;
+            font-weight: 700;
+            font-size: 0.65vw;
+            padding: 0.1vw 0.5vw;
+            background: #e2e8f0;
+            color: #0f172a;
+            border-radius: 0.3vw;
+            letter-spacing: 0.05em;
+        }
+
+        .popup-voucher-item .item-name {
+            font-size: 0.75vw;
+            font-weight: 500;
+            color: #0f172a;
+        }
+
+        .popup-voucher-item .item-discount {
+            font-size: 0.7vw;
+            font-weight: 600;
+            color: #16a34a;
+        }
+
+        .popup-voucher-item .item-min {
+            font-size: 0.6vw;
+            color: #94a3b8;
+        }
+
+        .popup-voucher-item .btn-use {
+            padding: 0.25vw 0.8vw;
+            background: #22c55e;
+            color: white;
+            border: none;
+            border-radius: 0.4vw;
+            font-size: 0.6vw;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            white-space: nowrap;
+        }
+
+        .popup-voucher-item .btn-use:hover {
+            background: #16a34a;
+            transform: scale(1.05);
+        }
+
+        .popup-voucher-item .btn-use:active {
+            transform: scale(0.95);
+        }
+
+        .popup-voucher-item .status-unavailable {
+            font-size: 0.6vw;
+            color: #94a3b8;
+            white-space: nowrap;
+        }
+
+        .popup-empty {
+            text-align: center;
+            padding: 2vw 0;
+            color: #94a3b8;
+            font-size: 0.8vw;
+        }
+    </style>
     
     {{-- Meta Description --}}
     @yield('meta_description')
@@ -59,8 +314,11 @@
                 </h2>
                 <div class="popup-header-actions">
                     <button id="cart-clear" class="btn-clear">
-                        <iconify-icon icon="mdi:delete-outline" width="16"></iconify-icon>
+                        <iconify-icon icon="mdi:delete-outline"></iconify-icon>
                         Kosongkan
+                    </button>
+                    <button id="wishlist-toggle" class="icon-btn icon-btn-wishlist" style="position:relative;" aria-label="Wishlist">
+                        <iconify-icon icon="mynaui:heart"></iconify-icon> Wishlist
                     </button>
                     <button id="cart-close" class="btn-close" aria-label="Tutup">✕</button>
                 </div>
@@ -114,7 +372,7 @@
                 </h2>
                 <div class="popup-header-actions">
                     <button id="wishlist-clear" class="btn-clear" style="display: none;">
-                        <iconify-icon icon="mdi:delete-outline" width="16"></iconify-icon>
+                        <iconify-icon icon="mdi:delete-outline"></iconify-icon>
                         Kosongkan
                     </button>
                     <button id="wishlist-close" class="btn-close" aria-label="Tutup">✕</button>
@@ -128,10 +386,40 @@
                         <iconify-icon icon="mdi:heart-outline"></iconify-icon>
                         <p>Wishlist kosong</p>
                         <p>Simpan produk favoritmu di sini!</p>
-                        <a href="{{ route('customer.products.index') }}" class="btn-primary">
-                            Mulai Belanja
-                        </a>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ============================================
+    VOUCHER POPUP (Right Side)
+    ============================================ --}}
+    <div class="voucher-popup-overlay" id="voucher-popup-overlay"></div>
+    <div class="voucher-popup" id="voucher-popup">
+        <div class="voucher-popup-header">
+            <h2>Pilih Voucher</h2>
+            <button type="button" class="close-popup" id="close-voucher-popup">✕</button>
+        </div>
+        <div class="voucher-popup-body">
+            {{-- Input Kode Voucher --}}
+            <div class="popup-voucher-input-group">
+                <input type="text" 
+                    id="popup-voucher-input" 
+                    placeholder="Masukkan kode promo..." 
+                    class="popup-voucher-input"
+                    maxlength="50">
+                <button type="button" class="popup-btn-apply" id="btn-apply-manual-voucher">
+                    Pakai
+                </button>
+            </div>
+
+            {{-- Daftar Voucher Tersedia --}}
+            <div class="popup-voucher-list" id="popup-voucher-list">
+                <p class="list-title">Voucher tersedia untuk kamu:</p>
+                {{-- Will be populated by JavaScript --}}
+                <div id="popup-voucher-items">
+                    {{-- Voucher items loaded via AJAX --}}
                 </div>
             </div>
         </div>
@@ -788,7 +1076,6 @@
 
         var swiper2 = new Swiper(".mySwiper", {
             slidesPerView: 1,
-            autoHeight: true,
             loop: true,
             effect: 'fade',
             navigation: {
@@ -800,16 +1087,21 @@
 
     <script>
         var swiperCategories = new Swiper(".categoriesSwiper", {
-            slidesPerView: 1,
+            slidesPerView: 3,
             spaceBetween: 10,
             navigation: {
                 nextEl: ".swiper-button-next",
                 prevEl: ".swiper-button-prev",
             },
+            autoplay: {
+                delay: 2500,
+                disableOnInteraction: true,
+                pauseOnMouseEnter: true,
+            },
             cssMode: true,
             breakpoints: {
                 640: { slidesPerView: 2, spaceBetween: 20 },
-                768: { slidesPerView: 2, spaceBetween: 30 },
+                768: { slidesPerView: 4, spaceBetween: 30 },
                 1024: { slidesPerView: 5, spaceBetween: 30 },
             },
         });
@@ -1032,6 +1324,403 @@
             }
         }
     </style>
+
+    <script>
+// ============================================
+// VOUCHER POPUP FUNCTIONS - GLOBAL SCOPE
+// ============================================
+
+// Open voucher popup
+function openVoucherPopup() {
+    var overlay = document.getElementById('voucher-popup-overlay');
+    var popup = document.getElementById('voucher-popup');
+    
+    if (overlay && popup) {
+        overlay.classList.add('active');
+        popup.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        
+        // Refresh voucher list
+        refreshVoucherList();
+        
+        // Focus input after animation
+        setTimeout(function() {
+            var input = document.getElementById('popup-voucher-input');
+            if (input) input.focus();
+        }, 350);
+    }
+}
+
+// Close voucher popup
+function closeVoucherPopup() {
+    var overlay = document.getElementById('voucher-popup-overlay');
+    var popup = document.getElementById('voucher-popup');
+    
+    if (overlay && popup) {
+        overlay.classList.remove('active');
+        popup.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+}
+
+// Refresh voucher list via AJAX
+function refreshVoucherList() {
+    var container = document.getElementById('popup-voucher-items');
+    if (!container) return;
+    
+    container.innerHTML = '<p style="text-align:center;padding:1vw 0;color:#94a3b8;">Memuat voucher...</p>';
+    
+    fetch('{{ route("customer.checkout.vouchers-ajax") }}', {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(function(response) { 
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json(); 
+    })
+    .then(function(data) {
+        if (data.success && data.vouchers && data.vouchers.length > 0) {
+            var html = '';
+            data.vouchers.forEach(function(voucher) {
+                var isApplicable = voucher.is_applicable;
+                var discountText = voucher.discount_type === 'fixed' 
+                    ? 'Rp ' + formatNumber(voucher.discount_value)
+                    : voucher.discount_value + '%' + (voucher.max_discount_amount ? ' (Maks. Rp ' + formatNumber(voucher.max_discount_amount) + ')' : '');
+                
+                html += `
+                    <div class="popup-voucher-item ${isApplicable ? 'applicable' : 'not-applicable'}">
+                        <div class="item-content">
+                            <div class="item-info">
+                                <span class="item-code">${voucher.code}</span>
+                                <span class="item-name">${voucher.name}</span>
+                                <span class="item-discount">${discountText}</span>
+                                <span class="item-min">Min. Rp ${formatNumber(voucher.min_transaction_amount)}</span>
+                            </div>
+                            ${isApplicable ? 
+                                `<button type="button" data-code="${voucher.code}" class="btn-use btn-apply-item">Pakai</button>` :
+                                `<span class="status-unavailable">${voucher.message || 'Tidak tersedia'}</span>`
+                            }
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = `
+                <div class="popup-empty">
+                    <p>Belum ada voucher tersedia saat ini.</p>
+                    <p style="font-size:0.7vw;margin-top:0.3vw;">Cek kembali nanti untuk promo menarik!</p>
+                </div>
+            `;
+        }
+    })
+    .catch(function(error) {
+        console.error('Error loading vouchers:', error);
+        container.innerHTML = '<p style="text-align:center;padding:1vw 0;color:#ef4444;">Gagal memuat voucher. Silakan refresh halaman.</p>';
+    });
+}
+
+// Apply voucher from popup
+function applyVoucherFromPopup(code) {
+    var voucherCode = code || document.getElementById('popup-voucher-input').value;
+    
+    if (!voucherCode) {
+        showToast('Masukkan kode voucher terlebih dahulu.', 'warning');
+        return;
+    }
+
+    voucherCode = voucherCode.trim().toUpperCase();
+
+    // Show loading state
+    var btn = document.getElementById('btn-apply-manual-voucher');
+    var originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Memproses...';
+
+    fetch('{{ route("customer.checkout.apply-voucher") }}', {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ voucher_code: voucherCode })
+    })
+    .then(function(response) { 
+        if (!response.ok) {
+            return response.json().then(function(err) {
+                throw new Error(err.message || 'Gagal menerapkan voucher');
+            });
+        }
+        return response.json(); 
+    })
+    .then(function(data) {
+        if (data.success) {
+            // Update summary UI
+            updateVoucherUI(data);
+            
+            // Close popup
+            closeVoucherPopup();
+            
+            showToast(data.message || 'Voucher berhasil diterapkan!', 'success');
+            
+            // Refresh page to update all states
+            setTimeout(function() {
+                location.reload();
+            }, 1000);
+        } else {
+            showToast(data.message || 'Gagal menerapkan voucher.', 'error');
+        }
+    })
+    .catch(function(error) {
+        showToast(error.message || 'Terjadi kesalahan. Silakan coba lagi.', 'error');
+    })
+    .finally(function() {
+        btn.disabled = false;
+        btn.textContent = originalText;
+    });
+}
+
+// Remove voucher
+function removeVoucher() {
+    fetch('{{ route("customer.checkout.remove-voucher") }}', {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+        if (data.success) {
+            // Update summary UI
+            var summary = document.getElementById('applied-voucher-summary');
+            if (summary) summary.classList.add('hidden');
+            
+            var discountText = document.getElementById('voucher-discount-text');
+            if (discountText) discountText.textContent = 'Rp 0';
+            
+            var actionText = document.getElementById('voucher-action-text');
+            if (actionText) actionText.textContent = 'Pilih Voucher';
+            
+            var input = document.getElementById('popup-voucher-input');
+            if (input) input.value = '';
+            
+            updateTotalWithVoucher(0);
+
+            showToast('Voucher dibatalkan.', 'info');
+            
+            // Refresh page
+            setTimeout(function() {
+                location.reload();
+            }, 500);
+        }
+    })
+    .catch(function() {
+        showToast('Gagal membatalkan voucher.', 'error');
+    });
+}
+
+// Update voucher UI in summary
+function updateVoucherUI(data) {
+    var summary = document.getElementById('applied-voucher-summary');
+    if (summary) {
+        summary.classList.remove('hidden');
+        var codeEl = summary.querySelector('.code');
+        var nameEl = summary.querySelector('.name');
+        var discountEl = summary.querySelector('.discount');
+        if (codeEl) codeEl.textContent = data.voucher.code;
+        if (nameEl) nameEl.textContent = data.voucher.name;
+        if (discountEl) discountEl.textContent = '-Rp ' + formatNumber(data.discount);
+    }
+    
+    var discountText = document.getElementById('voucher-discount-text');
+    if (discountText) discountText.textContent = '-Rp ' + formatNumber(data.discount);
+    
+    var actionText = document.getElementById('voucher-action-text');
+    if (actionText) actionText.textContent = 'Ganti Voucher';
+    
+    updateTotalWithVoucher(data.discount);
+}
+
+// Update total with voucher discount
+function updateTotalWithVoucher(discount) {
+    var subtotalEl = document.getElementById('subtotal-display');
+    var shippingEl = document.getElementById('shipping_cost');
+    var totalEl = document.getElementById('total-display');
+    
+    if (!subtotalEl || !totalEl) return;
+    
+    var subtotal = parseFloat(subtotalEl.textContent.replace(/[^0-9]/g, '')) || 0;
+    var shippingCost = parseInt(shippingEl ? shippingEl.value : 0) || 0;
+    var total = subtotal + shippingCost - discount;
+    totalEl.textContent = 'Rp ' + formatNumber(total);
+}
+
+// Format number with dots
+function formatNumber(num) {
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+// Show toast notification
+function showToast(message, type) {
+    type = type || 'info';
+    var colors = {
+        success: '#22c55e',
+        error: '#ef4444',
+        warning: '#f59e0b',
+        info: '#3b82f6'
+    };
+
+    var existing = document.querySelector('.voucher-toast');
+    if (existing) {
+        existing.remove();
+    }
+
+    var toast = document.createElement('div');
+    toast.className = 'voucher-toast';
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 2vw;
+        right: 2vw;
+        padding: 1vw 1.5vw;
+        background: ${colors[type] || colors.info};
+        color: white;
+        border-radius: 0.7vw;
+        font-size: 0.85vw;
+        box-shadow: 0 0.2vw 1vw rgba(0,0,0,0.15);
+        z-index: 99999;
+        max-width: 25vw;
+        transform: translateY(120%);
+        transition: transform 0.3s ease;
+        font-family: inherit;
+    `;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    setTimeout(function() {
+        toast.style.transform = 'translateY(0)';
+    }, 100);
+
+    setTimeout(function() {
+        toast.style.transform = 'translateY(120%)';
+        setTimeout(function() {
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        }, 300);
+    }, 3000);
+}
+
+// ============================================
+// EVENT BINDINGS - Run when DOM ready
+// ============================================
+document.addEventListener('DOMContentLoaded', function() {
+    // Open popup - using both ID and class for compatibility
+    var openBtn = document.getElementById('btn-open-voucher');
+    if (openBtn) {
+        openBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            openVoucherPopup();
+        });
+    }
+    
+    // Also handle if button uses class .btn-open-voucher
+    var openBtns = document.querySelectorAll('.btn-open-voucher');
+    openBtns.forEach(function(btn) {
+        if (btn.id !== 'btn-open-voucher') {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                openVoucherPopup();
+            });
+        }
+    });
+
+    // Close popup - overlay
+    var overlay = document.getElementById('voucher-popup-overlay');
+    if (overlay) {
+        overlay.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeVoucherPopup();
+            }
+        });
+    }
+
+    // Close popup - close button
+    var closeBtn = document.getElementById('close-voucher-popup');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            closeVoucherPopup();
+        });
+    }
+
+    // Apply manual voucher
+    var applyBtn = document.getElementById('btn-apply-manual-voucher');
+    if (applyBtn) {
+        applyBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            applyVoucherFromPopup();
+        });
+    }
+
+    // Enter key on input
+    var input = document.getElementById('popup-voucher-input');
+    if (input) {
+        input.addEventListener('keypress', function(e) {
+            if (e.which === 13) {
+                e.preventDefault();
+                applyVoucherFromPopup();
+            }
+        });
+    }
+
+    // Apply from list - delegated
+    document.addEventListener('click', function(e) {
+        if (e.target && e.target.matches('.btn-apply-item')) {
+            var code = e.target.getAttribute('data-code');
+            if (code) {
+                applyVoucherFromPopup(code);
+            }
+        }
+    });
+
+    // Remove voucher
+    var removeBtn = document.getElementById('btn-remove-voucher');
+    if (removeBtn) {
+        removeBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            removeVoucher();
+        });
+    }
+
+    // ESC key to close
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeVoucherPopup();
+        }
+    });
+});
+
+// Make functions globally accessible
+window.openVoucherPopup = openVoucherPopup;
+window.closeVoucherPopup = closeVoucherPopup;
+window.applyVoucherFromPopup = applyVoucherFromPopup;
+window.removeVoucher = removeVoucher;
+window.showToast = showToast;
+window.formatNumber = formatNumber;
+window.refreshVoucherList = refreshVoucherList;
+
+console.log('🎟️ Voucher popup initialized!');
+</script>
 
     <script src="{{ asset('js/cart.js') }}"></script>
     <script src="{{ asset('js/popup.js') }}"></script>

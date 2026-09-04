@@ -69,6 +69,35 @@ class ProductVariant extends Model
         )->withTimestamps();
     }
 
+    public function getCombinationAttribute(): string
+    {
+        if (!$this->relationLoaded('variantValues')) {
+            $this->load('variantValues.optionValue');
+        }
+        
+        return $this->variantValues
+            ->map(function($vv) {
+                return $vv->optionValue->value ?? '';
+            })
+            ->filter()
+            ->implode(' - ');
+    }
+
+    public function getOptionValueNamesAttribute(): array
+    {
+        if (!$this->relationLoaded('variantValues')) {
+            $this->load('variantValues.optionValue');
+        }
+        
+        return $this->variantValues
+            ->map(function($vv) {
+                return $vv->optionValue->value ?? '';
+            })
+            ->filter()
+            ->values()
+            ->toArray();
+    }
+
     public function options(): BelongsToMany
     {
         return $this->belongsToMany(
@@ -126,7 +155,7 @@ class ProductVariant extends Model
         $this->stockHistories()->create([
             'product_id' => $this->product_id,
             'product_variant_id' => $this->id,
-            'user_id' => auth()->id() ?? 1, // Default admin jika tidak login
+            'user_id' => auth()->id() ?? 1,
             'old_stock' => $oldStock,
             'new_stock' => $newStock,
             'quantity_change' => $quantityChange,
@@ -138,15 +167,53 @@ class ProductVariant extends Model
     }
 
     // ============================================
-    // ACCESSORS
+    // 🔥 EFFECTIVE PRICE WITH FLASH SALE PRIORITY
     // ============================================
 
     /**
-     * Mendapatkan harga efektif (harga diskon jika ada, selain itu harga normal)
+     * Mendapatkan harga efektif dengan prioritas:
+     * 1. Flash Sale (tertinggi)
+     * 2. Diskon Varian
+     * 3. Diskon Produk
+     * 4. Harga Original
      */
-    public function getEffectivePriceAttribute(): float
+    public function getEffectivePriceAttribute()
     {
-        return $this->discount_price ?? $this->price;
+        // 1. Check Flash Sale (highest priority)
+        if ($this->product && $this->product->isOnFlashSale()) {
+            $flashPrice = $this->product->calculateFlashSaleDiscount($this->price);
+            if ($flashPrice !== null && $flashPrice < $this->price) {
+                return round($flashPrice, 2);
+            }
+        }
+        
+        // 2. Check variant discount
+        if ($this->discount_price !== null && $this->discount_price < $this->price) {
+            return round($this->discount_price, 2);
+        }
+        
+        // 3. Check product discount
+        if ($this->product && $this->product->isOnProductDiscount()) {
+            $productDiscountPrice = $this->product->calculateProductDiscount($this->price);
+            if ($productDiscountPrice !== null && $productDiscountPrice < $this->price) {
+                return round($productDiscountPrice, 2);
+            }
+        }
+        
+        // 4. Original price
+        return round($this->price, 2);
+    }
+
+    /**
+     * Mendapatkan persentase diskon berdasarkan harga efektif
+     */
+    public function getDiscountPercentAttribute()
+    {
+        $effectivePrice = $this->effective_price;
+        if ($effectivePrice < $this->price && $this->price > 0) {
+            return round((($this->price - $effectivePrice) / $this->price) * 100, 2);
+        }
+        return 0;
     }
 
     /**
@@ -154,31 +221,104 @@ class ProductVariant extends Model
      */
     public function getPriceLabelAttribute(): string
     {
-        if ($this->discount_price && $this->discount_price < $this->price) {
-            return 'Rp ' . number_format($this->discount_price, 0, ',', '.') . 
-                   ' (diskon ' . number_format((1 - $this->discount_price / $this->price) * 100, 0) . '%)';
+        $effectivePrice = $this->effective_price;
+        if ($effectivePrice < $this->price) {
+            return 'Rp ' . number_format($effectivePrice, 0, ',', '.') . 
+                   ' (diskon ' . number_format($this->discount_percent, 0) . '%)';
         }
         return 'Rp ' . number_format($this->price, 0, ',', '.');
     }
 
     /**
-     * Mendapatkan persentase diskon
+     * Mendapatkan harga diskon final (null jika tidak ada diskon)
      */
-    public function getDiscountPercentAttribute(): float
+    public function getFinalDiscountPriceAttribute(): ?float
     {
-        if ($this->discount_price && $this->price > 0 && $this->discount_price < $this->price) {
-            return round((1 - $this->discount_price / $this->price) * 100, 0);
+        // 1. Cek flash sale
+        if ($this->product && $this->product->isOnFlashSale()) {
+            $flashPrice = $this->product->calculateFlashSaleDiscount($this->price);
+            if ($flashPrice !== null && $flashPrice < $this->price) {
+                return (float) $flashPrice;
+            }
         }
-        return 0;
+
+        // 2. Cek diskon varian (individual)
+        if ($this->discount_price && $this->discount_price < $this->price) {
+            return (float) $this->discount_price;
+        }
+
+        // 3. Cek diskon produk (global)
+        if ($this->product && $this->product->isOnProductDiscount()) {
+            return $this->product->calculateProductDiscount($this->price);
+        }
+
+        return null;
     }
 
+    /**
+     * Cek apakah varian memiliki diskon (flash sale, variant, atau product)
+     */
+    public function getHasAnyDiscountAttribute(): bool
+    {
+        return $this->discount_percent > 0;
+    }
+
+    /**
+     * Mendapatkan label diskon
+     */
     public function getDiscountLabelAttribute(): string
     {
-        if ($this->discount_price && $this->price > 0 && $this->discount_price < $this->price) {
+        if ($this->discount_percent > 0) {
+            // Cek jenis diskon
+            if ($this->product && $this->product->isOnFlashSale()) {
+                return '⚡ Flash Sale ' . $this->discount_percent . '%';
+            }
             return 'Diskon ' . $this->discount_percent . '%';
         }
         return '';
     }
+
+    /**
+     * Mendapatkan tipe diskon yang aktif (flash_sale, variant, product, atau null)
+     */
+    public function getDiscountTypeAttribute(): ?string
+    {
+        if ($this->product && $this->product->isOnFlashSale()) {
+            return 'flash_sale';
+        }
+        
+        if ($this->discount_price && $this->discount_price < $this->price) {
+            return 'variant';
+        }
+        
+        if ($this->product && $this->product->isOnProductDiscount()) {
+            return 'product';
+        }
+        
+        return null;
+    }
+
+    /**
+     * Mendapatkan badge label untuk diskon
+     */
+    public function getDiscountBadgeAttribute(): string
+    {
+        $type = $this->discount_type;
+        $percent = $this->discount_percent;
+        
+        if ($percent <= 0) return '';
+        
+        if ($type === 'flash_sale') {
+            return '⚡ ' . $percent . '%';
+        }
+        
+        return $percent . '%';
+    }
+
+    // ============================================
+    // STOCK STATUS
+    // ============================================
+
     /**
      * Mendapatkan status stok (in_stock / out_of_stock / low_stock)
      */
@@ -226,12 +366,40 @@ class ProductVariant extends Model
     }
 
     /**
-     * Scope untuk varian yang sedang diskon
+     * Scope untuk varian yang sedang diskon (termasuk flash sale)
      */
     public function scopeOnSale($query)
     {
-        return $query->whereNotNull('discount_price')
-                     ->whereColumn('discount_price', '<', 'price');
+        return $query->where(function($q) {
+            $q->whereNotNull('discount_price')
+              ->whereColumn('discount_price', '<', 'price')
+              ->orWhereHas('product', function($pq) {
+                  $pq->where('is_flash_sale', true)
+                     ->whereNotNull('flash_sale_value')
+                     ->where('flash_sale_value', '>', 0)
+                     ->where('flash_sale_start_date', '<=', now())
+                     ->where('flash_sale_end_date', '>=', now());
+              })
+              ->orWhereHas('product', function($pq) {
+                  $pq->where('has_product_discount', true)
+                     ->whereNotNull('discount_value')
+                     ->where('discount_value', '>', 0);
+              });
+        });
+    }
+
+    /**
+     * Scope untuk varian yang sedang flash sale
+     */
+    public function scopeOnFlashSale($query)
+    {
+        return $query->whereHas('product', function($pq) {
+            $pq->where('is_flash_sale', true)
+               ->whereNotNull('flash_sale_value')
+               ->where('flash_sale_value', '>', 0)
+               ->where('flash_sale_start_date', '<=', now())
+               ->where('flash_sale_end_date', '>=', now());
+        });
     }
 
     // ============================================
@@ -247,11 +415,19 @@ class ProductVariant extends Model
     }
 
     /**
-     * Cek apakah varian ini sedang diskon
+     * Cek apakah varian ini sedang diskon (termasuk flash sale)
      */
     public function isOnSale(): bool
     {
-        return $this->discount_price && $this->discount_price < $this->price;
+        return $this->discount_percent > 0;
+    }
+
+    /**
+     * Cek apakah varian ini sedang flash sale
+     */
+    public function isOnFlashSale(): bool
+    {
+        return $this->discount_type === 'flash_sale';
     }
 
     /**
@@ -312,5 +488,47 @@ class ProductVariant extends Model
     {
         $this->stock += $quantity;
         return $this->save();
+    }
+
+    /**
+     * Mendapatkan harga original dengan format Rupiah
+     */
+    public function getOriginalPriceFormattedAttribute(): string
+    {
+        return 'Rp ' . number_format($this->price, 0, ',', '.');
+    }
+
+    /**
+     * Mendapatkan harga efektif dengan format Rupiah
+     */
+    public function getEffectivePriceFormattedAttribute(): string
+    {
+        return 'Rp ' . number_format($this->effective_price, 0, ',', '.');
+    }
+
+    /**
+     * Mendapatkan informasi diskon lengkap
+     */
+    public function getDiscountInfoAttribute(): array
+    {
+        if ($this->discount_percent <= 0) {
+            return [
+                'has_discount' => false,
+                'percent' => 0,
+                'type' => null,
+                'label' => '',
+                'original_price' => $this->price,
+                'final_price' => $this->price,
+            ];
+        }
+
+        return [
+            'has_discount' => true,
+            'percent' => $this->discount_percent,
+            'type' => $this->discount_type,
+            'label' => $this->discount_label,
+            'original_price' => $this->price,
+            'final_price' => $this->effective_price,
+        ];
     }
 }

@@ -96,7 +96,14 @@ class ProductController extends Controller
 
     public function store(Request $request)
     {
+        \Log::info('=== STORE PRODUCT ===');
+        \Log::info('Request data:', $request->all());
+        \Log::info('Variants:', $request->input('variants', []));
+        \Log::info('Options:', $request->input('options', []));
+
         $validated = $this->validateProduct($request);
+
+        \Log::info('Validated data:', $validated);
 
         $uploadedFiles = [];
 
@@ -114,11 +121,19 @@ class ProductController extends Controller
                     'description' => $validated['description'] ?? null,
                     'gender' => $validated['gender'] ?? null,
                     'material' => $validated['material'] ?? null,
-                    'is_featured' => $request->boolean('is_featured'),
-                    'is_best_seller' => $request->boolean('is_best_seller'),
-                    'is_active' => $request->boolean('is_active'),
+                    'is_featured' => $validated['is_featured'],
+                    'is_best_seller' => $validated['is_best_seller'],
+                    'is_active' => $validated['is_active'],
                     'minimum_stock' => $request->input('minimum_stock', 5),
                     'restock_threshold' => $request->input('restock_threshold', 10),
+                    'has_product_discount' => $request->boolean('has_product_discount'),
+                    'discount_type' => $request->input('discount_type'),
+                    'discount_value' => $request->input('discount_value'),
+                    'is_flash_sale' => $request->boolean('is_flash_sale'),
+                    'flash_sale_type' => $request->input('flash_sale_type'),
+                    'flash_sale_value' => $request->input('flash_sale_value'),
+                    'flash_sale_start_date' => $request->input('flash_sale_start_date'),
+                    'flash_sale_end_date' => $request->input('flash_sale_end_date'),
                 ]);
 
                 // 2. UPLOAD IMAGES
@@ -181,6 +196,7 @@ class ProductController extends Controller
 
     public function edit(Product $product)
     {
+        // 🔥 LOAD SEMUA RELASI DENGAN BENAR
         $product->load([
             'category',
             'images' => function ($query) {
@@ -200,6 +216,7 @@ class ProductController extends Controller
             'features',
         ]);
 
+        // 🔥 BUILD EXISTING OPTIONS - PERBAIKI
         $existingOptions = $product->options->map(function ($option) {
             return [
                 'id' => $option->id,
@@ -214,32 +231,40 @@ class ProductController extends Controller
             ];
         })->values()->toArray();
 
+        // 🔥 BUILD EXISTING VARIANTS - PERBAIKI
         $existingVariants = $product->variants->map(function ($variant) {
-            $discountPercent = 0;
-            if ($variant->discount_price && $variant->price > 0 && $variant->discount_price < $variant->price) {
-                $discountPercent = round((($variant->price - $variant->discount_price) / $variant->price) * 100);
-            }
-
-            // 🔥 AMBIL VALUE NAMES DENGAN SORT
+            // Ambil option value IDs
+            $optionValueIds = $variant->variantValues
+                ->pluck('product_option_value_id')
+                ->map(function($id) { return (int) $id; })
+                ->values()
+                ->toArray();
+            
+            // Ambil value names dengan urutan yang benar
             $valueNames = $variant->variantValues
                 ->map(function($vv) {
                     return $vv->optionValue->value ?? '';
                 })
                 ->filter()
-                ->sort()
                 ->values()
                 ->toArray();
+            
+            // Hitung diskon persen
+            $discountPercent = 0;
+            if ($variant->discount_price && $variant->price > 0 && $variant->discount_price < $variant->price) {
+                $discountPercent = round((($variant->price - $variant->discount_price) / $variant->price) * 100);
+            }
 
             return [
                 'id' => $variant->id,
                 'sku' => $variant->sku,
-                'price' => $variant->price,
-                'discount_price' => $variant->discount_price,
+                'price' => (float) $variant->price,
+                'discount_price' => $variant->discount_price ? (float) $variant->discount_price : null,
                 'discount_percent' => $discountPercent,
-                'stock' => (int) $variant->stock, // ← PASTIKAN INTEGER
-                'weight' => $variant->weight,
+                'stock' => (int) $variant->stock,
+                'weight' => (int) $variant->weight,
                 'image' => $variant->image ? Storage::url($variant->image) : null,
-                'option_value_ids' => $variant->variantValues->pluck('product_option_value_id')->values()->toArray(),
+                'option_value_ids' => $optionValueIds,
                 'option_value_names' => $valueNames,
             ];
         })->values()->toArray();
@@ -268,6 +293,30 @@ class ProductController extends Controller
 
     public function update(Request $request, Product $product)
     {
+        // 🔥 HELPER UNTUK CHECKBOX
+        $hasCheckedValue = static function ($value): bool {
+            return collect((array) $value)->contains(function ($item): bool {
+                return in_array(strtolower((string) $item), ['1', 'true', 'on', 'yes'], true);
+            });
+        };
+
+        \Log::info('=== UPDATE PRODUCT ===', [
+            'product_id' => $product->id,
+            'name' => $request->input('name'),
+            'is_featured' => $request->input('is_featured'),
+            'is_best_seller' => $request->input('is_best_seller'),
+            'is_active' => $request->input('is_active'),
+        ]);
+
+        // 🔥 PASTIKAN CHECKBOX NILAI
+        $request->merge([
+            'is_featured' => $hasCheckedValue($request->input('is_featured')) ? 1 : 0,
+            'is_best_seller' => $hasCheckedValue($request->input('is_best_seller')) ? 1 : 0,
+            'is_active' => $hasCheckedValue($request->input('is_active')) ? 1 : 0,
+            'is_flash_sale' => $hasCheckedValue($request->input('is_flash_sale')) ? 1 : 0,
+            'has_product_discount' => $hasCheckedValue($request->input('has_product_discount')) ? 1 : 0,
+        ]);
+
         $validated = $this->validateProduct($request, $product);
 
         $uploadedFiles = [];
@@ -279,22 +328,47 @@ class ProductController extends Controller
                 $validated,
                 &$uploadedFiles
             ) {
-                // 1. UPDATE PRODUCT
-                $product->update([
-                    'category_id' => $validated['category_id'],
-                    'name' => $validated['name'],
-                    'slug' => $this->generateUniqueSlug($validated['name'], $product->id),
-                    'description' => $validated['description'] ?? null,
-                    'gender' => $validated['gender'] ?? null,
-                    'material' => $validated['material'] ?? null,
-                    'is_featured' => $request->boolean('is_featured'),
-                    'is_best_seller' => $request->boolean('is_best_seller'),
-                    'is_active' => $request->boolean('is_active'),
-                    'minimum_stock' => $request->input('minimum_stock', 5),
-                    'restock_threshold' => $request->input('restock_threshold', 10),
+                // ============================================
+                // 🔥 1. UPDATE PRODUCT - PERBAIKI
+                // ============================================
+                
+                // ✅ UPDATE PRODUCT DENGAN BENAR
+                $product->category_id = $validated['category_id'];
+                $product->name = $validated['name'];
+                $product->slug = $this->generateUniqueSlug($validated['name'], $product->id);
+                $product->description = $validated['description'] ?? null;
+                $product->gender = $validated['gender'] ?? null;
+                $product->material = $validated['material'] ?? null;
+                $product->minimum_stock = $request->input('minimum_stock', 5);
+                $product->restock_threshold = $request->input('restock_threshold', 10);
+                $product->has_product_discount = $validated['has_product_discount'] ? 1 : 0;
+                $product->discount_type = $validated['has_product_discount'] ? ($validated['discount_type'] ?? null) : null;
+                $product->discount_value = $validated['has_product_discount'] ? ($validated['discount_value'] ?? null) : null;
+                $product->is_flash_sale = $validated['is_flash_sale'] ? 1 : 0;
+                $product->flash_sale_type = $validated['is_flash_sale'] ? ($validated['flash_sale_type'] ?? null) : null;
+                $product->flash_sale_value = $validated['is_flash_sale'] ? ($validated['flash_sale_value'] ?? null) : null;
+                $product->flash_sale_start_date = $validated['is_flash_sale'] ? ($validated['flash_sale_start_date'] ?? null) : null;
+                $product->flash_sale_end_date = $validated['is_flash_sale'] ? ($validated['flash_sale_end_date'] ?? null) : null;
+                
+                // 🔥 UPDATE STATUS
+                $product->is_featured = $validated['is_featured'] ? 1 : 0;
+                $product->is_best_seller = $validated['is_best_seller'] ? 1 : 0;
+                $product->is_active = $validated['is_active'] ? 1 : 0;
+                
+                // ✅ SAVE PRODUCT - INI YANG PENTING!
+                $product->save();
+
+                \Log::info('Product updated successfully', [
+                    'product_id' => $product->id,
+                    'name' => $product->name,
+                    'slug' => $product->slug,
+                    'is_active' => $product->is_active,
                 ]);
 
+                // ============================================
                 // 2. DELETE SELECTED OLD IMAGES
+                // ============================================
+                
                 $keepImageIds = collect($request->input('existing_images', []))
                     ->map(fn ($id) => (int) $id)
                     ->toArray();
@@ -313,7 +387,10 @@ class ProductController extends Controller
                     $oldImage->delete();
                 }
 
+                // ============================================
                 // 3. UPLOAD NEW IMAGES
+                // ============================================
+                
                 if ($request->hasFile('images')) {
                     $lastSortOrder = $product->images()->max('sort_order') ?? -1;
 
@@ -328,7 +405,7 @@ class ProductController extends Controller
                 }
 
                 // ============================================
-                // 🔥 UPDATE OPTIONS (WARNA & UKURAN)
+                // 4. UPDATE OPTIONS & VARIANTS
                 // ============================================
 
                 $oldOptions = $product->options()->with('values')->get();
@@ -340,11 +417,9 @@ class ProductController extends Controller
                     }
                 }
 
-                // Hapus old options & variants
                 $product->options()->delete();
                 $product->variants()->delete();
 
-                // Create new options & variants
                 if (!empty($validated['options'])) {
                     $optionValueMap = $this->createProductOptionsWithExistingImages(
                         $product,
@@ -362,6 +437,10 @@ class ProductController extends Controller
                     }
                 }
 
+                // ============================================
+                // 5. UPDATE FEATURES
+                // ============================================
+                
                 if (!empty($validated['features'])) {
                     $product->features()->sync($validated['features']);
                 } else {
@@ -374,14 +453,21 @@ class ProductController extends Controller
                 ->with('success', 'Produk berhasil diperbarui.');
 
         } catch (Throwable $e) {
-            // Hapus file baru jika update gagal
             foreach ($uploadedFiles as $path) {
                 if (Storage::disk('public')->exists($path)) {
                     Storage::disk('public')->delete($path);
                 }
             }
 
-            throw $e;
+            \Log::error('Product update error:', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', 'Gagal memperbarui produk: ' . $e->getMessage());
         }
     }
 
@@ -441,7 +527,7 @@ class ProductController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | CREATE PRODUCT OPTIONS WITH EXISTING IMAGES
+    | CREATE PRODUCT OPTIONS WITH EXISTING IMAGES - PERBAIKI
     |--------------------------------------------------------------------------
     */
 
@@ -454,6 +540,7 @@ class ProductController extends Controller
         $optionValueMap = [];
 
         foreach ($options as $optionIndex => $optionData) {
+            // BUAT OPTION
             $option = $product->options()->create([
                 'name' => trim($optionData['name']),
                 'sort_order' => $optionIndex,
@@ -462,12 +549,28 @@ class ProductController extends Controller
             $optionValueMap[$optionIndex] = [];
 
             $values = $optionData['values'] ?? [];
+            
+            // FILTER DUPLIKAT VALUE
+            $uniqueValues = [];
+            $uniqueValueIndexes = [];
+            foreach ($values as $idx => $value) {
+                $trimmed = trim($value);
+                if (empty($trimmed)) continue;
+                if (!in_array($trimmed, $uniqueValues)) {
+                    $uniqueValues[] = $trimmed;
+                    $uniqueValueIndexes[] = $idx;
+                }
+            }
+            
             $newImages = $optionFiles[$optionIndex]['images'] ?? [];
             $oldOptionId = $optionData['old_id'] ?? null;
             $oldValueIds = $optionData['old_value_ids'] ?? [];
             $existingImages = $optionData['existing_images'] ?? [];
 
-            foreach ($values as $valueIndex => $value) {
+            $valueIndex = 0;
+            foreach ($uniqueValueIndexes as $originalIndex => $uniqueIdx) {
+                $value = $uniqueValues[$originalIndex];
+                
                 $imagePath = null;
                 $newImage = $newImages[$valueIndex] ?? null;
                 $selectedExistingImage = $existingImages[$valueIndex] ?? null;
@@ -481,18 +584,18 @@ class ProductController extends Controller
                             Storage::disk('public')->delete($oldImagePath);
                         }
                     }
-
                     $imagePath = $newImage->store('products/option-values', 'public');
                 }
-                // 2. Jika tidak ada upload baru, pertahankan gambar lama yang sudah dikirim dari form
+                // 2. Jika tidak ada upload baru, pertahankan gambar lama
                 elseif (!empty($selectedExistingImage)) {
                     $imagePath = $this->normalizeStoredImagePath($selectedExistingImage);
                 }
-                // 3. Jika masih tidak ada, cek mapping value lama berdasarkan id lama / posisi index
+                // 3. Cek mapping value lama
                 elseif ($oldOptionId && isset($oldOptionValuesMap[$oldOptionId])) {
                     if ($oldValueId && isset($oldOptionValuesMap[$oldOptionId][$oldValueId])) {
                         $imagePath = $oldOptionValuesMap[$oldOptionId][$oldValueId];
                     } else {
+                        // Cari berdasarkan urutan
                         $oldValueIdList = array_keys($oldOptionValuesMap[$oldOptionId]);
                         if (isset($oldValueIdList[$valueIndex])) {
                             $mappedOldValueId = $oldValueIdList[$valueIndex];
@@ -501,13 +604,16 @@ class ProductController extends Controller
                     }
                 }
 
+                // BUAT OPTION VALUE
                 $optionValue = $option->values()->create([
                     'value' => trim($value),
                     'image' => $imagePath,
                     'sort_order' => $valueIndex,
                 ]);
 
+                // SIMPAN MAPPING
                 $optionValueMap[$optionIndex][$valueIndex] = $optionValue->id;
+                $valueIndex++;
             }
         }
 
@@ -751,53 +857,91 @@ class ProductController extends Controller
 
     public function checkSku(Request $request)
     {
-        $request->validate([
-            'skus' => 'required|array',
-            'skus.*' => 'required|string',
-            'product_id' => 'nullable|exists:products,id',
-            'is_edit' => 'nullable|boolean',
-        ]);
+        try {
+            // 🔥 VALIDASI REQUEST - PERBAIKI
+            $rules = [
+                'skus' => 'required|array',
+                'skus.*' => 'required|string|max:100',
+                'product_id' => 'nullable|integer|exists:products,id', // nullable agar create bisa
+                'is_edit' => 'nullable|boolean',
+            ];
 
-        $skus = array_map('trim', $request->skus);
-        $skus = array_filter($skus, function($sku) {
-            return !empty($sku);
-        });
+            $validated = $request->validate($rules);
 
-        if (empty($skus)) {
-            return response()->json(['success' => true]);
-        }
+            $skus = array_map('trim', $request->skus);
+            $skus = array_filter($skus, function($sku) {
+                return !empty($sku);
+            });
 
-        $counts = array_count_values($skus);
-        $duplicates = [];
-        foreach ($counts as $sku => $count) {
-            if ($count > 1 && !empty($sku)) {
-                $duplicates[] = $sku;
+            if (empty($skus)) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Tidak ada SKU untuk diperiksa.'
+                ]);
             }
-        }
 
-        if (!empty($duplicates)) {
+            // 🔥 CEK DUPLIKAT DALAM FORM
+            $counts = array_count_values($skus);
+            $duplicates = [];
+            foreach ($counts as $sku => $count) {
+                if ($count > 1 && !empty($sku)) {
+                    $duplicates[] = $sku;
+                }
+            }
+
+            if (!empty($duplicates)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'SKU ' . implode(', ', $duplicates) . ' duplikat dalam form.',
+                    'skus' => $duplicates,
+                ], 422);
+            }
+
+            // 🔥 CEK SKU DI DATABASE
+            $query = \App\Models\ProductVariant::whereIn('sku', $skus);
+            
+            // Jika mode edit dan ada product_id, exclude product yang sedang diedit
+            if ($request->is_edit && $request->filled('product_id') && $request->product_id > 0) {
+                $query->where('product_id', '!=', $request->product_id);
+            }
+            
+            $existingSkus = $query->pluck('sku')->toArray();
+
+            if (!empty($existingSkus)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'SKU ' . implode(', ', $existingSkus) . ' sudah digunakan di produk lain.',
+                    'skus' => $existingSkus,
+                ], 422);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Semua SKU tersedia.'
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::warning('Check SKU validation failed:', [
+                'errors' => $e->errors(),
+                'request' => $request->all()
+            ]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'SKU ' . implode(', ', $duplicates) . ' duplikat dalam form.',
-            ], 400);
-        }
+                'message' => 'Validasi gagal: ' . $e->getMessage(),
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            \Log::error('Check SKU error:', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
 
-        $query = \App\Models\ProductVariant::whereIn('sku', $skus);
-        
-        if ($request->is_edit && $request->product_id) {
-            $query->where('product_id', '!=', $request->product_id);
-        }
-        
-        $existingSkus = $query->pluck('sku')->toArray();
-
-        if (!empty($existingSkus)) {
             return response()->json([
                 'success' => false,
-                'message' => 'SKU ' . implode(', ', $existingSkus) . ' sudah digunakan di produk lain.',
-            ], 400);
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
+            ], 500);
         }
-
-        return response()->json(['success' => true]);
     }
 
 
@@ -809,6 +953,8 @@ class ProductController extends Controller
 
     private function validateProduct(Request $request, ?Product $product = null): array
     {
+        $isEdit = $product !== null;
+        
         $rules = [
             'category_id' => ['required', 'exists:categories,id'],
             'name' => ['required', 'string', 'max:255'],
@@ -839,25 +985,60 @@ class ProductController extends Controller
             'variants.*.price' => ['required_with:variants', 'numeric', 'min:0'],
             'variants.*.discount_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'variants.*.discount_price' => ['nullable', 'numeric', 'min:0'],
-            'variants.*.stock' => ['nullable', 'integer', 'min:0'], // 🔥 PERBAIKI: nullable
+            'variants.*.stock' => ['nullable', 'integer', 'min:0'],
             'variants.*.weight' => ['required_with:variants', 'integer', 'min:0'],
             'variants.*.option_value_indexes' => ['required_with:variants', 'array', 'min:1'],
             'variants.*.option_value_indexes.*' => ['required_with:variants', 'integer', 'min:0'],
+            'has_product_discount' => ['nullable', 'boolean'],
+            'discount_type' => ['nullable', 'required_if:has_product_discount,1', 'in:percentage,fixed'],
+            'discount_value' => ['nullable', 'required_if:has_product_discount,1', 'numeric', 'min:0'],
+            'is_featured' => ['nullable', 'boolean'],
+            'is_best_seller' => ['nullable', 'boolean'],
+            'is_active' => ['nullable', 'boolean'],
+            'is_flash_sale' => ['nullable', 'boolean'],
+            'flash_sale_type' => ['nullable', 'required_if:is_flash_sale,1', 'in:percentage,fixed'],
+            'flash_sale_value' => ['nullable', 'required_if:is_flash_sale,1', 'numeric', 'min:0'],
+            'flash_sale_start_date' => ['nullable', 'required_if:is_flash_sale,1', 'date'],
+            'flash_sale_end_date' => ['nullable', 'required_if:is_flash_sale,1', 'date', 'after_or_equal:flash_sale_start_date'],
         ];
 
-        return $request->validate($rules);
+        $validated = $request->validate($rules);
+
+        // 🔥 PASTIKAN SEMUA CHECKBOX TERSIMPAN DENGAN BENAR
+        $validated['has_product_discount'] = $request->boolean('has_product_discount');
+        $validated['is_featured'] = $request->boolean('is_featured');
+        $validated['is_best_seller'] = $request->boolean('is_best_seller');
+        $validated['is_active'] = $request->boolean('is_active', true);
+        $validated['is_flash_sale'] = $request->boolean('is_flash_sale');
+
+        // 🔥 Jika diskon produk tidak aktif, hapus nilai diskon
+        if (!$validated['has_product_discount']) {
+            $validated['discount_type'] = null;
+            $validated['discount_value'] = null;
+        }
+
+        // 🔥 Jika flash sale tidak aktif, hapus nilai flash sale
+        if (!$validated['is_flash_sale']) {
+            $validated['flash_sale_type'] = null;
+            $validated['flash_sale_value'] = null;
+            $validated['flash_sale_start_date'] = null;
+            $validated['flash_sale_end_date'] = null;
+        }
+
+        return $validated;
     }
 
 
     /*
     |--------------------------------------------------------------------------
-    | CREATE PRODUCT OPTIONS
+    | CREATE PRODUCT OPTIONS - PERBAIKI
     |--------------------------------------------------------------------------
     */
 
     private function createProductOptions(Product $product, array $options, array $optionFiles = []): array
     {
         $optionValueMap = [];
+        $options = array_values($options); // Pastikan index 0, 1, 2... berurutan
 
         foreach ($options as $optionIndex => $optionData) {
             $option = $product->options()->create([
@@ -866,24 +1047,21 @@ class ProductController extends Controller
             ]);
 
             $optionValueMap[$optionIndex] = [];
-
-            $values = $optionData['values'] ?? [];
+            $values = array_values($optionData['values'] ?? []);
             
-            $images = [];
-            if (isset($optionFiles[$optionIndex]['images'])) {
-                $images = $optionFiles[$optionIndex]['images'];
-            }
+            $images = $optionFiles[$optionIndex]['images'] ?? [];
 
             foreach ($values as $valueIndex => $value) {
-                $imagePath = null;
+                $trimmed = trim($value);
+                if ($trimmed === '') continue;
 
-                if (isset($images[$valueIndex]) && 
-                    $images[$valueIndex] instanceof \Illuminate\Http\UploadedFile) {
+                $imagePath = null;
+                if (isset($images[$valueIndex]) && $images[$valueIndex] instanceof \Illuminate\Http\UploadedFile) {
                     $imagePath = $images[$valueIndex]->store('products/option-values', 'public');
                 }
 
                 $optionValue = $option->values()->create([
-                    'value' => trim($value),
+                    'value' => $trimmed,
                     'image' => $imagePath,
                     'sort_order' => $valueIndex,
                 ]);
@@ -898,7 +1076,7 @@ class ProductController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | CREATE PRODUCT VARIANTS
+    | CREATE PRODUCT VARIANTS - PERBAIKI
     |--------------------------------------------------------------------------
     */
 
@@ -907,41 +1085,39 @@ class ProductController extends Controller
         array $variants,
         array $optionValueMap
     ): void {
-        foreach ($variants as $variantData) {
+        $createdVariantKeys = [];
+        
+        foreach ($variants as $variantIndex => $variantData) {
             $optionValueIndexes = $variantData['option_value_indexes'] ?? [];
             $optionValueIds = [];
 
-            // 🔥 PERBAIKI: Mapping yang lebih robust
+            // Mapping option values
             foreach ($optionValueIndexes as $optionIndex => $valueIndex) {
                 $optionIndex = (int) $optionIndex;
                 $valueIndex = (int) $valueIndex;
                 
-                // Coba cari di map berdasarkan optionIndex dan valueIndex
                 if (isset($optionValueMap[$optionIndex][$valueIndex])) {
-                    $optionValueIds[] = $optionValueMap[$optionIndex][$valueIndex];
-                } else {
-                    // Jika tidak ditemukan, coba cari berdasarkan valueIndex saja
-                    foreach ($optionValueMap as $mapOptionIndex => $mapValues) {
-                        if (isset($mapValues[$valueIndex])) {
-                            $optionValueIds[] = $mapValues[$valueIndex];
-                            break;
-                        }
-                    }
+                    $optionValueIds[] = (int) $optionValueMap[$optionIndex][$valueIndex];
                 }
             }
 
-            // Jika masih kosong, coba ambil option value pertama yang tersedia
-            if (empty($optionValueIds) && !empty($optionValueMap)) {
-                $firstOptionIndex = array_key_first($optionValueMap);
-                if ($firstOptionIndex !== null && !empty($optionValueMap[$firstOptionIndex])) {
-                    $firstValueIndex = array_key_first($optionValueMap[$firstOptionIndex]);
-                    if ($firstValueIndex !== null) {
-                        $optionValueIds[] = $optionValueMap[$firstOptionIndex][$firstValueIndex];
-                    }
-                }
+            // Jika tidak ada option value ids, skip
+            if (empty($optionValueIds)) {
+                \Log::warning('Variant skipped - no option values', ['variant' => $variantData]);
+                continue;
             }
 
-            // 🔥 HITUNG HARGA DAN DISKON
+            $optionValueIds = array_unique($optionValueIds);
+            sort($optionValueIds);
+            
+            $variantKey = implode('|', $optionValueIds);
+            
+            if (in_array($variantKey, $createdVariantKeys)) {
+                continue;
+            }
+            $createdVariantKeys[] = $variantKey;
+
+            // Hitung harga
             $price = (float) ($variantData['price'] ?? 0);
             $discountPercent = (float) ($variantData['discount_percent'] ?? 0);
             
@@ -949,24 +1125,13 @@ class ProductController extends Controller
             if ($discountPercent > 0 && $price > 0) {
                 $discountPrice = round($price - ($price * ($discountPercent / 100)), 2);
             }
-            
-            // Jika ada discount_price langsung dari input (untuk edit)
-            if (isset($variantData['discount_price']) && $variantData['discount_price'] !== '' && $variantData['discount_price'] !== null) {
-                $discountPrice = (float) $variantData['discount_price'];
-                // Recalculate discount percent
-                if ($price > 0 && $discountPrice > 0 && $discountPrice < $price) {
-                    $discountPercent = round((($price - $discountPrice) / $price) * 100);
-                }
-            }
 
-            $stock = 0;
-            if (isset($variantData['stock']) && $variantData['stock'] !== '' && $variantData['stock'] !== null) {
-                $stock = (int) $variantData['stock'];
-            }
+            $stock = isset($variantData['stock']) && $variantData['stock'] !== '' ? (int) $variantData['stock'] : 0;
+            $sku = trim($variantData['sku'] ?? 'SKU-' . strtoupper(Str::random(8)));
 
-            // 🔥 BUAT VARIAN
+            // Buat variant
             $variant = $product->variants()->create([
-                'sku' => trim($variantData['sku'] ?? ''),
+                'sku' => $sku,
                 'price' => $price,
                 'discount_price' => $discountPrice,
                 'stock' => $stock,
@@ -974,7 +1139,7 @@ class ProductController extends Controller
                 'is_active' => true,
             ]);
 
-            // 🔥 SIMPAN OPTION VALUES
+            // Simpan option values
             foreach ($optionValueIds as $optionValueId) {
                 $variant->variantValues()->create([
                     'product_option_value_id' => $optionValueId,

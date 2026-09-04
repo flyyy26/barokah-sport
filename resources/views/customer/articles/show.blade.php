@@ -25,7 +25,7 @@
        LAYOUT UTAMA 75% - 25%
        ============================================ */
     .article-detail-wrapper {
-        max-width: 1400px;
+        max-width: 82vw;
         margin: 0 auto;
         padding: 2vw 7.54vw 4vw;
         display: grid;
@@ -883,20 +883,6 @@
         background: #fef2f2;
     }
 
-    @media (max-width: 768px) {
-        .comment-delete-btn {
-            font-size: 1.2vw;
-            padding: 0.2vw 0.5vw;
-        }
-    }
-
-    @media (max-width: 480px) {
-        .comment-delete-btn {
-            font-size: 1.6vw;
-            padding: 0.3vw 0.6vw;
-        }
-    }
-
     .comment-avatar {
         display: flex;
         align-items: center;
@@ -1041,477 +1027,871 @@
         to { transform: translateY(2vw); opacity: 0; }
     }
 
-    /* ============================================
-       RESPONSIVE
-       ============================================ */
-    @media (max-width: 1200px) {
-        .article-detail-wrapper {
-            padding: 2vw 4vw 4vw;
-            gap: 2vw;
-        }
+    .comment-reply {
+        margin-top: 0.3vw;
+        padding-left: 0.5vw;
     }
 
-    @media (max-width: 1024px) {
-        .article-detail-wrapper {
-            grid-template-columns: 70% 30%;
-            padding: 2vw 3vw 4vw;
-        }
+    .comment-reply .comment-item {
+        padding: 0.5vw 0;
+        border-bottom: 0.05vw solid #f1f5f9;
     }
 
+    .comment-reply .comment-item:last-child {
+        border-bottom: none;
+    }
+
+    .comment-reply .comment-header .comment-avatar {
+        width: 1.8vw;
+        height: 1.8vw;
+        font-size: 0.6vw;
+    }
+
+    .comment-reply .comment-user {
+        font-size: 0.75vw;
+    }
+
+    .comment-reply .comment-time {
+        font-size: 0.6vw;
+    }
+
+    .comment-reply .comment-content {
+        font-size: 0.75vw;
+        margin-left: 2.5vw;
+    }
+
+    .comment-reply .comment-actions {
+        margin-left: 2.5vw;
+    }
+
+    .comment-reply .comment-actions button {
+        font-size: 0.6vw;
+    }
+
+    /* 🔥 NESTED REPLY - LEVEL LEBIH DALAM */
+    .comment-reply .comment-reply {
+        margin-left: 1.5vw !important;
+        padding-left: 0.3vw;
+    }
+
+    .comment-reply .comment-reply .comment-item {
+        border-left: 0.15vw solid #e2e8f0;
+        padding-left: 0.8vw;
+    }
     @media (max-width: 768px) {
         .article-detail-wrapper {
+            width: 100%;
+            max-width: 100%;
             grid-template-columns: 1fr;
-            padding: 2vw 3vw 4vw;
+            padding: 0vw 0vw 0vw;
             gap: 2vw;
         }
 
-        .article-detail-header h1 {
-            font-size: 3.5vw;
+        /* ============================================ */
+        /* HEADER */
+        /* ============================================ */
+        .article-detail-header {
+            padding: 4vw 4vw;
+            padding-bottom: 0;
+            margin-bottom: 0;
         }
 
-        .article-detail-meta {
-            font-size: 1.2vw;
-            gap: 1.2vw;
-        }
-
-        .article-detail-content {
-            font-size: 1.3vw;
-        }
-
-        .article-detail-content h2 {
-            font-size: 1.8vw;
-        }
-
-        .article-detail-content h3 {
-            font-size: 1.5vw;
-        }
-
-        .action-btn {
-            font-size: 1.2vw;
-            padding: 0.6vw 1.5vw;
-        }
-
-        .action-btn .action-icon {
-            font-size: 1.8vw;
-        }
-
-        .share-modal-content {
-            max-width: 80vw;
-            padding: 4vw;
-        }
-
-        .share-modal-content h3 {
-            font-size: 2.5vw;
-        }
-
-        .share-modal-btn {
-            font-size: 1.5vw;
-            padding: 1.5vw;
-        }
-
-        .share-modal-btn iconify-icon {
-            font-size: 2vw;
-        }
-
-        .comment-section-title {
-            font-size: 2vw;
-        }
-
-        .comment-form-input-wrapper textarea {
-            font-size: 1.2vw;
-            padding: 1vw;
-            min-height: 6vw;
-        }
-
-        .comment-submit-btn {
-            font-size: 1.2vw;
-            padding: 1vw 1.8vw;
-        }
-
-        .comment-avatar {
-            width: 3.5vw;
-            height: 3.5vw;
-            font-size: 1.1vw;
-        }
-
-        .comment-user {
-            font-size: 1.2vw;
-        }
-
-        .comment-time {
-            font-size: 1vw;
-        }
-
-        .comment-content {
-            font-size: 1.2vw;
-            margin-left: 4.5vw;
-        }
-
-        .comment-actions {
-            margin-left: 4.5vw;
-        }
-
-        .comment-actions button {
-            font-size: 1vw;
-        }
-
-        .comment-reply {
-            margin-left: 4.5vw;
-        }
-
-        .sidebar-widget .widget-title {
-            font-size: 1.4vw;
-        }
-
-        .widget-search-form input {
-            font-size: 1.1vw;
-            padding: 0.6vw 1vw;
-        }
-
-        .widget-search-form button {
-            font-size: 1.1vw;
-            padding: 0.6vw 1.2vw;
-        }
-
-        .category-list li a {
-            font-size: 1.1vw;
-        }
-
-        .widget-article-list .widget-article-info h4 {
-            font-size: 1.1vw;
-        }
-
-        .widget-article-list .widget-article-info .widget-article-meta {
-            font-size: 0.9vw;
-        }
-
-        .popular-list .popular-info h4 {
-            font-size: 1.1vw;
-        }
-
-        .custom-toast {
-            bottom: 4vw;
-            right: 4vw;
-            padding: 1.5vw 2.5vw;
-            font-size: 1.4vw;
-            max-width: 60vw;
-        }
-    }
-
-    @media (max-width: 480px) {
-        .article-detail-wrapper {
-            padding: 3vw 2vw 5vw;
+        .article-detail-header .article-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.8vw;
+            color: #076694;
+            text-decoration: none;
+            font-size: 2.8vw;
+            margin-bottom: 1.5vw;
+            transition: color 0.2s;
+            font-weight: 500;
         }
 
         .article-detail-header h1 {
-            font-size: 4.5vw;
+            font-size: 5vw;
+            font-weight: 600;
+            color: #0f172a;
+            margin: 1.5vw 0;
+            line-height: 1.2;
         }
 
         .article-detail-meta {
-            font-size: 1.6vw;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
             gap: 1.5vw;
+            margin-top: 4.5vw;
+            font-size: 2.8vw;
+            color: #94a3b8;
+            padding-bottom: 2vw;
+            border-bottom: none;
+        }
+
+        .article-detail-meta .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 1vw;
         }
 
         .article-detail-meta .meta-item iconify-icon {
-            font-size: 1.4vw;
+            font-size: 3vw;
         }
 
-        .article-detail-content {
-            font-size: 1.8vw;
+        .article-detail-meta .meta-divider {
+            width: 0.1vw;
+            height: 3vw;
+            background: #e2e8f0;
         }
 
-        .article-detail-content h2 {
-            font-size: 2.4vw;
+        /* ============================================ */
+        /* GAMBAR */
+        /* ============================================ */
+        .article-detail-image {
+            aspect-ratio: 16/9;
+            border-radius: 0;
+            margin: 0;
+            width: 100%;
         }
 
-        .article-detail-content h3 {
-            font-size: 2vw;
+        .article-detail-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .article-detail-image .image-placeholder {
+            font-size: 8vw;
+        }
+
+        /* ============================================ */
+        /* LIKE & SHARE */
+        /* ============================================ */
+        .article-interaction-section {
+            margin: 0;
+            padding: 5vw 4vw;
+            padding-bottom: 4.5vw;
+            border-bottom: 0.1vw solid #e2e8f0;
+            border-top: 0.1vw solid #e2e8f0;
         }
 
         .article-actions {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 1.5vw;
+            flex-direction: row;
+            gap: 2vw;
+            align-items: stretch;
+        }
+
+        .action-group {
+            display: flex;
+            align-items: center;
+            gap: 1.8vw;
+            justify-content: center;
         }
 
         .action-btn {
-            font-size: 1.6vw;
-            padding: 0.8vw 2vw;
+            display: flex;
+            align-items: center;
+            gap: 1.2vw;
+            padding: 1.8vw 4vw;
+            border: 0.15vw solid #e2e8f0;
+            border-radius: 2vw;
+            background: #ffffff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 3vw;
+            color: #475569;
+            font-family: inherit;
         }
 
         .action-btn .action-icon {
+            font-size: 3.5vw;
+        }
+
+        .action-btn .action-count {
+            font-size: 2.8vw;
+        }
+
+        .comment-count {
+            display: flex;
+            align-items: center;
+            gap: 1vw;
+            font-size: 3vw;
+            color: #94a3b8;
+            justify-content: center;
+            padding: 0.5vw 0;
+        }
+
+        .comment-count iconify-icon {
+            font-size: 3.5vw;
+        }
+
+        /* ============================================ */
+        /* KONTEN ARTIKEL */
+        /* ============================================ */
+        .article-detail-content {
+            font-size: 3.2vw;
+            padding: 2vw 4vw;
+            line-height: 1.6;
+        }
+
+        .article-detail-content h2 {
+            font-size: 4.5vw;
+            margin: 4vw 0 2vw;
+            color: #0f172a;
+            font-weight: 700;
+        }
+
+        .article-detail-content h3 {
+            font-size: 4vw;
+            margin: 3vw 0 1.5vw;
+            font-weight: 600;
+        }
+
+        .article-detail-content h4 {
+            font-size: 3.5vw;
+            margin: 2.5vw 0 1.5vw;
+            font-weight: 600;
+        }
+
+        .article-detail-content p {
+            font-size: 3.2vw;
+            margin-bottom: 2vw;
+        }
+
+        .article-detail-content ul,
+        .article-detail-content ol {
+            margin: 1.5vw 0 2vw 3vw;
+        }
+
+        .article-detail-content li {
+            font-size: 3vw;
+            margin-bottom: 1vw;
+        }
+
+        .article-detail-content img {
+            border-radius: 1.5vw;
+            margin: 2vw 0;
+            width: 100%;
+            height: auto;
+        }
+
+        .article-detail-content blockquote {
+            border-left: 0.8vw solid #076694;
+            padding: 2vw 3vw;
+            margin: 2vw 0;
+            background: #f8fafc;
+            border-radius: 0 1.5vw 1.5vw 0;
+            font-style: italic;
+            color: #475569;
+            font-size: 3vw;
+        }
+
+        .article-detail-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 2vw 0;
+            font-size: 2.8vw;
+            display: block;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .article-detail-content table th,
+        .article-detail-content table td {
+            padding: 1.5vw 2vw;
+            border: 0.1vw solid #e2e8f0;
+            text-align: left;
+            font-size: 2.8vw;
+        }
+
+        /* ============================================ */
+        /* TAGS */
+        /* ============================================ */
+        .article-detail-tags {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 1.8vw;
+            margin: 0;
+            padding: 3vw 4vw;
+            padding-top: 3vw;
+            border-top: 0.1vw solid #e2e8f0;
+        }
+
+        .article-detail-tags .tag-label {
+            font-size: 3vw;
+            font-weight: 600;
+            color: #475569;
+            margin-right: 1.3vw;
+        }
+
+        .article-detail-tags .tag {
+            padding: 1vw 2.5vw;
+            border-radius: 100vw;
+            font-size: 2.8vw;
+            color: #475569;
+            background: #f1f5f9;
+            border: 0.1vw solid #e2e8f0;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-block;
+            margin-bottom: 0.5vw;
+        }
+
+        /* ============================================ */
+        /* 🔥 KOMENTAR - KE BAWAH */
+        /* ============================================ */
+        .comment-section {
+            padding: 4vw 4vw 8vw;
+            margin-top: 0;
+            padding-top: 4vw;
+            border-top: 0.2vw solid #e2e8f0;
+        }
+
+        .comment-section-title {
+            font-size: 4vw;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 3vw;
+            display: flex;
+            align-items: center;
+            gap: 1.5vw;
+        }
+
+        .comment-section-title iconify-icon {
+            font-size: 4.5vw;
+        }
+
+        .comment-form-wrapper {
+            margin-bottom: 4vw;
+        }
+
+        .comment-form-input-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 2.5vw;
+            align-items: stretch;
+            width: 100%;
+        }
+
+        .comment-form-input-wrapper textarea {
+            flex: 1;
+            padding: 3vw 3.5vw;
+            border: 0.15vw solid #e2e8f0;
+            border-radius: 2vw;
+            font-size: 3.2vw;
+            resize: vertical;
+            min-height: 12vw;
+            transition: border-color 0.3s ease;
+            font-family: inherit;
+            width: 100%;
+            background: #ffffff;
+        }
+
+        .comment-form-input-wrapper textarea:focus {
+            outline: none;
+            border-color: #076694;
+            box-shadow: 0 0 0 0.3vw rgba(7, 102, 148, 0.1);
+        }
+
+        .comment-submit-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1.3vw;
+            padding: 2.5vw 4vw;
+            background: #076694;
+            color: #ffffff;
+            border: none;
+            border-radius: 2vw;
+            font-size: 3.5vw;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            white-space: nowrap;
+            width: 100%;
+            height: fit-content;
+            font-family: inherit;
+        }
+
+        .comment-submit-btn:active {
+            background: #055a7a;
+            transform: scale(0.97);
+        }
+
+        .comment-submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .comment-submit-btn iconify-icon {
+            font-size: 4vw;
+        }
+
+        .comment-reply-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.5vw 2.5vw;
+            background: #f1f5f9;
+            border-radius: 1.5vw;
+            font-size: 2.8vw;
+            color: #475569;
+            margin-top: 1.5vw;
+            flex-wrap: wrap;
+            gap: 1vw;
+        }
+
+        .comment-reply-indicator strong {
+            color: #076694;
+        }
+
+        .cancel-reply-btn {
+            background: none;
+            border: none;
+            color: #ef4444;
+            cursor: pointer;
+            font-size: 2.8vw;
+            font-weight: 600;
+            padding: 0.5vw 1.5vw;
+        }
+
+        .cancel-reply-btn:active {
+            opacity: 0.7;
+        }
+
+        .comment-login-required {
+            padding: 3vw 4vw;
+            background: #f8fafc;
+            border-radius: 2vw;
+            border: 0.1vw dashed #e2e8f0;
+            text-align: center;
+        }
+
+        .comment-login-required p {
+            font-size: 3vw;
+            color: #475569;
+        }
+
+        .comment-login-required .login-link {
+            color: #076694;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .comment-login-required .login-link:hover {
+            text-decoration: underline;
+        }
+
+        .comment-login-required iconify-icon {
+            font-size: 3.5vw;
+            vertical-align: middle;
+            margin-right: 1vw;
+        }
+
+        /* ============================================ */
+        /* COMMENT LIST */
+        /* ============================================ */
+        .comment-list {
+            margin-top: 4vw;
+        }
+
+        .comment-loading {
+            text-align: center;
+            padding: 4vw;
+            color: #94a3b8;
+            font-size: 3vw;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 4vw;
+            height: 4vw;
+            border: 0.4vw solid #e2e8f0;
+            border-top-color: #076694;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            margin-right: 1.5vw;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .comment-empty {
+            text-align: center;
+            padding: 6vw 2vw;
+            color: #94a3b8;
+            font-size: 3.2vw;
+        }
+
+        .comment-empty iconify-icon {
+            font-size: 6vw;
+            display: block;
+            margin-bottom: 2vw;
+            color: #cbd5e1;
+        }
+
+        /* ============================================ */
+        /* COMMENT ITEM - MOBILE */
+        /* ============================================ */
+        .comment-item {
+            padding: 2.5vw 0;
+            border-bottom: 0.1vw solid #f1f5f9;
+            padding-left: 0;
+        }
+
+        .comment-item:last-child {
+            border-bottom: none;
+        }
+
+        .comment-header {
+            display: flex;
+            align-items: center;
+            gap: 2.5vw;
+            margin-bottom: 1vw;
+            flex-wrap: wrap;
+        }
+
+        .comment-avatar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 6vw;
+            height: 6vw;
+            border-radius: 50%;
+            background: #076694;
+            color: #ffffff;
+            font-size: 2.8vw;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .comment-user {
+            font-weight: 600;
+            font-size: 3.2vw;
+            color: #0f172a;
+        }
+
+        .comment-time {
+            font-size: 2.5vw;
+            color: #94a3b8;
+        }
+
+        .comment-delete-btn {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 2.8vw;
+            padding: 0.5vw 1vw;
+            transition: all 0.3s ease;
+            margin-left: auto;
+            border-radius: 0.5vw;
+            line-height: 1;
+        }
+
+        .comment-delete-btn:active {
+            color: #ef4444;
+            background: #fef2f2;
+        }
+
+        .comment-content {
+            font-size: 3.2vw;
+            color: #475569;
+            line-height: 1.6;
+            margin-bottom: 1vw;
+            margin-left: 8.5vw;
+            word-wrap: break-word;
+        }
+
+        .comment-actions {
+            display: flex;
+            gap: 2vw;
+            margin-left: 8.5vw;
+            padding-bottom: 0.5vw;
+        }
+
+        .comment-actions button {
+            background: none;
+            border: none;
+            font-size: 2.8vw;
+            color: #94a3b8;
+            cursor: pointer;
+            transition: color 0.3s ease;
+            padding: 0.5vw 0;
+        }
+
+        .comment-actions button:active {
+            color: #076694;
+        }
+
+        /* ============================================ */
+        /* COMMENT REPLY - MOBILE */
+        /* ============================================ */
+        .comment-reply {
+            margin-top: 1vw;
+            padding-left: 0;
+            margin-left: 0;
+        }
+
+        .comment-reply .comment-item {
+            padding: 2vw 0;
+            border-bottom: 0.05vw solid #f1f5f9;
+            border-left: 0.3vw solid #e2e8f0;
+            padding-left: 2vw;
+            margin-left: 2vw;
+        }
+
+        .comment-reply .comment-item:last-child {
+            border-bottom: none;
+        }
+
+        .comment-reply .comment-header .comment-avatar {
+            width: 5vw;
+            height: 5vw;
+            font-size: 2.2vw;
+        }
+
+        .comment-reply .comment-user {
+            font-size: 2.8vw;
+        }
+
+        .comment-reply .comment-time {
+            font-size: 2.2vw;
+        }
+
+        .comment-reply .comment-content {
+            font-size: 2.8vw;
+            margin-left: 7.5vw;
+        }
+
+        .comment-reply .comment-actions {
+            margin-left: 7.5vw;
+        }
+
+        .comment-reply .comment-actions button {
             font-size: 2.5vw;
         }
 
+        /* 🔥 NESTED REPLY - LEVEL LEBIH DALAM */
+        .comment-reply .comment-reply {
+            margin-left: 2vw !important;
+            padding-left: 1vw;
+        }
+
+        .comment-reply .comment-reply .comment-item {
+            border-left: 0.3vw solid #e2e8f0;
+            padding-left: 2vw;
+        }
+
+        /* ============================================ */
+        /* SIDEBAR - HIDE / TAMPILKAN DI BAWAH */
+        /* ============================================ */
+        .article-sidebar {
+            padding: 0 4vw 4vw;
+            margin-top: 0;
+        }
+
+        .sidebar-widget {
+            border-radius: 2vw;
+            padding: 3vw 3.5vw;
+            margin-bottom: 3vw;
+        }
+
+        .sidebar-widget .widget-title {
+            font-size: 3.5vw;
+            margin-bottom: 2.5vw;
+            padding-bottom: 1.5vw;
+        }
+
+        .sidebar-widget .widget-title iconify-icon {
+            font-size: 4vw;
+        }
+
+        .widget-search-form {
+            gap: 1.5vw;
+            flex-wrap: wrap;
+        }
+
+        .widget-search-form input {
+            padding: 1.5vw 2.5vw;
+            border-radius: 1.5vw;
+            font-size: 3vw;
+            min-width: 60%;
+            flex: 1;
+        }
+
+        .widget-search-form button {
+            padding: 1.5vw 3vw;
+            border-radius: 1.5vw;
+            font-size: 3vw;
+        }
+
+        .category-list li {
+            padding: 1.2vw 0;
+        }
+
+        .category-list li a {
+            font-size: 2.8vw;
+        }
+
+        .category-list li .count {
+            font-size: 2.2vw;
+            padding: 0.3vw 1.5vw;
+            border-radius: 100vw;
+        }
+
+        .widget-article-list li {
+            gap: 2vw;
+            padding: 1.5vw 0;
+        }
+
+        .widget-article-list .widget-article-image {
+            width: 12vw;
+            height: 12vw;
+            border-radius: 1.2vw;
+            flex-shrink: 0;
+        }
+
+        .widget-article-list .widget-article-image .no-image {
+            font-size: 4vw;
+        }
+
+        .widget-article-list .widget-article-info h4 {
+            font-size: 2.8vw;
+            margin: 0 0 0.5vw 0;
+        }
+
+        .widget-article-list .widget-article-info .widget-article-meta {
+            font-size: 2.2vw;
+            gap: 1vw;
+        }
+
+        .widget-article-list .widget-article-info .widget-article-meta iconify-icon {
+            font-size: 2.4vw;
+        }
+
+        .recommendation-badge {
+            padding: 0.2vw 1.2vw;
+            border-radius: 0.5vw;
+            font-size: 1.8vw;
+            margin-left: 0.8vw;
+            vertical-align: middle;
+            display: inline-block;
+        }
+
+        /* Popular List */
+        .popular-list li {
+            gap: 2vw;
+            padding: 1.2vw 0;
+        }
+
+        .popular-list .popular-number {
+            width: 5vw;
+            height: 5vw;
+            font-size: 2.5vw;
+            flex-shrink: 0;
+        }
+
+        .popular-list .popular-info h4 {
+            font-size: 2.8vw;
+        }
+
+        .popular-list .popular-info .popular-views {
+            font-size: 2.2vw;
+            gap: 0.5vw;
+        }
+
+        .popular-list .popular-info .popular-views iconify-icon {
+            font-size: 2.4vw;
+        }
+
+        /* ============================================ */
+        /* SHARE MODAL - MOBILE */
+        /* ============================================ */
         .share-modal-content {
-            max-width: 92vw;
-            padding: 5vw;
+            max-width: 85vw;
+            padding: 5vw 4vw;
+            border-radius: 2.5vw;
+            margin: 0 3vw;
+        }
+
+        .share-modal-close {
+            top: 1.5vw;
+            right: 2.5vw;
+            font-size: 4vw;
         }
 
         .share-modal-content h3 {
             font-size: 3.5vw;
+            margin-bottom: 3vw;
+        }
+
+        .share-modal-buttons {
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5vw;
         }
 
         .share-modal-btn {
-            font-size: 2vw;
-            padding: 2vw;
+            padding: 2vw 2vw;
+            border-radius: 1.5vw;
+            font-size: 2.8vw;
+            gap: 1vw;
         }
 
         .share-modal-btn iconify-icon {
-            font-size: 2.8vw;
+            font-size: 3.5vw;
         }
 
-        .comment-section-title {
-            font-size: 2.8vw;
-        }
-
-        .comment-form-input-wrapper {
-            flex-direction: column;
-        }
-
-        .comment-form-input-wrapper textarea {
-            font-size: 1.6vw;
-            padding: 1.5vw;
-            min-height: 8vw;
-            width: 100%;
-        }
-
-        .comment-submit-btn {
-            font-size: 1.6vw;
-            padding: 1.5vw 2.5vw;
-            width: 100%;
-            justify-content: center;
-        }
-
-        .comment-avatar {
-            width: 5vw;
-            height: 5vw;
-            font-size: 1.5vw;
-        }
-
-        .comment-user {
-            font-size: 1.6vw;
-        }
-
-        .comment-time {
-            font-size: 1.3vw;
-        }
-
-        .comment-content {
-            font-size: 1.6vw;
-            margin-left: 6.5vw;
-        }
-
-        .comment-actions {
-            margin-left: 6.5vw;
-        }
-
-        .comment-actions button {
-            font-size: 1.3vw;
-        }
-
-        .comment-reply {
-            margin-left: 6.5vw;
-        }
-
-        .comment-login-required p {
-            font-size: 1.2vw;
-        }
-
-        .article-detail-tags .tag {
-            font-size: 1.2vw;
-            padding: 0.3vw 1.2vw;
-        }
-
-        .sidebar-widget {
-            padding: 2vw;
-        }
-
-        .sidebar-widget .widget-title {
-            font-size: 2vw;
-        }
-
-        .sidebar-widget .widget-title iconify-icon {
-            font-size: 2vw;
-        }
-
-        .widget-search-form input {
-            font-size: 1.6vw;
-            padding: 0.8vw 1.5vw;
-        }
-
-        .widget-search-form button {
-            font-size: 1.6vw;
-            padding: 0.8vw 1.8vw;
-        }
-
-        .category-list li a {
-            font-size: 1.6vw;
-        }
-
-        .category-list li .count {
-            font-size: 1.2vw;
-        }
-
-        .widget-article-list li {
-            gap: 1.2vw;
-            padding: 1vw 0;
-        }
-
-        .widget-article-list .widget-article-image {
-            width: 8vw;
-            height: 8vw;
-        }
-
-        .widget-article-list .widget-article-info h4 {
-            font-size: 1.6vw;
-        }
-
-        .widget-article-list .widget-article-info .widget-article-meta {
-            font-size: 1.3vw;
-        }
-
-        .popular-list .popular-number {
-            width: 3.5vw;
-            height: 3.5vw;
-            font-size: 1.2vw;
-        }
-
-        .popular-list .popular-info h4 {
-            font-size: 1.6vw;
-        }
-
-        .popular-list .popular-info .popular-views {
-            font-size: 1.2vw;
-        }
-
+        /* ============================================ */
+        /* TOAST - MOBILE */
+        /* ============================================ */
         .custom-toast {
             bottom: 6vw;
-            right: 5vw;
-            padding: 2vw 3vw;
-            font-size: 2vw;
-            max-width: 80vw;
+            right: 4vw;
+            left: 4vw;
+            padding: 2.5vw 3.5vw;
+            font-size: 2.8vw;
+            max-width: 100%;
+            border-radius: 2vw;
+            gap: 1.5vw;
+        }
+
+        .custom-toast .custom-toast-close {
+            font-size: 2.5vw;
+            padding: 0.5vw 1vw;
+        }
+
+        /* ============================================ */
+        /* KEYFRAMES */
+        /* ============================================ */
+        @keyframes slideUp {
+            from { transform: translateY(4vw); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes slideDown {
+            from { transform: translateY(0); opacity: 1; }
+            to { transform: translateY(4vw); opacity: 0; }
+        }
+
+        @keyframes replySlideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-2vw);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .comment-reply .comment-item:first-child {
+            animation: replySlideIn 0.3s ease forwards;
         }
     }
-
-    .comment-reply {
-    margin-top: 0.3vw;
-    padding-left: 0.5vw;
-}
-
-.comment-reply .comment-item {
-    padding: 0.5vw 0;
-    border-bottom: 0.05vw solid #f1f5f9;
-}
-
-.comment-reply .comment-item:last-child {
-    border-bottom: none;
-}
-
-.comment-reply .comment-header .comment-avatar {
-    width: 1.8vw;
-    height: 1.8vw;
-    font-size: 0.6vw;
-}
-
-.comment-reply .comment-user {
-    font-size: 0.75vw;
-}
-
-.comment-reply .comment-time {
-    font-size: 0.6vw;
-}
-
-.comment-reply .comment-content {
-    font-size: 0.75vw;
-    margin-left: 2.5vw;
-}
-
-.comment-reply .comment-actions {
-    margin-left: 2.5vw;
-}
-
-.comment-reply .comment-actions button {
-    font-size: 0.6vw;
-}
-
-/* 🔥 NESTED REPLY - LEVEL LEBIH DALAM */
-.comment-reply .comment-reply {
-    margin-left: 1.5vw !important;
-    padding-left: 0.3vw;
-}
-
-.comment-reply .comment-reply .comment-item {
-    border-left: 0.15vw solid #e2e8f0;
-    padding-left: 0.8vw;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-    .comment-reply .comment-header .comment-avatar {
-        width: 2.8vw;
-        height: 2.8vw;
-        font-size: 1vw;
-    }
-    
-    .comment-reply .comment-user {
-        font-size: 1.1vw;
-    }
-    
-    .comment-reply .comment-time {
-        font-size: 0.9vw;
-    }
-    
-    .comment-reply .comment-content {
-        font-size: 1.1vw;
-        margin-left: 4vw;
-    }
-    
-    .comment-reply .comment-actions {
-        margin-left: 4vw;
-    }
-    
-    .comment-reply .comment-actions button {
-        font-size: 0.9vw;
-    }
-    
-    .comment-reply .comment-reply {
-        margin-left: 2vw !important;
-    }
-}
-
-@media (max-width: 480px) {
-    .comment-reply .comment-header .comment-avatar {
-        width: 4vw;
-        height: 4vw;
-        font-size: 1.4vw;
-    }
-    
-    .comment-reply .comment-user {
-        font-size: 1.5vw;
-    }
-    
-    .comment-reply .comment-time {
-        font-size: 1.2vw;
-    }
-    
-    .comment-reply .comment-content {
-        font-size: 1.5vw;
-        margin-left: 5.5vw;
-    }
-    
-    .comment-reply .comment-actions {
-        margin-left: 5.5vw;
-    }
-    
-    .comment-reply .comment-actions button {
-        font-size: 1.2vw;
-    }
-    
-    .comment-reply .comment-reply {
-        margin-left: 2.5vw !important;
-    }
-}
 </style>
 
 {{-- ============================================ --}}
@@ -2185,14 +2565,14 @@ function renderReplies(replies, level = 1) {
         html += `
             <div class="comment-item" id="comment-${reply.id}" style="border-left: 0.15vw solid #e2e8f0; padding-left: 0.8vw;">
                 <div class="comment-header">
-                    <div class="comment-avatar" style="width: 1.8vw; height: 1.8vw; font-size: 0.6vw;">${reply.user_avatar || 'U'}</div>
-                    <span class="comment-user" style="font-size: 0.75vw;">${reply.user_name || 'User'}</span>
-                    <span class="comment-time" style="font-size: 0.6vw;">${reply.created_at || 'Baru saja'}</span>
-                    ${canDelete ? `<button class="comment-delete-btn" onclick="deleteComment(${reply.id})" title="Hapus komentar" style="font-size: 0.6vw;">✕</button>` : ''}
+                    <div class="comment-avatar">${reply.user_avatar || 'U'}</div>
+                    <span class="comment-user">${reply.user_name || 'User'}</span>
+                    <span class="comment-time">${reply.created_at || 'Baru saja'}</span>
+                    ${canDelete ? `<button class="comment-delete-btn" onclick="deleteComment(${reply.id})" title="Hapus komentar">✕</button>` : ''}
                 </div>
-                <div class="comment-content" style="font-size: 0.75vw; margin-left: 2.5vw;">${escapeHtml(reply.content)}</div>
-                <div class="comment-actions" style="margin-left: 2.5vw;">
-                    <button onclick="setReply(${reply.id}, '${escapeHtml(reply.user_name || 'User')}')" style="font-size: 0.6vw;">Balas</button>
+                <div class="comment-content">${escapeHtml(reply.content)}</div>
+                <div class="comment-actions">
+                    <button onclick="setReply(${reply.id}, '${escapeHtml(reply.user_name || 'User')}')">Balas</button>
                 </div>
                 ${hasNestedReplies ? renderReplies(reply.replies, level + 1) : ''}
             </div>

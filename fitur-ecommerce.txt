@@ -33,7 +33,7 @@ D. Stok Management
 2. DISKON & PROMO
 A. Diskon Produk
 ☑ Diskon per varian (% atau nominal)
-□ Diskon per Produk (semua varian)
+☑ Diskon per Produk (semua varian)
 □ Diskon Flash Sale - dengan timer
 □ Diskon Kategori - semua produk di kategori tertentu
 □ Diskon Minimum Pembelian - diskon jika beli di atas jumlah tertentu

@@ -1,5 +1,5 @@
 // ============================================
-// VARIANT MODAL - SEDERHANA & LENGKAP
+// VARIANT MODAL - DENGAN DISKON PER PRODUK
 // ============================================
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -21,14 +21,17 @@ document.addEventListener('DOMContentLoaded', function() {
     let productVariants = [];
     let currentVariant = null;
     let currentProductId = null;
+    let allOptions = [];
+    let productData = null;
 
     // ============================================
     // OPEN MODAL
     // ============================================
     window.openVariantModal = function(productId, mode = 'add_to_cart') {
         currentProductId = productId;
+        allOptions = [];
+        productData = null;
         
-        // Reset
         selectedValues = {};
         modalSelectedVariant.value = '';
         modalQtyInput.value = 1;
@@ -36,10 +39,8 @@ document.addEventListener('DOMContentLoaded', function() {
         modalAddToCartBtn.disabled = true;
         modalActionMode.value = mode;
 
-        // Ubah teks tombol
         modalAddToCartBtn.textContent = mode === 'buy_now' ? 'Beli Sekarang' : 'Tambah ke Keranjang';
 
-        // Loading
         modalVariantOptions.innerHTML = `
             <div class="variant-loading">
                 <div class="variant-spinner"></div>
@@ -47,15 +48,10 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         `;
 
-        // Tampilkan modal
         modal.classList.remove('hidden');
         modal.classList.add('active');
         document.body.style.overflow = 'hidden';
 
-        // 🔥 RESET FLAG _fromWishlist jika modal dibuka dari wishlist
-        // Flag ini akan digunakan di add to cart untuk reload wishlist popup
-
-        // Fetch data
         fetch(`/api/products/${productId}/variants`, {
             headers: { 'Accept': 'application/json' }
         })
@@ -65,35 +61,38 @@ document.addEventListener('DOMContentLoaded', function() {
                 throw new Error(data.message || 'Gagal memuat data');
             }
 
-            productVariants = data.variants;
+            console.log('🔍 API Response:', data);
 
-            // Set product info
+            productVariants = data.variants || [];
+            allOptions = data.options || [];
+            productData = data.product || {};
+
             modalProductId.value = productId;
-            modalProductName.textContent = data.product.name;
+            modalProductName.textContent = productData.name || '';
             
-            const minPrice = data.variants.reduce((min, v) => {
-                const price = v.discount_price ?? v.price;
-                return price < min ? price : min;
-            }, Infinity);
-            modalProductPrice.textContent = 'Rp ' + formatRupiah(minPrice);
+            // 🔥 HITUNG HARGA TERMURAH (TERMASUK DISKON PRODUK)
+            const prices = productVariants.map(v => v.effective_price ?? v.discount_price ?? v.price);
+            const minPrice = prices.length > 0 ? Math.min(...prices) : 0;
+            const totalStock = productVariants.reduce((sum, v) => sum + v.stock, 0);
+            
+            // 🔥 TAMPILKAN HARGA DENGAN DISKON PRODUK
+            updateModalPriceWithProductDiscount(minPrice, totalStock);
 
-            const totalStock = data.variants.reduce((sum, v) => sum + v.stock, 0);
-            modalProductStock.textContent = 'Stok: ' + totalStock;
-
-            if (data.product.image) {
-                modalProductImage.src = data.product.image;
+            if (productData.image) {
+                modalProductImage.src = productData.image;
             }
 
-            if (!data.options || data.options.length === 0) {
+            if (!allOptions || allOptions.length === 0) {
                 modalVariantOptions.innerHTML = `
                     <div class="variant-empty-state">Produk ini tidak memiliki varian.</div>
                 `;
                 return;
             }
 
-            renderOptions(data.options, data.variants);
+            renderOptions(allOptions, productVariants);
         })
         .catch(error => {
+            console.error('Error loading variants:', error);
             modalVariantOptions.innerHTML = `
                 <div class="variant-empty-state error">
                     ❌ ${error.message}
@@ -105,6 +104,89 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     // ============================================
+    // 🔥 UPDATE MODAL PRICE - HANYA TAMPILKAN DISKON PRODUK
+    // ============================================
+    function updateModalPriceWithProductDiscount(price, stock) {
+        const priceEl = document.getElementById('modal-product-price');
+        const stockEl = document.getElementById('modal-product-stock');
+        
+        if (!priceEl) return;
+        
+        // 🔥 AMBIL DATA DISKON DARI productData
+        const hasProductDiscount = productData?.has_product_discount || false;
+        const productDiscountPercent = productData?.product_discount_percent || 0;
+        
+        // 🔥 HITUNG HARGA ASLI TERMURAH
+        let minOriginalPrice = Infinity;
+        productVariants.forEach(v => {
+            if (v.price < minOriginalPrice) {
+                minOriginalPrice = v.price;
+            }
+        });
+        
+        // 🔥 HITUNG HARGA EFEKTIF TERMURAH (SUDAH TERMASUK DISKON)
+        let minEffectivePrice = Infinity;
+        productVariants.forEach(v => {
+            const effPrice = v.effective_price ?? v.discount_price ?? v.price;
+            if (effPrice < minEffectivePrice) {
+                minEffectivePrice = effPrice;
+            }
+        });
+        
+        // 🔥 CEK APAKAH ADA DISKON DARI VARIAN
+        const hasVariantDiscount = productVariants.some(v => 
+            (v.discount_price && v.discount_price < v.price) || 
+            (v.effective_price && v.effective_price < v.price)
+        );
+        
+        const hasDiscount = hasVariantDiscount || hasProductDiscount;
+        
+        if (hasDiscount && minOriginalPrice !== Infinity) {
+            // 🔥 ADA DISKON - TAMPILKAN HARGA CORET DAN HARGA DISKON
+            // 🔥 HANYA TAMPILKAN BADGE DISKON PRODUK (30%) SAJA
+            let productBadge = '';
+            
+            // 🔥 BADGE DISKON PRODUK (GLOBAL) - PRIORITAS UTAMA
+            if (hasProductDiscount && productDiscountPercent > 0) {
+                productBadge = `<span class="modal-product-discount-badge">Diskon Produk ${Math.round(productDiscountPercent)}%</span>`;
+            }
+            
+            // 🔥 JIKA TIDAK ADA DISKON PRODUK, TAMPILKAN DISKON VARIAN
+            // TAPI KALAU ADA DISKON PRODUK, TAMPILKAN ITU SAJA
+            let variantBadge = '';
+            if (!hasProductDiscount && hasVariantDiscount) {
+                const maxDiscount = productVariants.reduce((max, v) => {
+                    const d = v.discount_percent || 0;
+                    return d > max ? d : max;
+                }, 0);
+                if (maxDiscount > 0) {
+                    variantBadge = `<span class="modal-discount-badge">Diskon ${Math.round(maxDiscount)}%</span>`;
+                }
+            }
+            
+            // 🔥 GABUNGKAN BADGE (PRIORITAS DISKON PRODUK)
+            const finalBadge = productBadge || variantBadge;
+            
+            priceEl.innerHTML = `
+                <div class="modal-price-wrapper">
+                    <span class="modal-price-current discounted">Rp ${formatRupiah(minEffectivePrice)}</span>
+                    <span class="modal-price-original">Rp ${formatRupiah(minOriginalPrice)}</span>
+                    ${finalBadge}
+                </div>
+            `;
+        } else {
+            // TIDAK ADA DISKON
+            priceEl.innerHTML = `
+                <span class="modal-price-current">Rp ${formatRupiah(price)}</span>
+            `;
+        }
+        
+        if (stockEl) {
+            stockEl.textContent = 'Stok: ' + (stock || 0);
+        }
+    }
+
+    // ============================================
     // CLOSE MODAL
     // ============================================
     window.closeVariantModal = function(event) {
@@ -112,6 +194,10 @@ document.addEventListener('DOMContentLoaded', function() {
         modal.classList.remove('active');
         modal.classList.add('hidden');
         document.body.style.overflow = '';
+        selectedValues = {};
+        productVariants = [];
+        currentVariant = null;
+        productData = null;
     };
 
     // ============================================
@@ -127,12 +213,17 @@ document.addEventListener('DOMContentLoaded', function() {
             let valuesHtml = '';
             
             option.values.forEach(value => {
+                const hasStock = variants.some(v => 
+                    v.values && v.values.includes(value.id) && v.stock > 0
+                );
+                
                 valuesHtml += `
                     <button type="button"
-                        class="variant-option-btn"
+                        class="variant-option-btn ${hasStock ? '' : 'disabled'}"
                         data-option-id="${option.id}"
                         data-value-id="${value.id}"
-                        data-image="${value.image || ''}">
+                        data-image="${value.image || ''}"
+                        ${!hasStock ? 'disabled' : ''}>
                         ${value.value}
                     </button>
                 `;
@@ -148,37 +239,104 @@ document.addEventListener('DOMContentLoaded', function() {
             modalVariantOptions.appendChild(group);
         });
 
-        // Event Delegation Klik Opsi
-        modalVariantOptions.addEventListener('click', function(e) {
-            const btn = e.target.closest('.variant-option-btn');
-            if (!btn || btn.disabled) return;
-
-            const optionId = btn.dataset.optionId;
-            const valueId = parseInt(btn.dataset.valueId);
-
-            // 1. Simpan nilai yang dipilih
-            selectedValues[optionId] = valueId;
-
-            // 2. Update status disabled & sesuaikan opsi grup lain jika opsi aktifnya jadi disabled
-            updateOptionAvailability(variants);
-
-            // 3. Refresh visual class active ke semua tombol
-            refreshActiveButtons();
-
-            // 4. Update preview gambar jika ada
-            const image = btn.dataset.image;
-            if (image) {
-                modalProductImage.src = image;
-            }
-
-            // 5. Cek kecocokan varian & update harga/stok
-            checkSelection(variants);
-        });
-
-        // Auto select opsi pertama yang memiliki stok di tiap grup
         autoSelectInitialOptions(variants);
+        updateOptionAvailability(variants);
+        refreshActiveButtons();
+        checkSelection(variants);
+        attachVariantButtonListeners();
     }
 
+    // ============================================
+    // ATTACH VARIANT BUTTON LISTENERS
+    // ============================================
+    function attachVariantButtonListeners() {
+        const buttons = document.querySelectorAll('.variant-option-btn:not(.disabled)');
+        buttons.forEach(function(btn) {
+            btn.removeEventListener('click', handleVariantClick);
+            btn.addEventListener('click', handleVariantClick);
+        });
+    }
+
+    // ============================================
+    // HANDLE VARIANT CLICK
+    // ============================================
+    function handleVariantClick(e) {
+        const btn = e.currentTarget;
+        if (btn.disabled) return;
+
+        const optionId = btn.dataset.optionId;
+        const valueId = parseInt(btn.dataset.valueId);
+        const group = btn.closest('.variant-option-values');
+        
+        if (!group || !optionId) return;
+
+        group.querySelectorAll('.variant-option-btn').forEach(b => {
+            b.classList.remove('active');
+        });
+
+        btn.classList.add('active');
+        selectedValues[optionId] = valueId;
+
+        updateOptionAvailability(productVariants);
+        refreshActiveButtons();
+
+        const image = btn.dataset.image;
+        if (image) {
+            modalProductImage.src = image;
+        }
+
+        checkSelection(productVariants);
+    }
+
+    // ============================================
+    // AUTO SELECT INITIAL OPTIONS
+    // ============================================
+    function autoSelectInitialOptions(variants) {
+        const availableVariant = variants.find(v => v.stock > 0);
+
+        if (availableVariant && availableVariant.values) {
+            const groups = document.querySelectorAll('.variant-option-values');
+            
+            groups.forEach(group => {
+                const optionId = group.dataset.optionId;
+                const buttons = group.querySelectorAll('.variant-option-btn');
+                
+                let found = false;
+                buttons.forEach(btn => {
+                    const valueId = parseInt(btn.dataset.valueId);
+                    if (availableVariant.values.includes(valueId) && !btn.disabled) {
+                        selectedValues[optionId] = valueId;
+                        btn.classList.add('active');
+                        found = true;
+                    }
+                });
+                
+                if (!found) {
+                    const firstValid = group.querySelector('.variant-option-btn:not([disabled])');
+                    if (firstValid) {
+                        const valId = parseInt(firstValid.dataset.valueId);
+                        selectedValues[optionId] = valId;
+                        firstValid.classList.add('active');
+                    }
+                }
+            });
+        } else {
+            const groups = document.querySelectorAll('.variant-option-values');
+            groups.forEach(group => {
+                const optionId = group.dataset.optionId;
+                const firstValid = group.querySelector('.variant-option-btn:not([disabled])');
+                if (firstValid) {
+                    const valId = parseInt(firstValid.dataset.valueId);
+                    selectedValues[optionId] = valId;
+                    firstValid.classList.add('active');
+                }
+            });
+        }
+    }
+
+    // ============================================
+    // REFRESH ACTIVE BUTTONS
+    // ============================================
     function refreshActiveButtons() {
         document.querySelectorAll('.variant-option-btn').forEach(btn => {
             const optionId = btn.dataset.optionId;
@@ -192,26 +350,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    function autoSelectInitialOptions(variants) {
-        // Cari varian pertama yang masih memiliki stok
-        const availableVariant = variants.find(v => v.stock > 0);
-
-        if (availableVariant && availableVariant.values) {
-            document.querySelectorAll('.variant-option-btn').forEach(btn => {
-                const optionId = btn.dataset.optionId;
-                const valueId = parseInt(btn.dataset.valueId);
-
-                if (availableVariant.values.includes(valueId)) {
-                    selectedValues[optionId] = valueId;
-                }
-            });
-        }
-
-        updateOptionAvailability(variants);
-        refreshActiveButtons();
-        checkSelection(variants);
-    }
-
+    // ============================================
+    // UPDATE OPTION AVAILABILITY
+    // ============================================
     function updateOptionAvailability(variants) {
         const groups = document.querySelectorAll('.variant-option-values');
 
@@ -222,41 +363,48 @@ document.addEventListener('DOMContentLoaded', function() {
             buttons.forEach(btn => {
                 const valueId = parseInt(btn.dataset.valueId);
 
-                // Cek apakah ada varian dengan kombinasi ini yang memiliki stok > 0
-                const isAvailable = variants.some(variant => {
-                    if (!variant.values || variant.stock <= 0) return false;
-                    if (!variant.values.includes(valueId)) return false;
+                let isAvailable = false;
+                
+                if (!selectedValues[optionId]) {
+                    isAvailable = variants.some(v => 
+                        v.values && v.values.includes(valueId) && v.stock > 0
+                    );
+                } else {
+                    isAvailable = variants.some(variant => {
+                        if (!variant.values || variant.stock <= 0) return false;
+                        if (!variant.values.includes(valueId)) return false;
 
-                    // Cocokkan dengan opsi grup LAIN yang sedang aktif
-                    for (const [otherOptId, otherValId] of Object.entries(selectedValues)) {
-                        if (otherOptId !== optionId && !variant.values.includes(otherValId)) {
-                            return false;
+                        for (const [otherOptId, otherValId] of Object.entries(selectedValues)) {
+                            if (otherOptId !== optionId && !variant.values.includes(otherValId)) {
+                                return false;
+                            }
                         }
-                    }
-                    return true;
-                });
+                        return true;
+                    });
+                }
 
                 btn.disabled = !isAvailable;
                 btn.classList.toggle('disabled', !isAvailable);
 
-                // Jika tombol yang tadinya aktif menjadi disabled, hapus dari selection
                 if (!isAvailable && selectedValues[optionId] === valueId) {
                     delete selectedValues[optionId];
                 }
             });
 
-            // Jika tidak ada tombol yang aktif di grup ini setelah update, auto-select tombol pertama yang valid
             if (!selectedValues[optionId]) {
                 const firstValid = group.querySelector('.variant-option-btn:not([disabled])');
                 if (firstValid) {
                     selectedValues[optionId] = parseInt(firstValid.dataset.valueId);
+                    firstValid.classList.add('active');
                 }
             }
         });
+        
+        attachVariantButtonListeners();
     }
 
     // ============================================
-    // CHECK SELECTION
+    // 🔥 CHECK SELECTION - UPDATE HARGA DENGAN DISKON PRODUK
     // ============================================
     function checkSelection(variants) {
         const totalOptions = document.querySelectorAll('.variant-option-values').length;
@@ -264,6 +412,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (selectedCount < totalOptions) {
             modalAddToCartBtn.disabled = true;
+            modalAddToCartBtn.textContent = modalActionMode.value === 'buy_now' ? 'Pilih Varian' : 'Pilih Varian';
             return;
         }
 
@@ -279,19 +428,64 @@ document.addEventListener('DOMContentLoaded', function() {
             currentVariant = matched;
             modalSelectedVariant.value = matched.id;
             
-            const price = matched.discount_price ?? matched.price;
-            modalProductPrice.textContent = 'Rp ' + formatRupiah(price);
+            // 🔥 GUNAKAN EFFECTIVE_PRICE (SUDAH TERMASUK DISKON PRODUK)
+            const price = matched.effective_price ?? matched.discount_price ?? matched.price;
+            const originalPrice = matched.price;
+            const hasDiscount = price < originalPrice;
+            const discountPercent = matched.discount_percent || 0;
+            
+            // 🔥 CEK APAKAH ADA DISKON PRODUK (dari data varian)
+            const hasProductDiscount = matched.has_product_discount || false;
+            const productDiscountPercent = matched.product_discount_percent || 0;
+            
+            // 🔥 UPDATE HARGA DI MODAL
+            const priceEl = document.getElementById('modal-product-price');
+            if (priceEl) {
+                if (hasDiscount || hasProductDiscount) {
+                    // 🔥 HANYA TAMPILKAN BADGE DISKON PRODUK (30%)
+                    let productBadge = '';
+                    let variantBadge = '';
+                    
+                    // 🔥 PRIORITAS DISKON PRODUK
+                    if (hasProductDiscount && productDiscountPercent > 0) {
+                        productBadge = `<span class="modal-product-discount-badge"> Diskon Produk ${Math.round(productDiscountPercent)}%</span>`;
+                    }
+                    
+                    // 🔥 JIKA TIDAK ADA DISKON PRODUK, TAMPILKAN DISKON VARIAN
+                    if (!hasProductDiscount && hasDiscount && discountPercent > 0) {
+                        variantBadge = `<span class="modal-discount-badge">Diskon ${Math.round(discountPercent)}%</span>`;
+                    }
+                    
+                    const finalBadge = productBadge || variantBadge;
+                    
+                    priceEl.innerHTML = `
+                        <div class="modal-price-wrapper">
+                            <span class="modal-price-current discounted">Rp ${formatRupiah(price)}</span>
+                            <span class="modal-price-original">Rp ${formatRupiah(originalPrice)}</span>
+                            ${finalBadge}
+                        </div>
+                    `;
+                } else {
+                    priceEl.innerHTML = `
+                        <span class="modal-price-current">Rp ${formatRupiah(price)}</span>
+                    `;
+                }
+            }
+            
             modalProductStock.textContent = 'Stok: ' + matched.stock;
             modalQtyInput.max = matched.stock;
-            modalQtyInput.value = 1;
+            if (parseInt(modalQtyInput.value) > matched.stock) {
+                modalQtyInput.value = matched.stock;
+            }
             modalAddToCartBtn.disabled = false;
+            modalAddToCartBtn.textContent = modalActionMode.value === 'buy_now' ? 'Beli Sekarang' : 'Tambah ke Keranjang';
             modalError.classList.add('hidden');
         } else {
             currentVariant = null;
             modalSelectedVariant.value = '';
             modalAddToCartBtn.disabled = true;
+            modalAddToCartBtn.textContent = modalActionMode.value === 'buy_now' ? 'Stok Habis' : 'Stok Habis';
             
-            // 🔥 CEK APAKAH KOMBINASI ADA TAPI STOK HABIS
             const hasVariant = variants.some(v => {
                 if (!v.values) return false;
                 const ids = v.values.map(Number).sort();
@@ -299,9 +493,9 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             if (hasVariant) {
-                modalError.textContent = 'Stok habis untuk kombinasi ini.';
+                modalError.textContent = '⚠️ Stok habis untuk kombinasi ini.';
             } else {
-                modalError.textContent = 'Kombinasi tidak tersedia.';
+                modalError.textContent = '⚠️ Kombinasi tidak tersedia.';
             }
             modalError.classList.remove('hidden');
         }
@@ -325,7 +519,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // ============================================
-    // 🔥 ADD TO CART FROM MODAL
+    // ADD TO CART FROM MODAL
     // ============================================
     modalAddToCartBtn.addEventListener('click', function() {
         const variantId = modalSelectedVariant.value;
@@ -334,95 +528,24 @@ document.addEventListener('DOMContentLoaded', function() {
         const mode = modalActionMode.value;
 
         if (!variantId) {
-            modalError.textContent = 'Pilih varian terlebih dahulu!';
+            modalError.textContent = '⚠️ Pilih varian terlebih dahulu!';
             modalError.classList.remove('hidden');
             return;
         }
 
         const variant = productVariants.find(v => v.id == variantId);
         if (variant && quantity > variant.stock) {
-            modalError.textContent = 'Stok tidak mencukupi! Tersedia: ' + variant.stock;
+            modalError.textContent = '⚠️ Stok tidak mencukupi! Tersedia: ' + variant.stock;
             modalError.classList.remove('hidden');
             return;
         }
 
-        // 🔥 PANGGIL FUNGSI addToCartFromVariant
-        // Fungsi ini akan handle popup login jika diperlukan
         if (typeof window.addToCartFromVariant === 'function') {
             window.addToCartFromVariant(productId, variantId, quantity, mode);
         } else {
-            // Fallback ke fungsi lama jika tidak ada
-            console.error('addToCartFromVariant tidak tersedia, menggunakan fallback');
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
-            const url = mode === 'buy_now' ? window.customerRoutes.buyNow : window.customerRoutes.cartAdd;
-
-            this.disabled = true;
-            this.textContent = 'Memproses...';
-
-            fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                    product_id: productId,
-                    variant_id: variantId,
-                    quantity: quantity
-                })
-            })
-            .then(response => {
-                if (response.status === 401) {
-                    window._pendingProductId = productId;
-                    closeVariantModal();
-                    openLoginPopup('add_to_cart', function() {
-                        setTimeout(function() {
-                            if (window._pendingProductId) {
-                                openVariantModal(window._pendingProductId, mode);
-                                window._pendingProductId = null;
-                            }
-                        }, 400);
-                    });
-                    throw new Error('Unauthorized');
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.success) {
-                    if (mode === 'buy_now') {
-                        showToast('Mengarahkan ke checkout...', 'success');
-                        closeVariantModal();
-                        setTimeout(() => {
-                            window.location.href = data.redirect;
-                        }, 500);
-                    } else {
-                        updateNavbarCartCount(data.count);
-                        document.dispatchEvent(new CustomEvent('cart-updated', {
-                            detail: { count: data.count, message: data.message }
-                        }));
-                        showToast(data.message || 'Produk ditambahkan ke keranjang!', 'success');
-                        if (typeof window.loadCartPopup === 'function') {
-                            window.loadCartPopup();
-                        }
-                        closeVariantModal();
-                    }
-                } else {
-                    modalError.textContent = data.message || 'Gagal memproses.';
-                    modalError.classList.remove('hidden');
-                    this.disabled = false;
-                    this.textContent = mode === 'buy_now' ? 'Beli Sekarang' : 'Tambah ke Keranjang';
-                }
-            })
-            .catch(error => {
-                if (error.message !== 'Unauthorized') {
-                    console.error('Error:', error);
-                    modalError.textContent = 'Terjadi kesalahan. Silakan coba lagi.';
-                    modalError.classList.remove('hidden');
-                    this.disabled = false;
-                    this.textContent = mode === 'buy_now' ? 'Beli Sekarang' : 'Tambah ke Keranjang';
-                }
-            });
+            console.error('addToCartFromVariant tidak tersedia');
+            modalError.textContent = 'Terjadi kesalahan. Silakan refresh halaman.';
+            modalError.classList.remove('hidden');
         }
     });
 
@@ -431,6 +554,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // ============================================
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
+            closeVariantModal();
+        }
+    });
+
+    // ============================================
+    // CLICK OUTSIDE
+    // ============================================
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
             closeVariantModal();
         }
     });

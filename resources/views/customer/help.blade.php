@@ -626,7 +626,7 @@
         {{-- TAB 2: CARA PESAN --}}
         <div class="help_tab_content" id="tab-cara-pesan">
             <div class="help_cara_pesan">
-                <h3>📝 Cara Memesan Produk</h3>
+                <h3>Cara Memesan Produk</h3>
                 <p class="subtitle">Ikuti langkah-langkah mudah berikut untuk memesan produk di Barokah Sport</p>
 
                 <div class="help_steps">
@@ -670,7 +670,7 @@
                 <span class="wa_icon">
                     <iconify-icon icon="mdi:whatsapp"></iconify-icon>
                 </span>
-                <h3>💬 Chat WhatsApp</h3>
+                <h3>Chat WhatsApp</h3>
                 <p>Hubungi kami langsung melalui WhatsApp untuk bantuan cepat dan responsif.</p>
 
                 <div class="wa_info">

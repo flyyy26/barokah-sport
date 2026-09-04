@@ -20,6 +20,52 @@
     <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
 
     <script src="https://cdn.tiny.cloud/1/f0qff2j87jgv24lrb8m0hd4yuglweewk56pa79tykafgtc6g/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+
+    <style>
+        .ql-editor {
+            min-height: 250px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .ql-toolbar.ql-snow {
+            border-radius: 8px 8px 0 0;
+            border-color: #d1d5db !important;
+            background: #f9fafb;
+        }
+        
+        .ql-container.ql-snow {
+            border-radius: 0 0 8px 8px;
+            border-color: #d1d5db !important;
+            background: white;
+        }
+        
+        .ql-container.ql-snow:focus-within {
+            border-color: #3b82f6 !important;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        /* Dark mode support */
+        .dark .ql-toolbar.ql-snow {
+            background: #1f2937;
+            border-color: #374151 !important;
+        }
+        
+        .dark .ql-container.ql-snow {
+            background: #1f2937;
+            border-color: #374151 !important;
+        }
+        
+        .dark .ql-editor {
+            color: #e5e7eb;
+        }
+        
+        .dark .ql-editor.ql-blank::before {
+            color: #6b7280;
+        }
+    </style>
 </head>
 
 
@@ -99,6 +145,12 @@
                         Kategori
                     </span>
 
+                </a>
+
+                <a href="{{ route('admin.vouchers.index') }}"
+                    class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium {{ request()->routeIs('admin.vouchers.*') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600' }}">
+                    <span>🎟️</span>
+                    <span>Voucher Promo</span>
                 </a>
 
 
@@ -382,6 +434,58 @@
     </div>
 
     @stack('scripts')
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Cek apakah Quill tersedia
+            if (typeof Quill !== 'undefined') {
+                const editorContainer = document.getElementById('quill-editor');
+                const hiddenInput = document.getElementById('description');
+                
+                if (editorContainer && hiddenInput) {
+                    // Inisialisasi Quill
+                    const quill = new Quill(editorContainer, {
+                        theme: 'snow',
+                        placeholder: 'Masukkan deskripsi produk...',
+                        modules: {
+                            toolbar: [
+                                [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                                [{ 'font': [] }],
+                                ['bold', 'italic', 'underline', 'strike'],
+                                [{ 'color': [] }, { 'background': [] }],
+                                [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                                [{ 'indent': '-1' }, { 'indent': '+1' }],
+                                [{ 'align': [] }],
+                                ['blockquote', 'code-block'],
+                                ['link', 'image', 'video'],
+                                ['clean']
+                            ]
+                        }
+                    });
+
+                    // 🔥 SYNC: Setiap perubahan di Quill, update hidden input
+                    quill.on('text-change', function() {
+                        const content = quill.root.innerHTML;
+                        hiddenInput.value = content;
+                    });
+
+                    // 🔥 SYNC: Saat form submit, pastikan hidden input terisi
+                    const form = document.getElementById('product-form');
+                    if (form) {
+                        form.addEventListener('submit', function() {
+                            hiddenInput.value = quill.root.innerHTML;
+                        });
+                    }
+
+                    // 🔥 SYNC: Set initial content jika ada
+                    const initialContent = hiddenInput.value;
+                    if (initialContent) {
+                        quill.root.innerHTML = initialContent;
+                    }
+                }
+            }
+        });
+    </script>
 
 
     {{-- Vanilla JavaScript --}}

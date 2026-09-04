@@ -27,6 +27,44 @@
     pointer-events: auto;
 }
 
+.modal-price-current.discounted{
+    color: #ef4444;
+    font-size: .86vw;
+}
+.modal-price-original {
+    font-size: .75vw;
+    color: #94a3b8;
+    font-weight: 500;
+    text-decoration: line-through;
+}
+
+.modal-discount-badge {
+    background: #ef4444;
+    color: white;
+    font-size: .5vw;
+    font-weight: 400;
+    padding: .1vw .3vw;
+    border-radius: .5vw;
+    margin-bottom:.6vw;
+    display: inline-block;
+}
+
+.modal-product-discount-badge {
+    background: #16a34a;
+    color: white;
+    font-size: .5vw;
+    font-weight: 400;
+    padding: .1vw .3vw;
+    border-radius: .5vw;
+    margin-bottom:.6vw;
+    display: inline-block;
+}
+
+/* Product info di modal */
+.variant-product-price {
+    margin: .2vw 0 0 0;
+}
+
 /* Saat hidden */
 .variant-modal-overlay.hidden {
     opacity: 0;
@@ -76,7 +114,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    border-bottom: 0.1vw solid #e2e8f0;
+    border-bottom: 0.1vw solid #076694;
     padding-bottom: 1vw;
 }
 
@@ -144,14 +182,12 @@
     font-size: 1.1vw;
     font-weight: 600;
     color: #0f172a;
-    margin: 0 0 0.2vw 0;
 }
 
 .variant-product-price {
     font-size: 1.1vw;
     font-weight: 700;
     color: #076694;
-    margin: 0 0 0.2vw 0;
 }
 
 .variant-product-stock {
@@ -208,7 +244,7 @@
 .variant-option-btn {
     padding: 0.5vw 1.2vw;
     border-radius: 0.5vw;
-    border: 0.15vw solid #e2e8f0;
+    border: 0.1vw solid #e2e8f0;
     background-color: #ffffff;
     color: #374151;
     font-size: 0.85vw;
@@ -227,7 +263,6 @@
     background-color: #eef2ff !important;
     color: #076694 !important;
     font-weight: 600 !important;
-    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2) !important;
 }
 
 .variant-option-btn:disabled,
@@ -263,7 +298,7 @@
     width: 2vw;
     height: 2vw;
     border: 0.25vw solid #e2e8f0;
-    border-top: 0.25vw solid #3b82f6;
+    border-top: 0.25vw solid #076694;
     border-radius: 50%;
     animation: variant-spin 0.8s linear infinite;
 }
@@ -296,7 +331,7 @@
 
 .variant-empty-state .variant-retry-btn {
     margin-top: 0.5vw;
-    color: #3b82f6;
+    color: #076694;
     background: none;
     border: none;
     cursor: pointer;
@@ -305,7 +340,7 @@
 }
 
 .variant-empty-state .variant-retry-btn:hover {
-    color: #1d4ed8;
+    color: #076694;
 }
 
 /* ============================================
@@ -316,14 +351,14 @@
     align-items: center;
     justify-content: space-between;
     margin-top: 1.2vw;
-    border-top: 0.1vw solid #e2e8f0;
+    border-top: 0.1vw solid #076694;
     padding-top: 1.2vw;
 }
 
 .variant-quantity-control {
     display: flex;
     align-items: center;
-    border: 0.1vw solid #e2e8f0;
+    border: 0.1vw solid #076694;
     border-radius: 0.6vw;
     overflow: hidden;
 }
@@ -374,7 +409,7 @@
     padding: 0.6vw 2vw;
     border-radius: 0.6vw;
     border: none;
-    background: #0f172a;
+    background:#076694 ;
     color: #ffffff;
     font-size: 0.9vw;
     font-weight: 600;
@@ -413,259 +448,164 @@
 }
 
 /* ============================================
-   RESPONSIVE
-   ============================================ */
-
-/* Tablet */
-@media (max-width: 1024px) {
-    .variant-modal-box {
-        max-width: 50vw;
-        padding: 2.5vw 3vw;
-        border-radius: 1.5vw;
-    }
-
-    .variant-modal-title {
-        font-size: 1.8vw;
-    }
-
-    .variant-product-name {
-        font-size: 1.4vw;
-    }
-
-    .variant-product-price {
-        font-size: 1.4vw;
-    }
-
-    .variant-option-btn {
-        font-size: 1.1vw;
-        padding: 0.7vw 1.5vw;
-    }
-}
-
-/* Mobile Large */
-@media (max-width: 768px) {
-    .variant-modal-box {
-        max-width: 70vw;
-        padding: 3vw 4vw;
-        border-radius: 2vw;
-    }
-
-    .variant-modal-title {
-        font-size: 2.2vw;
-    }
-
-    .variant-modal-close-icon {
-        width: 2.5vw;
-        height: 2.5vw;
-    }
-
-    .variant-product-info {
-        gap: 1.5vw;
-        margin-top: 1.8vw;
-    }
-
-    .variant-product-image-wrapper {
-        width: 8vw;
-        height: 8vw;
-        border-radius: 1vw;
-    }
-
-    .variant-product-name {
-        font-size: 1.8vw;
-    }
-
-    .variant-product-price {
-        font-size: 1.8vw;
-    }
-
-    .variant-product-stock {
-        font-size: 1.2vw;
-    }
-
-    .variant-option-label {
-        font-size: 1.3vw;
-    }
-
-    .variant-option-btn {
-        font-size: 1.3vw;
-        padding: 0.8vw 1.8vw;
-        border-radius: 0.8vw;
-    }
-
-    .variant-option-stock-badge {
-        font-size: 1vw;
-    }
-
-    .variant-quantity-control {
-        border-radius: 0.8vw;
-    }
-
-    .variant-qty-btn {
-        padding: 0.7vw 1.5vw;
-        font-size: 1.8vw;
-        min-width: 3.5vw;
-    }
-
-    .variant-qty-input {
-        width: 4.5vw;
-        font-size: 1.4vw;
-        padding: 0.7vw 0;
-    }
-
-    .variant-add-to-cart-btn {
-        padding: 0.8vw 3vw;
-        font-size: 1.3vw;
-        border-radius: 0.8vw;
-    }
-
-    .variant-error-message {
-        font-size: 1.2vw;
-        padding: 0.8vw 1.5vw;
-    }
-}
-
-/* Mobile Small */
-@media (max-width: 480px) {
-    .variant-modal-overlay {
-        padding: 3vw;
-        backdrop-filter: blur(0.3vw);
-        -webkit-backdrop-filter: blur(0.3vw);
-    }
-
-    .variant-modal-box {
-        max-width: 100%;
-        padding: 4vw 5vw;
-        border-radius: 2.5vw;
-        max-height: 95vh;
-    }
-
-    .variant-modal-title {
-        font-size: 3.5vw;
-    }
-
-    .variant-modal-close-icon {
-        width: 4vw;
-        height: 4vw;
-    }
-
-    .variant-product-info {
-        gap: 2.5vw;
-        margin-top: 2.5vw;
-    }
-
-    .variant-product-image-wrapper {
-        width: 12vw;
-        height: 12vw;
-        border-radius: 1.5vw;
-    }
-
-    .variant-product-name {
-        font-size: 2.8vw;
-    }
-
-    .variant-product-price {
-        font-size: 2.8vw;
-    }
-
-    .variant-product-stock {
-        font-size: 1.8vw;
-    }
-
-    .variant-options-wrapper {
-        max-height: 35vw;
-        margin-top: 2vw;
-    }
-
-    .variant-option-group {
-        margin-bottom: 1.8vw;
-    }
-
-    .variant-option-label {
-        font-size: 2vw;
-        margin-bottom: 0.8vw;
-    }
-
-    .variant-option-values {
-        gap: 1vw;
-    }
-
-    .variant-option-btn {
-        font-size: 2vw;
-        padding: 1.2vw 2.8vw;
-        border-radius: 1.2vw;
-        border-width: 0.2vw;
-    }
-
-    .variant-option-stock-badge {
-        font-size: 1.6vw;
-        margin-left: 0.5vw;
-    }
-
-    .variant-quantity-wrapper {
-        flex-direction: column;
-        gap: 2vw;
-        margin-top: 2vw;
-        padding-top: 2vw;
-    }
-
-    .variant-quantity-control {
-        border-radius: 1.2vw;
-        border-width: 0.2vw;
-        width: 100%;
-        justify-content: center;
-    }
-
-    .variant-qty-btn {
-        padding: 1.2vw 3vw;
-        font-size: 3vw;
-        min-width: 6vw;
-    }
-
-    .variant-qty-input {
-        width: 8vw;
-        font-size: 2.2vw;
-        padding: 1.2vw 0;
-        border-width: 0.2vw;
-    }
-
-    .variant-add-to-cart-btn {
-        width: 100%;
-        padding: 1.5vw 4vw;
-        font-size: 2.2vw;
-        border-radius: 1.2vw;
-        justify-content: center;
-    }
-
-    .variant-error-message {
-        font-size: 1.8vw;
-        padding: 1.2vw 2vw;
-        border-radius: 0.8vw;
-    }
-
-    .variant-loading-text {
-        font-size: 1.8vw;
-    }
-
-    .variant-spinner {
-        width: 4vw;
-        height: 4vw;
-        border-width: 0.4vw;
-    }
-
-    .variant-empty-state {
-        font-size: 1.8vw;
-        padding: 2.5vw;
-        border-radius: 1vw;
-    }
-
-    .variant-empty-state .variant-retry-btn {
-        font-size: 1.8vw;
-    }
-}
-
-/* ============================================
    UTILITY
    ============================================ */
 .hidden {
     display: none !important;
+}
+
+@media (max-width: 768px) {
+    .variant-modal-box {
+        max-width: 92vw;
+        border-radius: 4.2vw;
+        padding: 4vw 4vw;
+        max-height: 90vh;
+    }
+    .variant-modal-title {
+        font-size: 4.5vw;
+    }
+    .variant-modal-close-icon {
+        width: 5.6vw;
+        height: 5.6vw;
+    }
+    .variant-product-info {
+        gap: 3vw;
+        margin-top: 4.2vw;
+    }
+    .variant-product-price {
+        font-size: 3vw;
+        font-weight: 500;
+        color: #076694;
+    }
+    .variant-product-image-wrapper {
+        width: 23vw;
+        height: 23vw;
+        border-radius: 3.6vw;
+    }
+    .variant-product-name {
+        font-size: 3.5vw;
+        margin-bottom: .8vw;
+        font-weight: 500;
+    }
+    .modal-price-wrapper {
+        display: flex;
+        gap: 1.6vw;
+        margin-bottom: 1vw;
+        align-items: center;
+    }
+    .modal-price-current.discounted {
+        color: #ef4444;
+        font-size: 3.5vw;
+        font-weight:400;
+    }
+    .modal-price-original {
+        font-size: 2.3vw;
+        color: #94a3b8;
+        font-weight: 500;
+        text-decoration: line-through;
+    }
+    .modal-discount-badge {
+        background: #ef4444;
+        color: white;
+        font-size: 2vw;
+        font-weight: 400;
+        padding: .4vw 1.3vw;
+        border-radius: 1vw;
+        margin-bottom: 0.6vw;
+        display: inline-block;
+    }
+    .modal-product-discount-badge{
+        font-size: 2vw;
+        font-weight: 400;
+        padding: .4vw 1.3vw;
+        border-radius: 1vw;
+    }
+    .variant-product-stock {
+        font-size: 3vw;
+        color: #94a3b8;
+        margin: 0;
+    }
+    .variant-options-wrapper {
+    margin-top: 4.2vw;
+    max-height: max-content;
+    overflow-y: auto;
+}
+.variant-option-group {
+    margin-bottom: 3vw;
+}
+.variant-option-label {
+    display: block;
+    font-size: 3.5vw;
+    font-weight: 500;
+    color: #475569;
+    margin-bottom: 1.5vw;
+}
+.variant-option-values {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2vw;
+}
+.variant-option-btn {
+    padding: 1.5vw 3.2vw;
+    border-radius: 1.5vw;
+    border: 0.1vw solid #e2e8f0;
+    background-color: #ffffff;
+    color: #374151;
+    font-size: 3.5vw;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+.variant-quantity-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 4.2vw;
+    border-top: 0.1vw solid #076694;
+    padding-top: 4.2vw;
+}
+.variant-quantity-control {
+    display: flex;
+    align-items: center;
+    border: 0.1vw solid #076694;
+    border-radius: 1.6vw;
+    overflow: hidden;
+}
+.variant-qty-btn {
+    padding: 1.5vw 3vw;
+    background: none;
+    border: none;
+    color: #475569;
+    font-size: 4.5vw;
+    cursor: pointer;
+    transition: background 0.2s;
+    min-width: 2.5vw;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.variant-qty-input {
+    width: 11vw;
+    text-align: center;
+    border: none;
+    border-left: 0.1vw solid #e2e8f0;
+    border-right: 0.1vw solid #e2e8f0;
+    padding: 0.5vw 0;
+    font-size: 3.95vw;
+    font-weight: 600;
+    color: #0f172a;
+    background: #ffffff;
+    -moz-appearance: textfield;
+}
+.variant-add-to-cart-btn {
+    padding: 2.6vw 4vw;
+    border-radius: 1.6vw;
+    border: none;
+    background: #076694;
+    color: #ffffff;
+    font-size: 3vw;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
 }

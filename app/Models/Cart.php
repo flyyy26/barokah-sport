@@ -20,9 +20,10 @@ class Cart extends Model
         'quantity' => 'integer'
     ];
 
+    // 🔥 PERBAIKI: Relasi ke User (bukan Customer)
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_id'); // 🔥 Pastikan ini ke User, bukan Customer
+        return $this->belongsTo(User::class);
     }
 
     public function product()

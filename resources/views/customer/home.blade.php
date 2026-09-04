@@ -3,6 +3,7 @@
 @section('title', 'Barokah Sport')
 
 @section('content')
+
 <div class="banner_slide">
     <div class="swiper mySwiper">
         <div class="swiper-wrapper">
@@ -29,11 +30,32 @@
                             </div>
                         @endif
                     </div>
+                    <div class="slide_box slide_box_mobile" 
+                         style="background-image:url('{{ Storage::url($banner->image_mobile) }}'); 
+                                background-position:center; 
+                                background-size:cover;">
+                        
+                        @if($banner->title)
+                            <h2>{{ $banner->title }}</h2>
+                        @endif
+                        
+                        @if($banner->subtitle)
+                            <p>{{ $banner->subtitle }}</p>
+                        @endif
+                        
+                        @if($banner->button_text && $banner->button_url)
+                            <div class="banner_button">
+                                <a href="{{ $banner->button_url }}">
+                                    <button>{{ $banner->button_text }}</button>
+                                </a>
+                            </div>
+                        @endif
+                    </div>
                 </div>
             @empty
                 {{-- Default banner jika tidak ada data --}}
                 <div class="swiper-slide">
-                    <div class="slide_box" style="background-image:url({{ asset('images/slide_img.webp') }}); background-position:center; background-size:cover;">
+                    <div class="slide_box slide_box_dummy" style="background-image:url({{ asset('images/slide_img.webp') }}); background-position:center; background-size:cover;">
                         <h2>Performa dan Gaya dalam <span>Satu</span> Pilihan.</h2>
                         <p>Tampil sporty dengan jaket dan celana olahraga yang nyaman, stylish, dan siap menemani setiap aktivitas.</p>
                         <div class="banner_button">
@@ -47,7 +69,7 @@
                     </div>
                 </div>
                 <div class="swiper-slide">
-                    <div class="slide_box" style="background-image:url({{ asset('images/slide_img_2.png') }}); background-position:center; background-size:cover;">
+                    <div class="slide_box slide_box_dummy" style="background-image:url({{ asset('images/slide_img_2.png') }}); background-position:center; background-size:cover;">
                         <h2>Nyaman <span>Maksimal</span>, Bergerak Bebas.</h2>
                         <p>Dirancang dengan material ringan dan fleksibel, paduan sempurna untuk performa latihan terbaik dan gaya kasual harianmu.</p>
                         <div class="banner_button">
@@ -62,8 +84,10 @@
                 </div>
             @endforelse
         </div>
-        <div class="swiper-button-next"></div>
-        <div class="swiper-button-prev"></div>
+        @if($banners->count() > 1)
+            <div class="swiper-button-next"></div>
+            <div class="swiper-button-prev"></div>
+        @endif
     </div>
 </div>
 
@@ -127,91 +151,135 @@
         <h3>KOLEKSI TERBARU</h3>
         <a href="{{ route('customer.products.latest') }}">LIHAT SEMUA</a>
     </div>
-    <div class="product_layout_grid">
+    <div class="product_layout_grid product-layout-grid--show-5-desktop">
         @forelse($latestProducts as $product)
         @php
-            // 🔥 HITUNG DISKON TERBESAR
+            $hasDiscount = $product->has_discount ?? false;
+            $maxDiscountPercent = $product->max_discount_percent ?? 0;
+            $hasProductDiscount = $product->has_product_discount ?? false;
+            $productDiscountPercent = $product->product_discount_percent ?? 0;
+            $badgeLabel = $product->badge_label ?? null;
+            
             $maxDiscount = 0;
             foreach ($product->variants as $variant) {
-                if ($variant->discount_price && $variant->discount_price < $variant->price) {
-                    $discount = round((($variant->price - $variant->discount_price) / $variant->price) * 100);
-                    if ($discount > $maxDiscount) {
-                        $maxDiscount = $discount;
-                    }
+                $discount = $variant->discount_percent ?? 0;
+                if ($discount > $maxDiscount) {
+                    $maxDiscount = $discount;
                 }
             }
             
-            // 🔥 AMBIL DATA DARI attachDiscountData
-            $hasDiscount = $product->has_discount ?? false;
-            $displayPrice = $product->display_price ?? '';
-            $originalPriceDisplay = $product->original_price_display ?? null;
-            $discountLabel = $product->discount_label ?? null;
+            if ($maxDiscount == 0 && $hasProductDiscount) {
+                $maxDiscount = $productDiscountPercent;
+            }
+            
+            $minEffectivePrice = $product->min_effective_price ?? null;
+            $maxOriginalPrice = $product->max_price ?? null;
+            $minOriginalPrice = $product->variants->min('price') ?? 0;
+            $maxOriginalPrice = $product->variants->max('price') ?? 0;
+            
+            $discountedPriceDisplay = '';
+            $originalPriceDisplay = '';
+            
+            if ($minEffectivePrice !== null && $maxOriginalPrice !== null) {
+                if ($minEffectivePrice == $maxOriginalPrice) {
+                    $discountedPriceDisplay = 'Rp ' . number_format($minEffectivePrice, 0, ',', '.');
+                } else {
+                    $discountedPriceDisplay = 'Rp ' . number_format($minEffectivePrice, 0, ',', '.') . ' - Rp ' . number_format($maxOriginalPrice, 0, ',', '.');
+                }
+                
+                if ($minOriginalPrice == $maxOriginalPrice) {
+                    $originalPriceDisplay = 'Rp ' . number_format($minOriginalPrice, 0, ',', '.');
+                } else {
+                    $originalPriceDisplay = 'Rp ' . number_format($minOriginalPrice, 0, ',', '.') . ' - Rp ' . number_format($maxOriginalPrice, 0, ',', '.');
+                }
+            } else {
+                $prices = [];
+                foreach ($product->variants as $variant) {
+                    $prices[] = $variant->effective_price ?? $variant->price;
+                }
+                $minEffective = min($prices);
+                $maxEffective = max($prices);
+                $discountedPriceDisplay = 'Rp ' . number_format($minEffective, 0, ',', '.');
+                if ($minEffective != $maxEffective) {
+                    $discountedPriceDisplay .= ' - Rp ' . number_format($maxEffective, 0, ',', '.');
+                }
+                
+                $originalPrices = $product->variants->pluck('price')->toArray();
+                $minOrig = min($originalPrices);
+                $maxOrig = max($originalPrices);
+                $originalPriceDisplay = 'Rp ' . number_format($minOrig, 0, ',', '.');
+                if ($minOrig != $maxOrig) {
+                    $originalPriceDisplay .= ' - Rp ' . number_format($maxOrig, 0, ',', '.');
+                }
+            }
+            
+            $isOutOfStock = $product->isOutOfStock();
+            $badgeText = $badgeLabel ?? '';
+            
+            $thumbnail = $product->thumbnail ?? null;
+            if (!$thumbnail && $product->images->isNotEmpty()) {
+                $thumbnail = Storage::url($product->images->first()->image);
+            }
         @endphp
         <div class="product_layout_box" data-product-id="{{ $product->id }}">
             <div class="product_layout_img">
+                <div class="skeleton-image-box" id="skeleton-latest-{{ $product->id }}">
+                    <div class="skeleton" style="width:100%;height:100%;"></div>
+                </div>
                 <a href="{{ route('customer.products.show', $product->slug) }}">
-                    <img src="{{ $product->images->first() ? Storage::url($product->images->first()->image) : asset('images/product_dummy.png') }}" 
-                        alt="{{ $product->name }}">
+                    @if($thumbnail)
+                        <img src="{{ $thumbnail }}" 
+                            alt="{{ $product->name }}"
+                            loading="lazy"
+                            width="300"
+                            height="300"
+                            decoding="async"
+                            class="loading"
+                            onload="this.classList.remove('loading'); this.classList.add('loaded'); document.getElementById('skeleton-latest-{{ $product->id }}').classList.add('hidden');"
+                            onerror="this.onerror=null; this.src='{{ asset('images/placeholder.png') }}'; this.classList.remove('loading'); this.classList.add('loaded'); document.getElementById('skeleton-latest-{{ $product->id }}').classList.add('hidden');">
+                    @else
+                        <div class="placeholder">
+                            <iconify-icon icon="mdi:image-off-outline"></iconify-icon>
+                        </div>
+                        <script>
+                            document.getElementById('skeleton-latest-{{ $product->id }}')?.classList.add('hidden');
+                        </script>
+                    @endif
                 </a>
-                @if($product->isOutOfStock())
+                @if($isOutOfStock)
                 <span class="product_badge out-of-stock">HABIS</span>
                 @endif
+                
                 @if($maxDiscount > 0)
-                    <span class="discount_badge">Diskon {{ $maxDiscount }}%</span>
+                    <span class="discount_badge">Diskon {{ round($maxDiscount) }}%</span>
+                @endif
+                
+                @if(!empty($badgeText) && $maxDiscount == 0)
+                    <span class="discount_badge">{{ $badgeText }}</span>
                 @endif
             </div>
             <div class="product_layout_content">
                 <h5>{{ $product->name }}</h5>
                 <div class="product_layout_price">
-                    @php
-                        // Harga efektif (diskon jika ada)
-                        $prices = [];
-                        foreach ($product->variants as $variant) {
-                            $prices[] = $variant->discount_price ? (float) $variant->discount_price : (float) $variant->price;
-                        }
-                        $minEffective = min($prices);
-                        $maxEffective = max($prices);
-                        
-                        // Harga asli
-                        $minPrice = $product->variants->min('price');
-                        $maxPrice = $product->variants->max('price');
-                        
-                        $hasDiscount = $product->variants->contains(function($v) {
-                            return $v->discount_price !== null && $v->discount_price < $v->price;
-                        });
-                    @endphp
-                    
-                    @if($hasDiscount)
+                    @if($maxDiscount > 0)
                         <div class="product_layout_price_box">
-                            @if($minEffective == $maxEffective)
-                                <p class="price-discount">Rp {{ number_format($minEffective, 0, ',', '.') }}</p>
-                            @else
-                                <p class="price-discount">Rp {{ number_format($minEffective, 0, ',', '.') }} - Rp {{ number_format($maxEffective, 0, ',', '.') }}</p>
-                            @endif
-                            @if($minPrice == $maxPrice)
-                                <span class="price-original">Rp {{ number_format($minPrice, 0, ',', '.') }}</span>
-                            @else
-                                <span class="price-original">Rp {{ number_format($minPrice, 0, ',', '.') }} - Rp {{ number_format($maxPrice, 0, ',', '.') }}</span>
-                            @endif
+                            <p class="price-discount">{{ $discountedPriceDisplay }}</p>
+                            <span class="price-original">{{ $originalPriceDisplay }}</span>
                         </div>
                     @else
-                        @if($minEffective == $maxEffective)
-                            <p>Rp {{ number_format($minEffective, 0, ',', '.') }}</p>
-                        @else
-                            <p>Rp {{ number_format($minEffective, 0, ',', '.') }} - Rp {{ number_format($maxEffective, 0, ',', '.') }}</p>
-                        @endif
+                        <p>{{ $discountedPriceDisplay }}</p>
                     @endif
                 </div>
             </div>
             <div class="product_layout_button">
-                <button class="buy_now_btn {{ $product->isOutOfStock() ? 'disabled' : '' }}" 
-                        onclick="{{ $product->isOutOfStock() ? '' : 'buyNow(' . $product->id . ')' }}"
-                        {{ $product->isOutOfStock() ? 'disabled' : '' }}>
-                    {{ $product->isOutOfStock() ? 'HABIS' : 'BELI SEKARANG' }}
+                <button class="buy_now_btn {{ $isOutOfStock ? 'disabled' : '' }}" 
+                        onclick="{{ $isOutOfStock ? '' : 'buyNow(' . $product->id . ')' }}"
+                        {{ $isOutOfStock ? 'disabled' : '' }}>
+                    {{ $isOutOfStock ? 'HABIS' : 'BELI SEKARANG' }}
                 </button>
-                <button class="add_to_cart_btn {{ $product->isOutOfStock() ? 'disabled' : '' }}" 
-                        onclick="{{ $product->isOutOfStock() ? '' : 'addToCart(' . $product->id . ')' }}"
-                        {{ $product->isOutOfStock() ? 'disabled' : '' }}>
+                <button class="add_to_cart_btn {{ $isOutOfStock ? 'disabled' : '' }}" 
+                        onclick="{{ $isOutOfStock ? '' : 'addToCart(' . $product->id . ')' }}"
+                        {{ $isOutOfStock ? 'disabled' : '' }}>
                     <iconify-icon icon="solar:cart-linear"></iconify-icon>
                 </button>
                 <button class="add_to_wishlist_btn" 
@@ -234,90 +302,310 @@
     </div>
 </div>
 
-<div class="product_layout">
-    <div class="heading_product_layout">
-        <h3>PRODUK UNGGULAN</h3>
-        <a href="{{ route('customer.products.index') }}">LIHAT SEMUA</a>
+{{-- ============================================ --}}
+{{-- FLASH SALE --}}
+{{-- ============================================ --}}
+@if($flashSaleProducts->isNotEmpty())
+<div class="flash_sale_section">
+    <img src="{{ asset('images/flash_sale_logo.svg') }}" class="flash_sale_logo" alt="Flash Sale">
+    <div class="heading_product_layout heading_product_layout_flash">
+        <div class="flash_sale_time" id="flash-sale-timer">
+            <div class="timer-countdown">
+                <div class="timer-countdown-box">
+                    <div id="flash-sale-days">{{ str_pad($combinedFlashSaleDuration['days'], 2, '0', STR_PAD_LEFT) }}</div> Hari :
+                </div>
+                <div class="timer-countdown-box">
+                    <div id="flash-sale-hours">{{ str_pad($combinedFlashSaleDuration['hours'], 2, '0', STR_PAD_LEFT) }}</div> Jam :
+                </div>
+                <div class="timer-countdown-box">
+                    <div id="flash-sale-minutes">{{ str_pad($combinedFlashSaleDuration['minutes'], 2, '0', STR_PAD_LEFT) }}</div> Menit :
+                </div>
+                <div class="timer-countdown-box">
+                    <div id="flash-sale-seconds">{{ str_pad($combinedFlashSaleDuration['seconds'], 2, '0', STR_PAD_LEFT) }}</div> Detik
+                </div>
+            </div>
+        </div>
+        <a href="{{ route('customer.products.promo') }}">LIHAT SEMUA</a>
     </div>
-    <div class="product_layout_grid">
-        @forelse($featuredProducts as $product)
+    <div class="product_layout_grid product_layout_grid_4">
+        @foreach($flashSaleProducts as $product)
         @php
-            // 🔥 HITUNG DISKON TERBESAR
+            $hasDiscount = $product->has_discount ?? false;
+            $maxDiscountPercent = $product->max_discount_percent ?? 0;
+            $hasProductDiscount = $product->has_product_discount ?? false;
+            $productDiscountPercent = $product->product_discount_percent ?? 0;
+            
             $maxDiscount = 0;
             foreach ($product->variants as $variant) {
-                if ($variant->discount_price && $variant->discount_price < $variant->price) {
-                    $discount = round((($variant->price - $variant->discount_price) / $variant->price) * 100);
-                    if ($discount > $maxDiscount) {
-                        $maxDiscount = $discount;
+                $discount = $variant->discount_percent ?? 0;
+                if ($discount > $maxDiscount) {
+                    $maxDiscount = $discount;
+                }
+            }
+            
+            if ($maxDiscount == 0 && $hasProductDiscount) {
+                $maxDiscount = $productDiscountPercent;
+            }
+            
+            $flashSaleDiscount = 0;
+            if ($product->is_flash_sale && $product->flash_sale_value > 0) {
+                if ($product->flash_sale_type == 'percentage') {
+                    $flashSaleDiscount = $product->flash_sale_value;
+                } else {
+                    $minPrice = $product->variants->min('price') ?? 0;
+                    if ($minPrice > 0) {
+                        $flashSaleDiscount = round(($product->flash_sale_value / $minPrice) * 100);
                     }
                 }
             }
             
-            // 🔥 AMBIL DATA DARI attachDiscountData
-            $hasDiscount = $product->has_discount ?? false;
-            $displayPrice = $product->display_price ?? '';
-            $originalPriceDisplay = $product->original_price_display ?? null;
-            $discountLabel = $product->discount_label ?? null;
+            $minEffectivePrice = null;
+            $minOriginalPrice = 0;
+            $maxOriginalPrice = 0;
+            
+            foreach ($product->variants as $variant) {
+                $effPrice = $variant->effective_price ?? $variant->price;
+                if ($minEffectivePrice === null || $effPrice < $minEffectivePrice) {
+                    $minEffectivePrice = $effPrice;
+                }
+                if ($variant->price < $minOriginalPrice || $minOriginalPrice == 0) {
+                    $minOriginalPrice = $variant->price;
+                }
+                if ($variant->price > $maxOriginalPrice) {
+                    $maxOriginalPrice = $variant->price;
+                }
+            }
+            
+            $discountedPriceDisplay = 'Rp ' . number_format($minEffectivePrice ?? $minOriginalPrice, 0, ',', '.');
+            $originalPriceDisplay = 'Rp ' . number_format($minOriginalPrice, 0, ',', '.');
+            if ($minOriginalPrice != $maxOriginalPrice) {
+                $originalPriceDisplay = 'Rp ' . number_format($minOriginalPrice, 0, ',', '.') . ' - Rp ' . number_format($maxOriginalPrice, 0, ',', '.');
+            }
+            
+            $isOutOfStock = $product->isOutOfStock();
+            $badgeText = '⚡ Flash Sale';
+            if ($flashSaleDiscount > 0) {
+                $badgeText = '⚡ Flash Sale ' . round($flashSaleDiscount) . '%';
+            }
+            
+            $thumbnail = $product->thumbnail ?? null;
+            if (!$thumbnail && $product->images->isNotEmpty()) {
+                $thumbnail = Storage::url($product->images->first()->image);
+            }
         @endphp
-        <div class="product_layout_box" data-product-id="{{ $product->id }}">
+        <div class="product_layout_box product_layout_box_flash" data-product-id="{{ $product->id }}">
             <div class="product_layout_img">
+                <div class="skeleton-image-box" id="skeleton-flash-{{ $product->id }}">
+                    <div class="skeleton" style="width:100%;height:100%;"></div>
+                </div>
                 <a href="{{ route('customer.products.show', $product->slug) }}">
-                    <img src="{{ $product->images->first() ? Storage::url($product->images->first()->image) : asset('images/product_dummy.png') }}" 
-                        alt="{{ $product->name }}">
+                    @if($thumbnail)
+                        <img src="{{ $thumbnail }}" 
+                            alt="{{ $product->name }}"
+                            loading="lazy"
+                            width="300"
+                            height="300"
+                            decoding="async"
+                            class="loading"
+                            onload="this.classList.remove('loading'); this.classList.add('loaded'); document.getElementById('skeleton-flash-{{ $product->id }}').classList.add('hidden');"
+                            onerror="this.onerror=null; this.src='{{ asset('images/placeholder.png') }}'; this.classList.remove('loading'); this.classList.add('loaded'); document.getElementById('skeleton-flash-{{ $product->id }}').classList.add('hidden');">
+                    @else
+                        <div class="placeholder">
+                            <iconify-icon icon="mdi:image-off-outline"></iconify-icon>
+                        </div>
+                        <script>
+                            document.getElementById('skeleton-flash-{{ $product->id }}')?.classList.add('hidden');
+                        </script>
+                    @endif
                 </a>
-                @if($product->isOutOfStock())
+                @if($isOutOfStock)
                 <span class="product_badge out-of-stock">HABIS</span>
                 @endif
-                @if($maxDiscount > 0)
-                    <span class="discount_badge">Diskon {{ $maxDiscount }}%</span>
+                
+                @if($product->is_flash_sale)
+                    <span class="discount_badge flash-sale-badge">{{ $badgeText }}</span>
+                @elseif($maxDiscount > 0)
+                    <span class="discount_badge">Diskon {{ round($maxDiscount) }}%</span>
                 @endif
             </div>
             <div class="product_layout_content">
                 <h5>{{ $product->name }}</h5>
                 <div class="product_layout_price">
-                    @php
-                        // Harga efektif (diskon jika ada)
-                        $prices = [];
-                        foreach ($product->variants as $variant) {
-                            $prices[] = $variant->discount_price ? (float) $variant->discount_price : (float) $variant->price;
-                        }
-                        $minEffective = min($prices);
-                        $maxEffective = max($prices);
-                        
-                        // Harga asli
-                        $minPrice = $product->variants->min('price');
-                        $maxPrice = $product->variants->max('price');
-                        
-                        $hasDiscount = $product->variants->contains(function($v) {
-                            return $v->discount_price !== null && $v->discount_price < $v->price;
-                        });
-                    @endphp
-                    
-                    @if($hasDiscount)
+                    @if($maxDiscount > 0 || $product->is_flash_sale)
                         <div class="product_layout_price_box">
-                            @if($minEffective == $maxEffective)
-                                <p class="price-discount">Rp {{ number_format($minEffective, 0, ',', '.') }}</p>
-                            @else
-                                <p class="price-discount">Rp {{ number_format($minEffective, 0, ',', '.') }} - Rp {{ number_format($maxEffective, 0, ',', '.') }}</p>
-                            @endif
-                            @if($minPrice == $maxPrice)
-                                <span class="price-original">Rp {{ number_format($minPrice, 0, ',', '.') }}</span>
-                            @else
-                                <span class="price-original">Rp {{ number_format($minPrice, 0, ',', '.') }} - Rp {{ number_format($maxPrice, 0, ',', '.') }}</span>
-                            @endif
+                            <p class="price-discount flash-sale-price">{{ $discountedPriceDisplay }}</p>
+                            <span class="price-original">{{ $originalPriceDisplay }}</span>
                         </div>
                     @else
-                        @if($minEffective == $maxEffective)
-                            <p>Rp {{ number_format($minEffective, 0, ',', '.') }}</p>
-                        @else
-                            <p>Rp {{ number_format($minEffective, 0, ',', '.') }} - Rp {{ number_format($maxEffective, 0, ',', '.') }}</p>
-                        @endif
+                        <p>{{ $discountedPriceDisplay }}</p>
                     @endif
                 </div>
             </div>
             <div class="product_layout_button">
-                <button class="buy_now_btn" onclick="buyNow({{ $product->id }})">BELI SEKARANG</button>
-                <button class="add_to_cart_btn" onclick="addToCart({{ $product->id }})">
+                <button class="buy_now_btn {{ $isOutOfStock ? 'disabled' : '' }}" 
+                        onclick="{{ $isOutOfStock ? '' : 'buyNow(' . $product->id . ')' }}"
+                        {{ $isOutOfStock ? 'disabled' : '' }}>
+                    {{ $isOutOfStock ? 'HABIS' : 'BELI SEKARANG' }}
+                </button>
+                <button class="add_to_cart_btn {{ $isOutOfStock ? 'disabled' : '' }}" 
+                        onclick="{{ $isOutOfStock ? '' : 'addToCart(' . $product->id . ')' }}"
+                        {{ $isOutOfStock ? 'disabled' : '' }}>
+                    <iconify-icon icon="solar:cart-linear"></iconify-icon>
+                </button>
+                <button class="add_to_wishlist_btn" 
+                        data-product-id="{{ $product->id }}"
+                        data-in-wishlist="{{ in_array($product->id, array_keys(session()->get('wishlist', []))) ? 'true' : 'false' }}"
+                        onclick="addToWishlist({{ $product->id }})">
+                    @if(in_array($product->id, array_keys(session()->get('wishlist', []))))
+                        <iconify-icon icon="solar:heart-bold" style="color: #ef4444;"></iconify-icon>
+                    @else
+                        <iconify-icon icon="solar:heart-linear"></iconify-icon>
+                    @endif
+                </button>
+            </div>
+        </div>
+        @endforeach
+    </div>
+</div>
+@endif
+
+{{-- ============================================ --}}
+{{-- PRODUK UNGGULAN --}}
+{{-- ============================================ --}}
+<div class="product_layout">
+    <div class="heading_product_layout">
+        <h3>PRODUK UNGGULAN</h3>
+        <a href="{{ route('customer.products.index') }}">LIHAT SEMUA</a>
+    </div>
+    <div class="product_layout_grid product-layout-grid--show-5-desktop">
+        @forelse($featuredProducts as $product)
+        @php
+            $hasDiscount = $product->has_discount ?? false;
+            $maxDiscountPercent = $product->max_discount_percent ?? 0;
+            $hasProductDiscount = $product->has_product_discount ?? false;
+            $productDiscountPercent = $product->product_discount_percent ?? 0;
+            $badgeLabel = $product->badge_label ?? null;
+            
+            $maxDiscount = 0;
+            foreach ($product->variants as $variant) {
+                $discount = $variant->discount_percent ?? 0;
+                if ($discount > $maxDiscount) {
+                    $maxDiscount = $discount;
+                }
+            }
+            
+            if ($maxDiscount == 0 && $hasProductDiscount) {
+                $maxDiscount = $productDiscountPercent;
+            }
+            
+            $minEffectivePrice = $product->min_effective_price ?? null;
+            $maxOriginalPrice = $product->max_price ?? null;
+            $minOriginalPrice = $product->variants->min('price') ?? 0;
+            $maxOriginalPrice = $product->variants->max('price') ?? 0;
+            
+            $discountedPriceDisplay = '';
+            $originalPriceDisplay = '';
+            
+            if ($minEffectivePrice !== null && $maxOriginalPrice !== null) {
+                if ($minEffectivePrice == $maxOriginalPrice) {
+                    $discountedPriceDisplay = 'Rp ' . number_format($minEffectivePrice, 0, ',', '.');
+                } else {
+                    $discountedPriceDisplay = 'Rp ' . number_format($minEffectivePrice, 0, ',', '.') . ' - Rp ' . number_format($maxOriginalPrice, 0, ',', '.');
+                }
+                
+                if ($minOriginalPrice == $maxOriginalPrice) {
+                    $originalPriceDisplay = 'Rp ' . number_format($minOriginalPrice, 0, ',', '.');
+                } else {
+                    $originalPriceDisplay = 'Rp ' . number_format($minOriginalPrice, 0, ',', '.') . ' - Rp ' . number_format($maxOriginalPrice, 0, ',', '.');
+                }
+            } else {
+                $prices = [];
+                foreach ($product->variants as $variant) {
+                    $prices[] = $variant->effective_price ?? $variant->price;
+                }
+                $minEffective = min($prices);
+                $maxEffective = max($prices);
+                $discountedPriceDisplay = 'Rp ' . number_format($minEffective, 0, ',', '.');
+                if ($minEffective != $maxEffective) {
+                    $discountedPriceDisplay .= ' - Rp ' . number_format($maxEffective, 0, ',', '.');
+                }
+                
+                $originalPrices = $product->variants->pluck('price')->toArray();
+                $minOrig = min($originalPrices);
+                $maxOrig = max($originalPrices);
+                $originalPriceDisplay = 'Rp ' . number_format($minOrig, 0, ',', '.');
+                if ($minOrig != $maxOrig) {
+                    $originalPriceDisplay .= ' - Rp ' . number_format($maxOrig, 0, ',', '.');
+                }
+            }
+            
+            $isOutOfStock = $product->isOutOfStock();
+            $badgeText = $badgeLabel ?? '';
+            
+            $thumbnail = $product->thumbnail ?? null;
+            if (!$thumbnail && $product->images->isNotEmpty()) {
+                $thumbnail = Storage::url($product->images->first()->image);
+            }
+        @endphp
+        <div class="product_layout_box" data-product-id="{{ $product->id }}">
+            <div class="product_layout_img">
+                <div class="skeleton-image-box" id="skeleton-featured-{{ $product->id }}">
+                    <div class="skeleton" style="width:100%;height:100%;"></div>
+                </div>
+                <a href="{{ route('customer.products.show', $product->slug) }}">
+                    @if($thumbnail)
+                        <img src="{{ $thumbnail }}" 
+                            alt="{{ $product->name }}"
+                            loading="lazy"
+                            width="300"
+                            height="300"
+                            decoding="async"
+                            class="loading"
+                            onload="this.classList.remove('loading'); this.classList.add('loaded'); document.getElementById('skeleton-featured-{{ $product->id }}').classList.add('hidden');"
+                            onerror="this.onerror=null; this.src='{{ asset('images/placeholder.png') }}'; this.classList.remove('loading'); this.classList.add('loaded'); document.getElementById('skeleton-featured-{{ $product->id }}').classList.add('hidden');">
+                    @else
+                        <div class="placeholder">
+                            <iconify-icon icon="mdi:image-off-outline"></iconify-icon>
+                        </div>
+                        <script>
+                            document.getElementById('skeleton-featured-{{ $product->id }}')?.classList.add('hidden');
+                        </script>
+                    @endif
+                </a>
+                @if($isOutOfStock)
+                <span class="product_badge out-of-stock">HABIS</span>
+                @endif
+                
+                @if($maxDiscount > 0)
+                    <span class="discount_badge">Diskon {{ round($maxDiscount) }}%</span>
+                @endif
+                
+                @if(!empty($badgeText) && $maxDiscount == 0)
+                    <span class="discount_badge">{{ $badgeText }}</span>
+                @endif
+            </div>
+            <div class="product_layout_content">
+                <h5>{{ $product->name }}</h5>
+                <div class="product_layout_price">
+                    @if($maxDiscount > 0)
+                        <div class="product_layout_price_box">
+                            <p class="price-discount">{{ $discountedPriceDisplay }}</p>
+                            <span class="price-original">{{ $originalPriceDisplay }}</span>
+                        </div>
+                    @else
+                        <p>{{ $discountedPriceDisplay }}</p>
+                    @endif
+                </div>
+            </div>
+            <div class="product_layout_button">
+                <button class="buy_now_btn {{ $isOutOfStock ? 'disabled' : '' }}" 
+                        onclick="{{ $isOutOfStock ? '' : 'buyNow(' . $product->id . ')' }}"
+                        {{ $isOutOfStock ? 'disabled' : '' }}>
+                    {{ $isOutOfStock ? 'HABIS' : 'BELI SEKARANG' }}
+                </button>
+                <button class="add_to_cart_btn {{ $isOutOfStock ? 'disabled' : '' }}" 
+                        onclick="{{ $isOutOfStock ? '' : 'addToCart(' . $product->id . ')' }}"
+                        {{ $isOutOfStock ? 'disabled' : '' }}>
                     <iconify-icon icon="solar:cart-linear"></iconify-icon>
                 </button>
                 <button class="add_to_wishlist_btn" 
@@ -340,7 +628,9 @@
     </div>
 </div>
 
-
+{{-- ============================================ --}}
+{{-- PROMO SECTION --}}
+{{-- ============================================ --}}
 <div class="promo_section" style="background-image:url({{ asset('images/promo_section_bg.png') }}); background-size:cover; background-position:center; background-repeat:no-repeat;">
     <div class="promo_section_content">
         <button><iconify-icon icon="mdi:fire"></iconify-icon> PROMO TERBATAS</button>
@@ -352,88 +642,143 @@
     </a>
 </div>
 
+{{-- ============================================ --}}
+{{-- PRODUK TERLARIS --}}
+{{-- ============================================ --}}
 <div class="product_layout">
     <div class="heading_product_layout">
         <h3>PRODUK <span>TERLARIS BULAN</span> INI</h3>
         <a href="{{ route('customer.products.index') }}">LIHAT SEMUA</a>
     </div>
-    <div class="product_layout_grid">
+    <div class="product_layout_grid product-layout-grid--show-5-desktop">
         @forelse($bestSellers as $product)
         @php
-            // 🔥 HITUNG DISKON TERBESAR
+            $hasDiscount = $product->has_discount ?? false;
+            $maxDiscountPercent = $product->max_discount_percent ?? 0;
+            $hasProductDiscount = $product->has_product_discount ?? false;
+            $productDiscountPercent = $product->product_discount_percent ?? 0;
+            $badgeLabel = $product->badge_label ?? null;
+            
             $maxDiscount = 0;
             foreach ($product->variants as $variant) {
-                if ($variant->discount_price && $variant->discount_price < $variant->price) {
-                    $discount = round((($variant->price - $variant->discount_price) / $variant->price) * 100);
-                    if ($discount > $maxDiscount) {
-                        $maxDiscount = $discount;
-                    }
+                $discount = $variant->discount_percent ?? 0;
+                if ($discount > $maxDiscount) {
+                    $maxDiscount = $discount;
                 }
             }
             
-            // 🔥 AMBIL DATA DARI attachDiscountData
-            $hasDiscount = $product->has_discount ?? false;
-            $displayPrice = $product->display_price ?? '';
-            $originalPriceDisplay = $product->original_price_display ?? null;
-            $discountLabel = $product->discount_label ?? null;
+            if ($maxDiscount == 0 && $hasProductDiscount) {
+                $maxDiscount = $productDiscountPercent;
+            }
+            
+            $minEffectivePrice = $product->min_effective_price ?? null;
+            $maxOriginalPrice = $product->max_price ?? null;
+            $minOriginalPrice = $product->variants->min('price') ?? 0;
+            $maxOriginalPrice = $product->variants->max('price') ?? 0;
+            
+            $discountedPriceDisplay = '';
+            $originalPriceDisplay = '';
+            
+            if ($minEffectivePrice !== null && $maxOriginalPrice !== null) {
+                if ($minEffectivePrice == $maxOriginalPrice) {
+                    $discountedPriceDisplay = 'Rp ' . number_format($minEffectivePrice, 0, ',', '.');
+                } else {
+                    $discountedPriceDisplay = 'Rp ' . number_format($minEffectivePrice, 0, ',', '.') . ' - Rp ' . number_format($maxOriginalPrice, 0, ',', '.');
+                }
+                
+                if ($minOriginalPrice == $maxOriginalPrice) {
+                    $originalPriceDisplay = 'Rp ' . number_format($minOriginalPrice, 0, ',', '.');
+                } else {
+                    $originalPriceDisplay = 'Rp ' . number_format($minOriginalPrice, 0, ',', '.') . ' - Rp ' . number_format($maxOriginalPrice, 0, ',', '.');
+                }
+            } else {
+                $prices = [];
+                foreach ($product->variants as $variant) {
+                    $prices[] = $variant->effective_price ?? $variant->price;
+                }
+                $minEffective = min($prices);
+                $maxEffective = max($prices);
+                $discountedPriceDisplay = 'Rp ' . number_format($minEffective, 0, ',', '.');
+                if ($minEffective != $maxEffective) {
+                    $discountedPriceDisplay .= ' - Rp ' . number_format($maxEffective, 0, ',', '.');
+                }
+                
+                $originalPrices = $product->variants->pluck('price')->toArray();
+                $minOrig = min($originalPrices);
+                $maxOrig = max($originalPrices);
+                $originalPriceDisplay = 'Rp ' . number_format($minOrig, 0, ',', '.');
+                if ($minOrig != $maxOrig) {
+                    $originalPriceDisplay .= ' - Rp ' . number_format($maxOrig, 0, ',', '.');
+                }
+            }
+            
+            $isOutOfStock = $product->isOutOfStock();
+            $badgeText = $badgeLabel ?? '';
+            
+            $thumbnail = $product->thumbnail ?? null;
+            if (!$thumbnail && $product->images->isNotEmpty()) {
+                $thumbnail = Storage::url($product->images->first()->image);
+            }
         @endphp
         <div class="product_layout_box" data-product-id="{{ $product->id }}">
             <div class="product_layout_img">
+                <div class="skeleton-image-box" id="skeleton-bestseller-{{ $product->id }}">
+                    <div class="skeleton" style="width:100%;height:100%;"></div>
+                </div>
                 <a href="{{ route('customer.products.show', $product->slug) }}">
-                    <img src="{{ $product->images->first() ? Storage::url($product->images->first()->image) : asset('images/product_dummy.png') }}" 
-                        alt="{{ $product->name }}">
+                    @if($thumbnail)
+                        <img src="{{ $thumbnail }}" 
+                            alt="{{ $product->name }}"
+                            loading="lazy"
+                            width="300"
+                            height="300"
+                            decoding="async"
+                            class="loading"
+                            onload="this.classList.remove('loading'); this.classList.add('loaded'); document.getElementById('skeleton-bestseller-{{ $product->id }}').classList.add('hidden');"
+                            onerror="this.onerror=null; this.src='{{ asset('images/placeholder.png') }}'; this.classList.remove('loading'); this.classList.add('loaded'); document.getElementById('skeleton-bestseller-{{ $product->id }}').classList.add('hidden');">
+                    @else
+                        <div class="placeholder">
+                            <iconify-icon icon="mdi:image-off-outline"></iconify-icon>
+                        </div>
+                        <script>
+                            document.getElementById('skeleton-bestseller-{{ $product->id }}')?.classList.add('hidden');
+                        </script>
+                    @endif
                 </a>
-                @if($product->isOutOfStock())
+                @if($isOutOfStock)
                 <span class="product_badge out-of-stock">HABIS</span>
                 @endif
+                
                 @if($maxDiscount > 0)
-                    <span class="discount_badge">Diskon {{ $maxDiscount }}%</span>
+                    <span class="discount_badge">Diskon {{ round($maxDiscount) }}%</span>
+                @endif
+                
+                @if(!empty($badgeText) && $maxDiscount == 0)
+                    <span class="discount_badge">{{ $badgeText }}</span>
                 @endif
             </div>
             <div class="product_layout_content">
                 <h5>{{ $product->name }}</h5>
                 <div class="product_layout_price">
-                    @php
-                        $prices = [];
-                        foreach ($product->variants as $variant) {
-                            $prices[] = $variant->discount_price ? (float) $variant->discount_price : (float) $variant->price;
-                        }
-                        $minEffective = min($prices);
-                        $maxEffective = max($prices);
-                        
-                        $minPrice = $product->variants->min('price');
-                        $maxPrice = $product->variants->max('price');
-                        
-                        $hasDiscount = $product->variants->contains(function($v) {
-                            return $v->discount_price !== null && $v->discount_price < $v->price;
-                        });
-                    @endphp
-                    
-                    @if($hasDiscount)
+                    @if($maxDiscount > 0)
                         <div class="product_layout_price_box">
-                            @if($minEffective == $maxEffective)
-                                <p class="price-discount">Rp {{ number_format($minEffective, 0, ',', '.') }}</p>
-                            @else
-                                <p class="price-discount">Rp {{ number_format($minEffective, 0, ',', '.') }} - Rp {{ number_format($maxEffective, 0, ',', '.') }}</p>
-                            @endif
-                            @if($minPrice == $maxPrice)
-                                <span class="price-original">Rp {{ number_format($minPrice, 0, ',', '.') }}</span>
-                            @else
-                                <span class="price-original">Rp {{ number_format($minPrice, 0, ',', '.') }} - Rp {{ number_format($maxPrice, 0, ',', '.') }}</span>
-                            @endif
+                            <p class="price-discount">{{ $discountedPriceDisplay }}</p>
+                            <span class="price-original">{{ $originalPriceDisplay }}</span>
                         </div>
                     @else
-                        @if($minEffective == $maxEffective)
-                            <p>Rp {{ number_format($minEffective, 0, ',', '.') }}</p>
-                        @else
-                            <p>Rp {{ number_format($minEffective, 0, ',', '.') }} - Rp {{ number_format($maxEffective, 0, ',', '.') }}</p>
-                        @endif
+                        <p>{{ $discountedPriceDisplay }}</p>
                     @endif
                 </div>
             </div>
             <div class="product_layout_button">
-                <button class="buy_now_btn" onclick="buyNow({{ $product->id }})">BELI SEKARANG</button>
-                <button class="add_to_cart_btn" onclick="addToCart({{ $product->id }})">
+                <button class="buy_now_btn {{ $isOutOfStock ? 'disabled' : '' }}" 
+                        onclick="{{ $isOutOfStock ? '' : 'buyNow(' . $product->id . ')' }}"
+                        {{ $isOutOfStock ? 'disabled' : '' }}>
+                    {{ $isOutOfStock ? 'HABIS' : 'BELI SEKARANG' }}
+                </button>
+                <button class="add_to_cart_btn {{ $isOutOfStock ? 'disabled' : '' }}" 
+                        onclick="{{ $isOutOfStock ? '' : 'addToCart(' . $product->id . ')' }}"
+                        {{ $isOutOfStock ? 'disabled' : '' }}>
                     <iconify-icon icon="solar:cart-linear"></iconify-icon>
                 </button>
                 <button class="add_to_wishlist_btn" 
@@ -456,6 +801,9 @@
     </div>
 </div>
 
+{{-- ============================================ --}}
+{{-- TESTIMONIAL SECTION --}}
+{{-- ============================================ --}}
 <div class="testimonial_section">
     <div class="heading_product_layout">
         <h3>MEREKA SUDAH <span>MEMBUKTIKAN</span></h3>
@@ -578,6 +926,9 @@
     </div>
 </div>
 
+{{-- ============================================ --}}
+{{-- ARTIKEL SECTION --}}
+{{-- ============================================ --}}
 @if($articles->isNotEmpty())
     <div class="artikel_section">
         <div class="heading_product_layout">
@@ -606,7 +957,6 @@
                                 <iconify-icon icon="lets-icons:date-fill"></iconify-icon>
                                 <span>{{ $article->formatted_published_at }}</span>
                             </div>
-                            {{-- 🔥 GANTI category dengan articleCategory->name --}}
                             @if($article->articleCategory)
                                 <div class="artikel_section_meta_box">
                                     <iconify-icon icon="material-symbols:category"></iconify-icon>
@@ -626,16 +976,46 @@
     </div>
 @endif
 
+<div class="keunggulan_layout keunggulan_layout_mobile">
+    <div class="keunggulan_box_layout">
+        <img src="{{ asset('images/gratis_ongkir.svg') }}" alt="">
+        <div class="keunggulan_box_content">
+            <h3>GRATIS ONGKIR</h3>
+            <p>Pembelian di atas 750.000</p>
+        </div>
+    </div>
+    <div class="keunggulan_box_layout">
+        <img src="{{ asset('images/retur_mudah.svg') }}" alt="">
+        <div class="keunggulan_box_content">
+            <h3>PENGEMBALIAN MUDAH</h3>
+            <p>Retur mudah dalam 7 hari.</p>
+        </div>
+    </div>
+    <div class="keunggulan_box_layout">
+        <img src="{{ asset('images/safety_pay.svg') }}" alt="">
+        <div class="keunggulan_box_content">
+            <h3>PEMBAYARAN AMAN</h3>
+            <p>Metode pembayaran terpercaya</p>
+        </div>
+    </div>
+    <div class="keunggulan_box_layout">
+        <img src="{{ asset('images/cs.svg') }}" alt="">
+        <div class="keunggulan_box_content">
+            <h3>BANTUAN CEPAT</h3>
+            <p>24/7 Support</p>
+        </div>
+    </div>
+</div>
+
+{{-- ============================================ --}}
+{{-- SCRIPTS --}}
+{{-- ============================================ --}}
 <script>
     // ============================================
     // OVERRIDE FUNGSI WISHLIST UNTUK HOME PAGE
     // ============================================
     
-    /**
-     * 🔥 UPDATE ALL WISHLIST BUTTONS FOR SAME PRODUCT
-     */
     function updateAllWishlistButtons(productId, inWishlist) {
-        // Cari semua tombol wishlist untuk produk ini di seluruh halaman
         const allButtons = document.querySelectorAll(`.add_to_wishlist_btn[data-product-id="${productId}"]`);
         
         console.log(`❤️ Updating ${allButtons.length} wishlist buttons for product ${productId}`);
@@ -654,9 +1034,6 @@
         });
     }
 
-    /**
-     * 🔥 OVERRIDE addToWishlist UNTUK HOME PAGE
-     */
     if (typeof window.addToWishlist === 'function') {
         const originalAddToWishlist = window.addToWishlist;
         
@@ -665,7 +1042,6 @@
             
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
             
-            // Disable semua tombol untuk produk ini
             const allButtons = document.querySelectorAll(`.add_to_wishlist_btn[data-product-id="${productId}"]`);
             allButtons.forEach(function(btn) {
                 btn.disabled = true;
@@ -691,10 +1067,8 @@
                     
                     console.log('❤️ Wishlist response:', { count, inWishlist });
                     
-                    // 🔥 UPDATE SEMUA TOMBOL UNTUK PRODUK INI
                     updateAllWishlistButtons(productId, inWishlist);
                     
-                    // 🔥 UPDATE WISHLIST COUNT
                     if (typeof window.updateNavbarWishlistCount === 'function') {
                         window.updateNavbarWishlistCount(count);
                     } else {
@@ -705,7 +1079,6 @@
                         }
                     }
                     
-                    // 🔥 TRIGGER EVENT
                     document.dispatchEvent(new CustomEvent('wishlist-updated', {
                         detail: { 
                             count: count, 
@@ -721,7 +1094,6 @@
                     }
                 } else {
                     showToast(data.message || 'Gagal menambahkan ke wishlist', 'error');
-                    // Reset tombol
                     allButtons.forEach(function(btn) {
                         const currentState = btn.dataset.inWishlist === 'true';
                         if (currentState) {
@@ -738,7 +1110,6 @@
             .catch(function(error) {
                 console.error('Error:', error);
                 showToast('Terjadi kesalahan', 'error');
-                // Reset tombol
                 allButtons.forEach(function(btn) {
                     const currentState = btn.dataset.inWishlist === 'true';
                     if (currentState) {
@@ -757,13 +1128,72 @@
     console.log('✅ Home page wishlist functions initialized');
 </script>
 
-{{-- GANTI DENGAN INI --}}
 <script>
     // ============================================
-    // FUNGSI UNTUK MEMASTIKAN COUNTER UPDATE
+    // 🔥 FLASH SALE COUNTDOWN TIMER
     // ============================================
-    
-    // Override fungsi addToCartDirect dari cart.js untuk memastikan counter update
+    document.addEventListener('DOMContentLoaded', function() {
+        var durationData = @json($combinedFlashSaleDuration ?? null);
+
+        if (!durationData || durationData.is_expired || durationData.total_seconds <= 0) {
+            var timerContainer = document.getElementById('flash-sale-timer');
+            if (timerContainer) {
+                timerContainer.innerHTML = '<div class="timer-expired" style="color:#ef4444; font-weight:600;">⏰ Flash Sale Telah Berakhir</div>';
+            }
+            return;
+        }
+
+        startFlashSaleCountdown(durationData.total_seconds);
+    });
+
+    function startFlashSaleCountdown(initialSeconds) {
+        var daysEl = document.getElementById('flash-sale-days');
+        var hoursEl = document.getElementById('flash-sale-hours');
+        var minutesEl = document.getElementById('flash-sale-minutes');
+        var secondsEl = document.getElementById('flash-sale-seconds');
+        var timerContainer = document.getElementById('flash-sale-timer');
+
+        var endTime = Date.now() + (initialSeconds * 1000);
+
+        function renderTimer() {
+            var remainingMs = endTime - Date.now();
+            var remainingSec = Math.floor(remainingMs / 1000);
+
+            if (remainingSec <= 0) {
+                clearInterval(timerInterval);
+                if (daysEl) daysEl.textContent = '00';
+                if (hoursEl) hoursEl.textContent = '00';
+                if (minutesEl) minutesEl.textContent = '00';
+                if (secondsEl) secondsEl.textContent = '00';
+
+                if (timerContainer) {
+                    timerContainer.innerHTML = '<div class="timer-expired" style="color:#ef4444; font-weight:600;">⏰ Flash Sale Telah Berakhir</div>';
+                }
+                return;
+            }
+
+            var days = Math.floor(remainingSec / 86400);
+            var rem = remainingSec % 86400;
+            var hours = Math.floor(rem / 3600);
+            rem %= 3600;
+            var minutes = Math.floor(rem / 60);
+            var seconds = rem % 60;
+
+            if (daysEl) daysEl.textContent = String(days).padStart(2, '0');
+            if (hoursEl) hoursEl.textContent = String(hours).padStart(2, '0');
+            if (minutesEl) minutesEl.textContent = String(minutes).padStart(2, '0');
+            if (secondsEl) secondsEl.textContent = String(seconds).padStart(2, '0');
+        }
+
+        renderTimer();
+        var timerInterval = setInterval(renderTimer, 1000);
+    }
+</script>
+
+{{-- ============================================ --}}
+{{-- FUNGSI UNTUK MEMASTIKAN COUNTER UPDATE --}}
+{{-- ============================================ --}}
+<script>
     if (typeof window.addToCartDirect === 'function') {
         const originalAddToCartDirect = window.addToCartDirect;
         
@@ -772,7 +1202,6 @@
             
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
             
-            // Tampilkan loading
             const btn = document.querySelector(`.product_layout_box[data-product-id="${productId}"] .add_to_cart_btn`);
             if (btn) {
                 btn.disabled = true;
@@ -798,11 +1227,9 @@
                     const count = data.count || data.cart_count || 0;
                     console.log('✅ Cart add success, count:', count);
                     
-                    // 🔥 UPDATE CART COUNT - PAKAI FUNGSI DARI CART.JS
                     if (typeof window.updateNavbarCartCount === 'function') {
                         window.updateNavbarCartCount(count);
                     } else {
-                        // Fallback manual
                         const cartCountEl = document.getElementById('cart-count');
                         if (cartCountEl) {
                             cartCountEl.textContent = count;
@@ -810,7 +1237,6 @@
                         }
                     }
                     
-                    // 🔥 TRIGGER EVENT
                     document.dispatchEvent(new CustomEvent('cart-updated', {
                         detail: { count: count, message: data.message }
                     }));
@@ -839,71 +1265,6 @@
                 if (btn) {
                     btn.disabled = false;
                     btn.innerHTML = '<iconify-icon icon="solar:cart-linear"></iconify-icon>';
-                }
-            });
-        };
-    }
-    
-    // Override fungsi addToWishlist dari cart.js
-    if (typeof window.addToWishlist === 'function') {
-        const originalAddToWishlist = window.addToWishlist;
-        
-        window.addToWishlist = function(productId) {
-            console.log('❤️ addToWishlist called from home page');
-            
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
-            
-            const btn = document.querySelector(`.product_layout_box[data-product-id="${productId}"] .add_to_wishlist_btn`);
-            if (btn) {
-                btn.disabled = true;
-                btn.innerHTML = '⏳';
-            }
-            
-            fetch(window.customerRoutes.wishlistAdd, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                    product_id: productId
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // 🔥 UPDATE WISHLIST COUNT
-                    if (typeof window.updateNavbarWishlistCount === 'function') {
-                        window.updateNavbarWishlistCount(data.count || 0);
-                    } else {
-                        const wishlistCountEl = document.getElementById('wishlist-count');
-                        if (wishlistCountEl) {
-                            wishlistCountEl.textContent = data.count || 0;
-                            wishlistCountEl.style.display = data.count > 0 ? 'inline-flex' : 'none';
-                        }
-                    }
-                    
-                    if (btn) {
-                        btn.innerHTML = '<iconify-icon icon="solar:heart-bold"></iconify-icon>';
-                        btn.classList.add('active');
-                    }
-                    
-                    showToast(data.message || 'Produk ditambahkan ke wishlist!', 'success');
-                    
-                    if (typeof loadWishlistPopup === 'function') {
-                        loadWishlistPopup();
-                    }
-                } else {
-                    showToast(data.message || 'Gagal menambahkan ke wishlist', 'error');
-                }
-            })
-            .catch(() => {
-                showToast('Terjadi kesalahan', 'error');
-            })
-            .finally(() => {
-                if (btn) {
-                    btn.disabled = false;
                 }
             });
         };

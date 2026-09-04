@@ -9,9 +9,12 @@ use App\Models\ProductVariant;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use App\Traits\ProductDiscountTrait;
 
 class CartController extends Controller
 {
+    use ProductDiscountTrait;
+
     // ============================================
     // INDEX - Tampilkan Keranjang
     // ============================================
@@ -35,10 +38,7 @@ class CartController extends Controller
             $variant = $item->variant;
             $product = $item->product;
 
-            $price = $variant ? 
-                ($variant->discount_price ?? $variant->price) : 
-                $product->price;
-
+            $price = $this->getEffectivePrice($variant, $product);
             $subtotal += $price * $item->quantity;
 
             $variantImage = null;
@@ -49,9 +49,10 @@ class CartController extends Controller
                 $variantImage = $product->images->first()?->image;
             }
 
-            // 🔥 GUNAKAN FORMAT YANG KONSISTEN
+            // 🔥 PASTIKAN KEY ADALAH ID CART
             $cart[] = [
-                'id' => $item->id,
+                'id' => $item->id, // 🔥 INI ADALAH KEY
+                'cart_id' => $item->id,
                 'product_id' => $product->id,
                 'variant_id' => $variant?->id,
                 'product_name' => $product->name,
@@ -65,7 +66,6 @@ class CartController extends Controller
             ];
         }
 
-        // 🔥 SIMPAN KE SESSION AGAR KONSISTEN
         session()->put('cart', $cart);
 
         return view('customer.cart.index', compact('cart', 'subtotal'));
@@ -99,9 +99,15 @@ class CartController extends Controller
             $variant = $item->variant;
             $product = $item->product;
 
-            $price = $variant ? 
-                ($variant->discount_price ?? $variant->price) : 
-                $product->price;
+            $price = $this->getEffectivePrice($variant, $product);
+            $originalPrice = $variant?->price ?? $product->price;
+            $hasDiscount = $price < $originalPrice;
+            
+            $hasProductDiscount = $product->isOnProductDiscount();
+            $productDiscountPercent = 0;
+            if ($hasProductDiscount) {
+                $productDiscountPercent = $product->getProductDiscountPercent($originalPrice);
+            }
 
             $subtotal += $price * $item->quantity;
 
@@ -113,7 +119,6 @@ class CartController extends Controller
                 $variantImage = $product->images->first()?->image;
             }
 
-            // 🔥 GUNAKAN FORMAT YANG KONSISTEN
             $cart[] = [
                 'id' => $item->id,
                 'product_id' => $product->id,
@@ -121,7 +126,11 @@ class CartController extends Controller
                 'product_name' => $product->name,
                 'variant_name' => $variant ? $variant->option_combination : null,
                 'price' => $price,
-                'original_price' => $variant?->price ?? $product->price,
+                'original_price' => $originalPrice,
+                'has_discount' => $hasDiscount,
+                'discount_percent' => $hasDiscount ? round((($originalPrice - $price) / $originalPrice) * 100) : 0,
+                'has_product_discount' => $hasProductDiscount,
+                'product_discount_percent' => $productDiscountPercent,
                 'quantity' => $item->quantity,
                 'image' => $variantImage,
                 'slug' => $product->slug,
@@ -208,7 +217,6 @@ class CartController extends Controller
             ]);
         }
 
-        // 🔥 UPDATE SESSION CART
         $this->syncCartSession($user->id);
 
         $count = Cart::where('user_id', $user->id)->count();
@@ -227,14 +235,135 @@ class CartController extends Controller
     }
 
     // ============================================
+    // 🔥 BUY NOW - Direct Checkout
+    // ============================================
+
+    public function buyNow(Request $request)
+    {
+        $request->validate([
+            'product_id' => 'required|exists:products,id',
+            'variant_id' => 'required|exists:product_variants,id',
+            'quantity' => 'required|integer|min:1',
+        ]);
+
+        $product = Product::with(['images', 'variants'])->findOrFail($request->product_id);
+        $variant = ProductVariant::with(['variantValues.optionValue'])->findOrFail($request->variant_id);
+
+        // 🔥 HITUNG HARGA EFEKTIF
+        $effectivePrice = $variant->effective_price;
+
+        // 🔥 BACKUP CART SEBELUMNYA
+        $oldCart = session()->get('cart', []);
+        session()->put('old_cart_backup', $oldCart);
+        session()->forget('cart');
+
+        // 🔥 BUILD VARIAN NAME
+        $variantName = $variant->variantValues->map(function($vv) {
+            return $vv->optionValue->value ?? '';
+        })->filter()->implode(' / ');
+
+        // 🔥 GET PRODUCT IMAGE
+        $imageUrl = null;
+        if ($product->images->first()) {
+            $imageUrl = $product->images->first()->image;
+        }
+
+        // 🔥 CREATE BUY NOW ITEMS
+        $buyNowItems = [
+            [
+                'product_id' => $product->id,
+                'variant_id' => $variant->id,
+                'product_name' => $product->name,
+                'variant_name' => $variantName,
+                'price' => $effectivePrice,
+                'original_price' => $variant->price,
+                'quantity' => $request->quantity,
+                'weight' => $variant->weight ?? 1000,
+                'image' => $imageUrl,
+                'slug' => $product->slug,
+            ]
+        ];
+
+        session()->put('cart', $buyNowItems);
+        session()->put('is_buy_now', true);
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'redirect' => route('customer.checkout.index'),
+                'message' => 'Mengarahkan ke checkout...'
+            ]);
+        }
+
+        return redirect()->route('customer.checkout.index')
+            ->with('success', 'Silakan lanjutkan ke checkout.');
+    }
+
+    // ============================================
     // UPDATE - Update Quantity
     // ============================================
 
     public function update(Request $request)
     {
+        // 🔥 PERBAIKI VALIDASI - Key adalah ID cart
         $validated = $request->validate([
             'key' => 'required|integer|exists:carts,id',
             'quantity' => 'required|integer|min:1',
+        ]);
+
+        $user = Auth::guard('customer')->user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Silakan login terlebih dahulu',
+            ], 401);
+        }
+
+        // 🔥 CARI CART ITEM BERDASARKAN ID
+        $cartItem = Cart::where('id', $validated['key'])
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (!$cartItem) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Item tidak ditemukan.',
+            ], 404);
+        }
+
+        // 🔥 CEK STOK
+        if ($cartItem->variant_id) {
+            $variant = ProductVariant::find($cartItem->variant_id);
+            if ($variant && $variant->stock < $validated['quantity']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Stok tidak mencukupi. Tersedia: ' . $variant->stock,
+                ], 400);
+            }
+        }
+
+        $cartItem->quantity = $validated['quantity'];
+        $cartItem->save();
+
+        $this->syncCartSession($user->id);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Keranjang berhasil diperbarui.',
+            'quantity' => $cartItem->quantity,
+            'subtotal' => $cartItem->quantity * $cartItem->product->price,
+        ]);
+    }
+
+    // ============================================
+    // REMOVE - Hapus Item
+    // ============================================
+
+    public function remove(Request $request)
+    {
+        $validated = $request->validate([
+            'key' => 'required|integer|exists:carts,id',
         ]);
 
         $user = Auth::guard('customer')->user();
@@ -257,68 +386,8 @@ class CartController extends Controller
             ], 404);
         }
 
-        // Cek stok
-        if ($cartItem->variant_id) {
-            $variant = ProductVariant::find($cartItem->variant_id);
-            if ($variant && $variant->stock < $validated['quantity']) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Stok tidak mencukupi. Tersedia: ' . $variant->stock,
-                ], 400);
-            }
-        }
-
-        $cartItem->quantity = $validated['quantity'];
-        $cartItem->save();
-
-        // 🔥 UPDATE SESSION CART
-        $this->syncCartSession($user->id);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Keranjang berhasil diperbarui.',
-        ]);
-    }
-
-    // ============================================
-    // REMOVE - Hapus Item
-    // ============================================
-
-    public function remove(Request $request)
-    {
-        $validated = $request->validate([
-            'key' => 'required|string',
-        ]);
-
-        $user = Auth::guard('customer')->user();
-
-        if (!$user) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Silakan login terlebih dahulu',
-            ], 401);
-        }
-
-        $key = $validated['key'];
-        
-        if (is_numeric($key)) {
-            $cartItem = Cart::where('id', $key)
-                ->where('user_id', $user->id)
-                ->first();
-        } else {
-            $cartItem = null;
-        }
-
-        if (!$cartItem) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Item tidak ditemukan.',
-            ], 404);
-        }
-
         $cartItem->delete();
 
-        // 🔥 UPDATE SESSION CART
         $this->syncCartSession($user->id);
 
         $count = Cart::where('user_id', $user->id)->count();
@@ -347,7 +416,6 @@ class CartController extends Controller
 
         Cart::where('user_id', $user->id)->delete();
 
-        // 🔥 KOSONGKAN SESSION CART
         session()->forget('cart');
 
         if ($request->ajax() || $request->wantsJson()) {
@@ -395,9 +463,15 @@ class CartController extends Controller
             $variant = $item->variant;
             $product = $item->product;
 
-            $price = $variant ? 
-                ($variant->discount_price ?? $variant->price) : 
-                $product->price;
+            $price = $this->getEffectivePrice($variant, $product);
+            $originalPrice = $variant?->price ?? $product->price;
+            $hasDiscount = $price < $originalPrice;
+            
+            $hasProductDiscount = $product->isOnProductDiscount();
+            $productDiscountPercent = 0;
+            if ($hasProductDiscount) {
+                $productDiscountPercent = $product->getProductDiscountPercent($originalPrice);
+            }
 
             $variantImage = null;
             if ($variant) {
@@ -414,7 +488,11 @@ class CartController extends Controller
                 'product_name' => $product->name,
                 'variant_name' => $variant ? $variant->option_combination : null,
                 'price' => $price,
-                'original_price' => $variant?->price ?? $product->price,
+                'original_price' => $originalPrice,
+                'has_discount' => $hasDiscount,
+                'discount_percent' => $hasDiscount ? round((($originalPrice - $price) / $originalPrice) * 100) : 0,
+                'has_product_discount' => $hasProductDiscount,
+                'product_discount_percent' => $productDiscountPercent,
                 'quantity' => $item->quantity,
                 'image' => $variantImage,
                 'slug' => $product->slug,
@@ -423,6 +501,18 @@ class CartController extends Controller
         }
 
         session()->put('cart', $cart);
+    }
+
+    // ============================================
+    // HELPER - Get Effective Price
+    // ============================================
+
+    private function getEffectivePrice($variant, $product)
+    {
+        if ($variant) {
+            return $variant->effective_price;
+        }
+        return $product->price;
     }
 
     // ============================================

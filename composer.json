@@ -9,6 +9,7 @@
         "php": "^8.2",
         "aliziodev/laravel-indonesia-regions": "^1.0",
         "cloudenum/laravel-biteship": "^0.2.0",
+        "intervention/image": "^3.11",
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1"
     },
