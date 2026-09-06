@@ -64,7 +64,7 @@
 
     .about_main_content .content {
         font-size: 0.9vw;
-        line-height: 1.8;
+        line-height: 1.5;
         color: #334155;
     }
 
@@ -73,7 +73,6 @@
         color: #076694;
         margin-top: 1.5vw;
         margin-bottom: 0.5vw;
-        font-family: heading, sans-serif;
     }
 
     .about_main_content .content h1 {
@@ -81,21 +80,30 @@
         font-size: 1.8vw;
         margin-top: 1.5vw;
         margin-bottom: 0.5vw;
-        font-family: heading, sans-serif;
     }
 
     .about_main_content .content p {
-        margin-bottom: 1vw;
+        margin-bottom: .7vw;
     }
 
     .about_main_content .content ul,
     .about_main_content .content ol {
         padding-left: 1.5vw;
         margin-bottom: 1vw;
+        list-style-position: outside;
+    }
+
+    .about_main_content .content ul {
+        list-style-type: disc;
+    }
+
+    .about_main_content .content ol {
+        list-style-type: decimal;
     }
 
     .about_main_content .content li {
         margin-bottom: 0.3vw;
+        list-style: inherit;
     }
 
     .about_main_content .content strong {
@@ -161,7 +169,6 @@
         letter-spacing: 0.03vw;
         color: #076694;
         margin-bottom: 0.8vw;
-        font-family: heading, sans-serif;
         text-transform: uppercase;
         padding-bottom: 0.6vw;
         border-bottom: 0.15vw solid #e2e8f0;
@@ -178,7 +185,7 @@
     .about_sidebar_box .mission-content {
         font-size: 0.85vw;
         color: #475569;
-        line-height: 1.8;
+        line-height: 1.5;
     }
 
     .about_sidebar_box .vision-content p,
@@ -189,9 +196,18 @@
     .about_sidebar_box .vision-content ul,
     .about_sidebar_box .mission-content ul,
     .about_sidebar_box .mission-content ol {
-        list-style: disc;
         margin-left: 1.2vw;
         margin-top: 0.5vw;
+        list-style-position: outside;
+    }
+
+    .about_sidebar_box .vision-content ul,
+    .about_sidebar_box .mission-content ul {
+        list-style-type: disc;
+    }
+
+    .about_sidebar_box .mission-content ol {
+        list-style-type: decimal;
     }
 
     .about_sidebar_box .vision-content ul li,
@@ -199,13 +215,7 @@
         margin-bottom: 0.3vw;
         font-size: 0.85vw;
         color: #475569;
-        list-style: disc;
-    }
-
-    .about_sidebar_box ul {
-        list-style: none;
-        padding: 0;
-        margin: 0;
+        list-style: inherit;
     }
 
     .about_sidebar_box ul li {
@@ -213,8 +223,10 @@
         border-bottom: 0.05vw solid #f1f5f9;
         font-size: 0.85vw;
         color: #475569;
-        display: flex;
-        align-items: center;
+        display: list-item;
+        list-style-type: disc;
+        list-style-position: outside;
+        margin-left: 1.2vw;
         gap: 0.6vw;
     }
 

@@ -3,6 +3,63 @@
     $article = $article ?? null;
 @endphp
 
+{{-- Quill.js CDN --}}
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+
+<style>
+    /* Quill Editor Styling */
+    .ql-editor {
+        min-height: 300px !important;
+        max-height: 500px !important;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+
+    .ql-toolbar.ql-snow {
+        border-radius: 8px 8px 0 0;
+        border-color: #d1d5db !important;
+        background: #f9fafb;
+    }
+
+    .ql-container.ql-snow {
+        border-radius: 0 0 8px 8px;
+        border-color: #d1d5db !important;
+        background: white;
+        min-height: 300px;
+    }
+
+    .ql-container.ql-snow:focus-within {
+        border-color: #3b82f6 !important;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    /* Dark mode support */
+    .dark .ql-toolbar.ql-snow {
+        background: #1f2937;
+        border-color: #374151 !important;
+    }
+
+    .dark .ql-container.ql-snow {
+        background: #1f2937;
+        border-color: #374151 !important;
+    }
+
+    .dark .ql-editor {
+        color: #e5e7eb;
+    }
+
+    .dark .ql-editor.ql-blank::before {
+        color: #6b7280;
+    }
+
+    /* Image upload styling */
+    .ql-image-uploading {
+        opacity: 0.5;
+        pointer-events: none;
+    }
+</style>
+
 <div class="space-y-6">
 
     {{-- Title --}}
@@ -16,7 +73,7 @@
         @error('title') <p class="text-sm text-red-600 mt-2">{{ $message }}</p> @enderror
     </div>
 
-    {{-- 🔥 KATEGORI --}}
+    {{-- KATEGORI --}}
     <div>
         <label class="block text-sm font-medium text-gray-700 mb-2">
             Kategori <span class="text-red-500">*</span>
@@ -80,14 +137,20 @@
         <p class="text-xs text-gray-500 mt-1">Jika kosong, akan diambil dari konten secara otomatis (max 150 karakter).</p>
     </div>
 
-    {{-- Content - CKEditor --}}
+    {{-- 🔥 CONTENT - QUILL.JS --}}
     <div>
         <label for="content" class="block text-sm font-medium text-gray-700 mb-2">
             Konten <span class="text-red-500">*</span>
         </label>
-        <textarea name="content" id="editor" rows="10"
-                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Isi artikel...">{{ old('content', $article->content ?? '') }}</textarea>
+        
+        {{-- Hidden input untuk form submission --}}
+        <textarea name="content" id="content" style="display: none;">{{ old('content', $article->content ?? '') }}</textarea>
+        
+        {{-- Quill Editor Container --}}
+        <div id="quill-editor" class="rounded-lg border border-gray-300 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500">
+            {!! old('content', $article->content ?? '') !!}
+        </div>
+        
         @error('content') <p class="text-sm text-red-600 mt-2">{{ $message }}</p> @enderror
     </div>
 
@@ -139,7 +202,7 @@
 
 </div>
 
-{{-- 🔥 MODAL TAMBAH KATEGORI --}}
+{{-- MODAL TAMBAH KATEGORI --}}
 <div id="modal-add-category" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 hidden">
     <div class="bg-white rounded-lg p-6 w-full max-w-md">
         <div class="flex items-center justify-between mb-4">
@@ -170,7 +233,7 @@
     </div>
 </div>
 
-{{-- 🔥 JAVASCRIPT SIMPLIFIED --}}
+{{-- JAVASCRIPT --}}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const selectCategory = document.getElementById('article_category_id');
@@ -181,6 +244,52 @@ document.addEventListener('DOMContentLoaded', function() {
     const btnSaveCategory = document.getElementById('btn-save-category');
     const submitBtn = document.getElementById('submit-article-btn');
     const articleForm = document.getElementById('article-form');
+    const hiddenInput = document.getElementById('content');
+    const editorContainer = document.getElementById('quill-editor');
+
+    // ============================================
+    // 🔥 QUILL.JS INITIALIZATION
+    // ============================================
+
+    let quill = null;
+
+    if (editorContainer && typeof Quill !== 'undefined') {
+        // 🔥 Toolbar configuration
+        const toolbarOptions = [
+            [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+            ['bold', 'italic', 'underline', 'strike'],
+            [{ 'color': [] }, { 'background': [] }],
+            [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+            [{ 'indent': '-1' }, { 'indent': '+1' }],
+            [{ 'align': [] }],
+            ['blockquote', 'code-block'],
+            ['link', 'image'],
+            ['clean']
+        ];
+
+        quill = new Quill(editorContainer, {
+            theme: 'snow',
+            placeholder: 'Tulis konten artikel di sini...',
+            modules: {
+                toolbar: toolbarOptions
+            }
+        });
+
+        // 🔥 Set initial content
+        const initialContent = hiddenInput.value;
+        if (initialContent) {
+            quill.root.innerHTML = initialContent;
+        }
+
+        // 🔥 Sync to hidden input on change
+        quill.on('text-change', function() {
+            hiddenInput.value = quill.root.innerHTML;
+        });
+
+        console.log('✅ Quill.js initialized');
+    } else {
+        console.error('❌ Quill.js not loaded');
+    }
 
     // ============================================
     // 🔥 TAMBAH KATEGORI
@@ -337,7 +446,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // ============================================
-    // 🔥 SUBMIT FORM - PAKAI TOMBOL
+    // 🔥 SUBMIT FORM
     // ============================================
 
     if (submitBtn) {
@@ -346,17 +455,16 @@ document.addEventListener('DOMContentLoaded', function() {
             
             console.log('🔄 Submit button clicked');
             
-            // 🔥 AMBIL DATA CKEDITOR
-            if (window.ckEditorInstance) {
-                const editorData = window.ckEditorInstance.getData();
-                document.querySelector('#editor').value = editorData;
-                console.log('📝 CKEditor content saved:', editorData.length);
+            // 🔥 SYNC QUILL CONTENT TO HIDDEN INPUT
+            if (quill) {
+                hiddenInput.value = quill.root.innerHTML;
+                console.log('📝 Quill content saved:', hiddenInput.value.length);
             }
             
             // 🔥 VALIDASI
             const title = document.getElementById('title').value.trim();
             const category = document.getElementById('article_category_id').value;
-            const content = document.querySelector('#editor').value.trim();
+            const content = hiddenInput.value.trim();
             
             if (!title) {
                 alert('Judul artikel wajib diisi!');
@@ -370,9 +478,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            if (!content || content === '<p>&nbsp;</p>' || content === '<p></p>' || content === '') {
+            if (!content || content === '<p><br></p>' || content === '<p></p>' || content === '') {
                 alert('Konten artikel wajib diisi!');
-                document.getElementById('editor').focus();
+                editorContainer.focus();
                 return;
             }
             
@@ -382,55 +490,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // ============================================
-    // 🔥 CKEDITOR
-    // ============================================
-
-    if (typeof ClassicEditor !== 'undefined') {
-        ClassicEditor
-            .create(document.querySelector('#editor'), {
-                toolbar: {
-                    items: [
-                        'heading', '|',
-                        'bold', 'italic', 'underline', 'strikethrough', '|',
-                        'bulletedList', 'numberedList', '|',
-                        'outdent', 'indent', '|',
-                        'link', 'blockQuote', 'insertTable', '|',
-                        'undo', 'redo'
-                    ]
-                },
-                heading: {
-                    options: [
-                        { model: 'paragraph', title: 'Paragraf', class: 'ck-heading_paragraph' },
-                        { model: 'heading1', view: 'h1', title: 'Heading 1', class: 'ck-heading_heading1' },
-                        { model: 'heading2', view: 'h2', title: 'Heading 2', class: 'ck-heading_heading2' },
-                        { model: 'heading3', view: 'h3', title: 'Heading 3', class: 'ck-heading_heading3' }
-                    ]
-                },
-                language: 'id',
-                placeholder: 'Tulis konten artikel di sini...',
-                licenseKey: 'GPL',
-                version: 'GPL'
-            })
-            .then(editor => {
-                window.ckEditorInstance = editor;
-                console.log('✅ CKEditor initialized');
-            })
-            .catch(error => {
-                console.error('CKEditor error:', error);
-            });
-    }
-
     console.log('✅ Article form initialized');
 });
 </script>
-
-<style>
-    .ck-editor__editable {
-        min-height: 300px !important;
-        max-height: 500px !important;
-    }
-    #modal-add-category.hidden {
-        display: none !important;
-    }
-</style>

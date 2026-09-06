@@ -105,8 +105,21 @@
         margin-top: 0;
     }
 
-    .terms-content h3 {
-        font-size: 1.2rem;
+    .privacy-content h3 {
+        font-size: 1rem;
+        color: #076694;
+    }
+
+    .privacy-content h3 {
+        font-size: .9rem;
+        color: #076694;
+    }
+    .privacy-content h4 {
+        font-size: .8rem;
+        color: #076694;
+    }
+    .privacy-content h5 {
+        font-size: .7rem;
         color: #076694;
     }
 

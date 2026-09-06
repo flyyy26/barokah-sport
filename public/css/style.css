@@ -210,7 +210,7 @@
 .product_layout{
     width:100%;
     padding: 0 7.54vw;
-    margin-top:3.8vw;
+    margin-top:2.5vw;
 }
 .flash_sale_section{
     width:84.8%;
@@ -944,12 +944,12 @@
         font-size: 6vw;
     }
     .heading_product_layout a {
-        font-size: 3.5vw;
+        font-size: 4vw;
         color: black;
         font-family: heading-italic;
         text-decoration-color: #076694;
         display: block;
-        margin-top: 2vw;
+        margin-top: 1.5vw;
     }
     .heading_product_layout_flash a{
         display: none;
@@ -1193,7 +1193,7 @@
         height: 33vw;
         position: relative;
         border-radius: 2vw;
-        border: .1vw solid black;
+        border: none;
         overflow: hidden;
         margin-bottom: 2.5vw;
     }

@@ -55,34 +55,48 @@
                 @enderror
             </div>
 
-            {{-- KONTEN UTAMA --}}
+            {{-- 🔥 KONTEN UTAMA --}}
             <div class="mb-5">
                 <label class="block text-sm font-medium text-gray-700">Konten Utama</label>
-                <textarea name="content" id="about_content" rows="15" 
-                          class="mt-2 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                          placeholder="Tuliskan tentang kami...">{{ old('content', $about?->content ?? '') }}</textarea>
+                
+                {{-- Hidden input untuk form submission --}}
+                <textarea name="content" id="about_content" style="display: none;">{{ old('content', $about?->content ?? '') }}</textarea>
+                
+                {{-- Quill Editor Container --}}
+                <div id="quill-editor-content" class="mt-2 rounded-lg border border-gray-300 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500" style="min-height: 300px;">
+                    {!! old('content', $about?->content ?? '') !!}
+                </div>
+                
                 @error('content')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror
             </div>
 
-            {{-- VISI --}}
+            {{-- 🔥 VISI --}}
             <div class="mb-5">
                 <label class="block text-sm font-medium text-gray-700">Visi</label>
-                <textarea name="vision" id="about_vision" rows="5" 
-                          class="mt-2 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                          placeholder="Tuliskan visi perusahaan...">{{ old('vision', $about?->vision ?? '') }}</textarea>
+                
+                <textarea name="vision" id="about_vision" style="display: none;">{{ old('vision', $about?->vision ?? '') }}</textarea>
+                
+                <div id="quill-editor-vision" class="mt-2 rounded-lg border border-gray-300 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500" style="min-height: 150px;">
+                    {!! old('vision', $about?->vision ?? '') !!}
+                </div>
+                
                 @error('vision')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror
             </div>
 
-            {{-- MISI --}}
+            {{-- 🔥 MISI --}}
             <div class="mb-5">
                 <label class="block text-sm font-medium text-gray-700">Misi</label>
-                <textarea name="mission" id="about_mission" rows="5" 
-                          class="mt-2 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                          placeholder="Tuliskan misi perusahaan...">{{ old('mission', $about?->mission ?? '') }}</textarea>
+                
+                <textarea name="mission" id="about_mission" style="display: none;">{{ old('mission', $about?->mission ?? '') }}</textarea>
+                
+                <div id="quill-editor-mission" class="mt-2 rounded-lg border border-gray-300 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500" style="min-height: 150px;">
+                    {!! old('mission', $about?->mission ?? '') !!}
+                </div>
+                
                 @error('mission')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror
@@ -124,7 +138,7 @@
 
         {{-- ACTION --}}
         <div class="flex justify-end rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
-            <button type="submit" 
+            <button type="submit" id="submit-about-btn"
                     class="inline-flex items-center rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">
                 <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
@@ -175,91 +189,254 @@
         </div>
     @endif
 </div>
-@endsection
 
-@push('scripts')
-<script src="https://cdn.tiny.cloud/1/f0qff2j87jgv24lrb8m0hd4yuglweewk56pa79tykafgtc6g/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+{{-- 🔥 QUILL.JS CDN --}}
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+
+<style>
+    /* Quill Editor Styling */
+    .ql-editor {
+        min-height: 150px !important;
+        max-height: 500px !important;
+        font-size: 14px;
+        line-height: 1.8;
+        background: #ffffff;
+    }
+
+    #quill-editor-content .ql-editor {
+        min-height: 300px !important;
+    }
+
+    #quill-editor-vision .ql-editor,
+    #quill-editor-mission .ql-editor {
+        min-height: 150px !important;
+    }
+
+    .ql-toolbar.ql-snow {
+        border-radius: 8px 8px 0 0;
+        border-color: #d1d5db !important;
+        background: #f9fafb;
+    }
+
+    .ql-container.ql-snow {
+        border-radius: 0 0 8px 8px;
+        border-color: #d1d5db !important;
+        background: white;
+    }
+
+    .ql-container.ql-snow:focus-within {
+        border-color: #3b82f6 !important;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    /* Dark mode support */
+    .dark .ql-toolbar.ql-snow {
+        background: #1f2937;
+        border-color: #374151 !important;
+    }
+
+    .dark .ql-container.ql-snow {
+        background: #1f2937;
+        border-color: #374151 !important;
+    }
+
+    .dark .ql-editor {
+        color: #e5e7eb;
+    }
+
+    .dark .ql-editor.ql-blank::before {
+        color: #6b7280;
+    }
+</style>
+
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Inisialisasi TinyMCE untuk Konten Utama
-        tinymce.init({
-            selector: '#about_content',
-            height: 400,
-            menubar: false,
-            plugins: [
-                'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
-                'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-                'insertdatetime', 'media', 'table', 'help', 'wordcount'
-            ],
-            toolbar: 'undo redo | blocks | ' +
-                'bold italic backcolor | alignleft aligncenter ' +
-                'alignright alignjustify | bullist numlist outdent indent | ' +
-                'removeformat | help',
-            content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
-            setup: function(editor) {
-                editor.on('change', function() {
-                    editor.save();
-                });
+document.addEventListener('DOMContentLoaded', function() {
+    const hiddenContent = document.getElementById('about_content');
+    const hiddenVision = document.getElementById('about_vision');
+    const hiddenMission = document.getElementById('about_mission');
+    
+    const editorContent = document.getElementById('quill-editor-content');
+    const editorVision = document.getElementById('quill-editor-vision');
+    const editorMission = document.getElementById('quill-editor-mission');
+    
+    const form = document.getElementById('about-form');
+    const submitBtn = document.getElementById('submit-about-btn');
+
+    let quillContent = null;
+    let quillVision = null;
+    let quillMission = null;
+
+    // ============================================
+    // 🔥 TOOLBAR CONFIGURATION
+    // ============================================
+
+    const fullToolbar = [
+        [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+        ['bold', 'italic', 'underline', 'strike'],
+        [{ 'color': [] }, { 'background': [] }],
+        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+        [{ 'indent': '-1' }, { 'indent': '+1' }],
+        [{ 'align': [] }],
+        ['blockquote', 'code-block'],
+        ['link', 'image'],
+        ['clean']
+    ];
+
+    const simpleToolbar = [
+        ['bold', 'italic', 'underline'],
+        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+        ['clean']
+    ];
+
+    // ============================================
+    // 🔥 QUILL.JS - KONTEN UTAMA
+    // ============================================
+
+    if (editorContent && typeof Quill !== 'undefined') {
+        quillContent = new Quill(editorContent, {
+            theme: 'snow',
+            placeholder: 'Tulis konten tentang kami di sini...',
+            modules: {
+                toolbar: fullToolbar
             }
         });
 
-        // Inisialisasi TinyMCE untuk Visi
-        tinymce.init({
-            selector: '#about_vision',
-            height: 200,
-            menubar: false,
-            plugins: [
-                'advlist', 'autolink', 'lists', 'link', 'charmap', 'preview',
-                'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-                'insertdatetime', 'media', 'help', 'wordcount'
-            ],
-            toolbar: 'undo redo | blocks | ' +
-                'bold italic | alignleft aligncenter ' +
-                'alignright alignjustify | bullist numlist outdent indent | ' +
-                'removeformat | help',
-            content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
-            setup: function(editor) {
-                editor.on('change', function() {
-                    editor.save();
-                });
-            }
-        });
-
-        // Inisialisasi TinyMCE untuk Misi
-        tinymce.init({
-            selector: '#about_mission',
-            height: 200,
-            menubar: false,
-            plugins: [
-                'advlist', 'autolink', 'lists', 'link', 'charmap', 'preview',
-                'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-                'insertdatetime', 'media', 'help', 'wordcount'
-            ],
-            toolbar: 'undo redo | blocks | ' +
-                'bold italic | alignleft aligncenter ' +
-                'alignright alignjustify | bullist numlist outdent indent | ' +
-                'removeformat | help',
-            content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
-            setup: function(editor) {
-                editor.on('change', function() {
-                    editor.save();
-                });
-            }
-        });
-
-        // Pastikan semua konten tersimpan sebelum submit
-        const form = document.getElementById('about-form');
-        if (form) {
-            form.addEventListener('submit', function(e) {
-                tinymce.triggerSave();
-            });
+        const initialContent = hiddenContent.value;
+        if (initialContent) {
+            quillContent.root.innerHTML = initialContent;
         }
-    });
 
-    function toggleAbout() {
+        quillContent.on('text-change', function() {
+            hiddenContent.value = quillContent.root.innerHTML;
+        });
+
+        console.log('✅ Quill.js - Content initialized');
+    }
+
+    // ============================================
+    // 🔥 QUILL.JS - VISI
+    // ============================================
+
+    if (editorVision && typeof Quill !== 'undefined') {
+        quillVision = new Quill(editorVision, {
+            theme: 'snow',
+            placeholder: 'Tulis visi perusahaan di sini...',
+            modules: {
+                toolbar: simpleToolbar
+            }
+        });
+
+        const initialVision = hiddenVision.value;
+        if (initialVision) {
+            quillVision.root.innerHTML = initialVision;
+        }
+
+        quillVision.on('text-change', function() {
+            hiddenVision.value = quillVision.root.innerHTML;
+        });
+
+        console.log('✅ Quill.js - Vision initialized');
+    }
+
+    // ============================================
+    // 🔥 QUILL.JS - MISI
+    // ============================================
+
+    if (editorMission && typeof Quill !== 'undefined') {
+        quillMission = new Quill(editorMission, {
+            theme: 'snow',
+            placeholder: 'Tulis misi perusahaan di sini...',
+            modules: {
+                toolbar: simpleToolbar
+            }
+        });
+
+        const initialMission = hiddenMission.value;
+        if (initialMission) {
+            quillMission.root.innerHTML = initialMission;
+        }
+
+        quillMission.on('text-change', function() {
+            hiddenMission.value = quillMission.root.innerHTML;
+        });
+
+        console.log('✅ Quill.js - Mission initialized');
+    }
+
+    // ============================================
+    // 🔥 SUBMIT FORM - SYNC ALL CONTENT
+    // ============================================
+
+    function syncAllContent() {
+        if (quillContent) {
+            hiddenContent.value = quillContent.root.innerHTML;
+        }
+        if (quillVision) {
+            hiddenVision.value = quillVision.root.innerHTML;
+        }
+        if (quillMission) {
+            hiddenMission.value = quillMission.root.innerHTML;
+        }
+        console.log('📝 All Quill content synced');
+    }
+
+    function validateForm() {
+        syncAllContent();
+
+        const title = document.querySelector('input[name="title"]')?.value.trim();
+        const content = hiddenContent.value.trim();
+
+        if (!title) {
+            alert('Judul tentang kami wajib diisi!');
+            document.querySelector('input[name="title"]')?.focus();
+            return false;
+        }
+
+        if (!content || content === '<p><br></p>' || content === '<p></p>' || content === '') {
+            alert('Konten utama tentang kami wajib diisi!');
+            editorContent.focus();
+            return false;
+        }
+
+        return true;
+    }
+
+    // 🔥 Submit via button click
+    if (submitBtn) {
+        submitBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (validateForm()) {
+                console.log('✅ Submitting form...');
+                form.submit();
+            }
+        });
+    }
+
+    // 🔥 Submit via form submit event
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            syncAllContent();
+            // Validasi tetap berjalan
+            if (!validateForm()) {
+                e.preventDefault();
+                return false;
+            }
+        });
+    }
+
+    // ============================================
+    // 🔥 TOGGLE STATUS
+    // ============================================
+
+    window.toggleAbout = function() {
         if (confirm('Apakah Anda yakin ingin mengubah status Tentang Kami?')) {
+            syncAllContent();
             document.getElementById('toggle-form').submit();
         }
-    }
+    };
+
+    console.log('✅ About Us form initialized with Quill.js');
+});
 </script>
-@endpush
+@endsection

@@ -1647,6 +1647,31 @@ ZOOM IMAGE
     background: #cbd5e1;
     border-radius: 0.4vw;
 }
+.empty_state{
+    width: 100%;
+    text-align: center;
+}
+.empty-icon{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2vw;
+    width: 5vw;
+    margin: auto;
+    border-radius: 100vw;
+    height: 5vw;
+    background-color: transparent;
+    border: .1vw solid #076694;
+    color: #076694;
+    margin-bottom: .6vw;
+}
+.empty_state p{
+    font-size: 1vw;
+}
+.empty_state span{
+    font-size: .85vw;
+    color: #555;
+}
 
 /* ============================================
    MOBILE RESPONSIVE - SHOPEE STYLE
@@ -1654,6 +1679,33 @@ ZOOM IMAGE
    ============================================ */
 
 @media (max-width: 768px) {
+    .empty_state{
+        width: 100%;
+        text-align: center;
+        padding: 14vw 2vw;
+    }
+    .empty-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 7vw;
+        width: 18vw;
+        margin: auto;
+        border-radius: 100vw;
+        height: 18vw;
+        background-color: transparent;
+        border: .1vw solid #076694;
+        color: #076694;
+        margin-bottom: 2.6vw;
+    }
+    .empty_state p {
+        font-size: 3vw;
+    }
+    .empty_state span{
+        font-size: 2.5vw;
+        color: #555;
+    }
+
     
     /* ============================================
        BREADCRUMB - HIDE

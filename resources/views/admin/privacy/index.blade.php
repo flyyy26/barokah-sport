@@ -35,7 +35,6 @@
                     </span>
                 </div>
                 @if($privacy)
-                    {{-- HAPUS FORM TOGGLE DI SINI --}}
                     <button type="button" 
                             onclick="togglePrivacy()"
                             class="rounded-lg px-4 py-2 text-sm font-medium {{ $privacy->is_active ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' : 'bg-green-100 text-green-800 hover:bg-green-200' }}">
@@ -56,12 +55,18 @@
                 @enderror
             </div>
 
-            {{-- KONTEN DENGAN TINYMCE --}}
+            {{-- 🔥 KONTEN DENGAN QUILL.JS --}}
             <div class="mb-5">
                 <label class="block text-sm font-medium text-gray-700">Konten</label>
-                <textarea name="content" id="privacy_content" rows="15" 
-                          class="mt-2 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                          placeholder="Tuliskan kebijakan privasi...">{{ old('content', $privacy?->content ?? '') }}</textarea>
+                
+                {{-- Hidden input untuk form submission --}}
+                <textarea name="content" id="privacy_content" style="display: none;">{{ old('content', $privacy?->content ?? '') }}</textarea>
+                
+                {{-- Quill Editor Container --}}
+                <div id="quill-editor" class="mt-2 rounded-lg border border-gray-300 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500" style="min-height: 400px;">
+                    {!! old('content', $privacy?->content ?? '') !!}
+                </div>
+                
                 @error('content')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror
@@ -121,49 +126,154 @@
         </form>
     @endif
 </div>
-@endsection
 
-@push('scripts')
-<script src="https://cdn.tiny.cloud/1/f0qff2j87jgv24lrb8m0hd4yuglweewk56pa79tykafgtc6g/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+{{-- 🔥 QUILL.JS CDN --}}
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+
+<style>
+    /* Quill Editor Styling */
+    #quill-editor {
+        min-height: 400px !important;
+    }
+
+    .ql-editor {
+        min-height: 400px !important;
+        max-height: 600px !important;
+        font-size: 14px;
+        line-height: 1.8;
+        background: #ffffff;
+    }
+
+    .ql-toolbar.ql-snow {
+        border-radius: 8px 8px 0 0;
+        border-color: #d1d5db !important;
+        background: #f9fafb;
+    }
+
+    .ql-container.ql-snow {
+        border-radius: 0 0 8px 8px;
+        border-color: #d1d5db !important;
+        background: white;
+        min-height: 400px;
+    }
+
+    .ql-container.ql-snow:focus-within {
+        border-color: #3b82f6 !important;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    /* Dark mode support */
+    .dark .ql-toolbar.ql-snow {
+        background: #1f2937;
+        border-color: #374151 !important;
+    }
+
+    .dark .ql-container.ql-snow {
+        background: #1f2937;
+        border-color: #374151 !important;
+    }
+
+    .dark .ql-editor {
+        color: #e5e7eb;
+    }
+
+    .dark .ql-editor.ql-blank::before {
+        color: #6b7280;
+    }
+</style>
+
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Inisialisasi TinyMCE
-        tinymce.init({
-            selector: '#privacy_content',
-            height: 400,
-            menubar: false,
-            plugins: [
-                'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
-                'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-                'insertdatetime', 'media', 'table', 'help', 'wordcount'
-            ],
-            toolbar: 'undo redo | blocks | ' +
-                'bold italic backcolor | alignleft aligncenter ' +
-                'alignright alignjustify | bullist numlist outdent indent | ' +
-                'removeformat | help',
-            content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
-            setup: function(editor) {
-                editor.on('change', function() {
-                    editor.save();
-                });
+document.addEventListener('DOMContentLoaded', function() {
+    const hiddenInput = document.getElementById('privacy_content');
+    const editorContainer = document.getElementById('quill-editor');
+    const form = document.getElementById('privacy-form');
+
+    let quill = null;
+
+    // ============================================
+    // 🔥 QUILL.JS INITIALIZATION
+    // ============================================
+
+    if (editorContainer && typeof Quill !== 'undefined') {
+        // 🔥 Toolbar configuration
+        const toolbarOptions = [
+            [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+            ['bold', 'italic', 'underline', 'strike'],
+            [{ 'color': [] }, { 'background': [] }],
+            [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+            [{ 'indent': '-1' }, { 'indent': '+1' }],
+            [{ 'align': [] }],
+            ['blockquote', 'code-block'],
+            ['link', 'image'],
+            ['clean']
+        ];
+
+        quill = new Quill(editorContainer, {
+            theme: 'snow',
+            placeholder: 'Tulis konten kebijakan privasi di sini...',
+            modules: {
+                toolbar: toolbarOptions
             }
         });
-        
-        // Pastikan content tersimpan sebelum submit
-        const form = document.getElementById('privacy-form');
-        if (form) {
-            form.addEventListener('submit', function(e) {
-                tinymce.triggerSave();
-                console.log('Form submitted, content saved');
-            });
-        }
-    });
 
-    // Function untuk toggle status
-    function togglePrivacy() {
+        // 🔥 Set initial content
+        const initialContent = hiddenInput.value;
+        if (initialContent) {
+            quill.root.innerHTML = initialContent;
+        }
+
+        // 🔥 Sync to hidden input on change
+        quill.on('text-change', function() {
+            hiddenInput.value = quill.root.innerHTML;
+        });
+
+        console.log('✅ Quill.js initialized for Privacy Policy');
+    } else {
+        console.error('❌ Quill.js not loaded');
+    }
+
+    // ============================================
+    // 🔥 SUBMIT FORM - SYNC CONTENT
+    // ============================================
+
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            // 🔥 SYNC QUILL CONTENT TO HIDDEN INPUT
+            if (quill) {
+                hiddenInput.value = quill.root.innerHTML;
+                console.log('📝 Quill content saved before submit');
+            }
+            
+            // 🔥 VALIDASI KONTEN
+            const content = hiddenInput.value.trim();
+            if (!content || content === '<p><br></p>' || content === '<p></p>' || content === '') {
+                e.preventDefault();
+                alert('Konten kebijakan privasi wajib diisi!');
+                editorContainer.focus();
+                return false;
+            }
+            
+            console.log('✅ Form submitted successfully');
+            return true;
+        });
+    }
+
+    // ============================================
+    // 🔥 TOGGLE STATUS
+    // ============================================
+
+    window.togglePrivacy = function() {
         if (confirm('Apakah Anda yakin ingin mengubah status Kebijakan Privasi?')) {
+            // 🔥 SYNC QUILL CONTENT BEFORE TOGGLE
+            if (quill) {
+                hiddenInput.value = quill.root.innerHTML;
+            }
             document.getElementById('toggle-form').submit();
         }
-    }
+    };
+
+    console.log('✅ Privacy Policy form initialized');
+});
 </script>
-@endpush
+@endsection

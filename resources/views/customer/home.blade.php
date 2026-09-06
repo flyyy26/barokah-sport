@@ -325,7 +325,7 @@
                 </div>
             </div>
         </div>
-        <a href="{{ route('customer.products.promo') }}">LIHAT SEMUA</a>
+        <a href="{{ route('customer.products.flash-sale') }}">LIHAT SEMUA</a>
     </div>
     <div class="product_layout_grid product_layout_grid_4">
         @foreach($flashSaleProducts as $product)

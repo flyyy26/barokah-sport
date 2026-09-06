@@ -5,38 +5,89 @@ namespace App\Http\Controllers\Customer;
 use App\Http\Controllers\Controller;
 use App\Models\CustomerAddress;
 use App\Models\Order;
+use App\Models\Wishlist;
+use App\Models\Voucher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class AccountController extends Controller
 {
-    public function index()
+    protected function getAccountData()
     {
-        $user = Auth::user();
-        return view('customer.account.index', compact('user'));
+        $customer = Auth::guard('customer')->user();
+        
+        $orderCount = Order::where('customer_id', $customer->id)->count();
+        $wishlistCount = Wishlist::where('user_id', $customer->id)->count();
+        
+        // 🔥 HITUNG VOUCHER TERSEDIA
+        $availableVouchers = Voucher::where('is_active', true)
+            ->where('is_public', true)
+            ->where('start_date', '<=', now())
+            ->where('end_date', '>=', now())
+            ->where(function($q) {
+                $q->whereNull('usage_limit')
+                  ->orWhereRaw('used_count < usage_limit');
+            })
+            ->where(function($q) use ($customer) {
+                // 🔥 CEK APAKAH USER SUDAH PERNAH PAKAI
+                $q->whereNotExists(function($sub) use ($customer) {
+                    $sub->select('id')
+                        ->from('voucher_usages')
+                        ->whereColumn('voucher_usages.voucher_id', 'vouchers.id')
+                        ->where('voucher_usages.user_id', $customer->id);
+                });
+            })
+            ->count();
+
+        return [
+            'orderCount' => $orderCount,
+            'wishlistCount' => $wishlistCount,
+            'availableVouchers' => $availableVouchers,
+        ];
     }
 
-
-    // ============================================
-    // RIWAYAT PESANAN
-    // ============================================
+    public function index()
+    {
+        $user = Auth::guard('customer')->user();
+        $data = $this->getAccountData();
+        
+        return view('customer.account.index', array_merge(['user' => $user], $data));
+    }
 
     public function orders()
     {
         $customer = Auth::guard('customer')->user();
         
-        // 🔥 AMBIL DATA ORDER DARI DATABASE
         $orders = Order::with(['items.product', 'items.variant'])
             ->where('customer_id', $customer->id)
             ->orderBy('created_at', 'desc')
             ->paginate(10);
 
-        return view('customer.account.orders', compact('orders'));
+        $data = $this->getAccountData();
+
+        return view('customer.account.orders', array_merge(['orders' => $orders], $data));
     }
 
     // ============================================
     // ADDRESS CRUD
     // ============================================
+
+    public function indexAddresses()
+    {
+        $customer = Auth::guard('customer')->user();
+
+        $addresses = $customer->addresses()
+            ->orderBy('is_default', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $data = $this->getAccountData();
+
+        return view('customer.account.addresses.index', array_merge([
+            'addresses' => $addresses,
+        ], $data));
+    }
 
     public function createAddress()
     {
@@ -45,12 +96,19 @@ class AccountController extends Controller
 
     public function storeAddress(Request $request)
     {
+        $request->merge([
+            'district' => $request->input('district') ?: $request->input('district_select'),
+            'subdistrict' => $request->input('subdistrict') ?: $request->input('subdistrict_select'),
+        ]);
+
         $validated = $request->validate([
             'label' => 'nullable|string|max:50',
             'recipient_name' => 'required|string|max:100',
             'recipient_phone' => 'required|string|max:20',
             'address' => 'required|string',
             'city' => 'required|string|max:100',
+            'district' => 'required|string|max:100',
+            'subdistrict' => 'required|string|max:100',
             'province' => 'required|string|max:100',
             'postal_code' => 'required|string|max:10',
             'is_default' => 'boolean',
@@ -66,18 +124,20 @@ class AccountController extends Controller
             $customer->addresses()->update(['is_default' => false]);
         }
 
-        $customer->addresses()->create($validated);
+        $validated['customer_id'] = $customer->id;
+        $validated['user_id'] = $customer->id;
+
+        CustomerAddress::create($validated);
 
         return redirect()
-            ->route('customer.account')
+            ->route('customer.addresses.index')
             ->with('success', 'Alamat berhasil ditambahkan.');
     }
 
-    public function editAddress(CustomerAddress $address)
+    public function editAddress(int $address)
     {
-        if ($address->customer_id !== Auth::guard('customer')->id()) {
-            abort(403);
-        }
+        $customer = Auth::guard('customer')->user();
+        $address = $customer->addresses()->findOrFail($address);
 
         // 🔥 Debug: cek data address
         \Log::info('Edit Address Data:', [
@@ -90,11 +150,15 @@ class AccountController extends Controller
         return view('customer.account.addresses.edit', compact('address'));
     }
 
-    public function updateAddress(Request $request, CustomerAddress $address)
+    public function updateAddress(Request $request, int $address)
     {
-        if ($address->customer_id !== Auth::guard('customer')->id()) {
-            abort(403);
-        }
+        $customer = Auth::guard('customer')->user();
+        $address = $customer->addresses()->findOrFail($address);
+
+        $request->merge([
+            'district' => $request->input('district') ?: $request->input('district_select'),
+            'subdistrict' => $request->input('subdistrict') ?: $request->input('subdistrict_select'),
+        ]);
 
         $validated = $request->validate([
             'label' => 'nullable|string|max:50',
@@ -102,12 +166,12 @@ class AccountController extends Controller
             'recipient_phone' => 'required|string|max:20',
             'address' => 'required|string',
             'city' => 'required|string|max:100',
+            'district' => 'required|string|max:100',
+            'subdistrict' => 'required|string|max:100',
             'province' => 'required|string|max:100',
             'postal_code' => 'required|string|max:10',
             'is_default' => 'boolean',
         ]);
-
-        $customer = Auth::guard('customer')->user();
 
         if (isset($validated['is_default']) && $validated['is_default']) {
             $customer->addresses()
@@ -115,27 +179,33 @@ class AccountController extends Controller
                 ->update(['is_default' => false]);
         }
 
+        $validated['customer_id'] = $customer->id;
+        $validated['user_id'] = $customer->id;
+
         $address->update($validated);
+        DB::table('user_addresses')
+            ->where('id', $address->id)
+            ->update([
+                'district' => $validated['district'],
+                'subdistrict' => $validated['subdistrict'],
+                'updated_at' => now(),
+            ]);
 
         return redirect()
-            ->route('customer.account')
+            ->route('customer.addresses.index')
             ->with('success', 'Alamat berhasil diperbarui.');
     }
 
-    public function destroyAddress(CustomerAddress $address)
+    public function destroyAddress(int $address)
     {
-        if ($address->customer_id !== Auth::guard('customer')->id()) {
-            abort(403);
-        }
+        $customer = Auth::guard('customer')->user();
+        $address = $customer->addresses()->findOrFail($address);
 
         $wasDefault = $address->is_default;
         $address->delete();
 
         if ($wasDefault) {
-            $firstAddress = Auth::guard('customer')
-                ->user()
-                ->addresses()
-                ->first();
+            $firstAddress = $customer->addresses()->first();
 
             if ($firstAddress) {
                 $firstAddress->update(['is_default' => true]);
@@ -143,7 +213,7 @@ class AccountController extends Controller
         }
 
         return redirect()
-            ->route('customer.account')
+            ->route('customer.addresses.index')
             ->with('success', 'Alamat berhasil dihapus.');
     }
 

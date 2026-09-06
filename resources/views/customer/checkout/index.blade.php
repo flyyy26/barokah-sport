@@ -113,6 +113,9 @@
         .form-grid .full-width {
             grid-column: 1 / -1;
         }
+        .form-grid-custom{
+            display:flex;
+        }
 
         .form-group {
             display: flex;
@@ -143,14 +146,31 @@
             transition: border-color 0.2s, box-shadow 0.2s;
             font-family: inherit;
         }
+        .checkout-section textarea {
+            width: 100%;
+            padding: 0.7vw 1vw;
+            border: 0.1vw solid #e2e8f0;
+            border-radius: 0.7vw;
+            font-size: 0.8vw;
+            color: #0f172a;
+            background: #ffffff;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            font-family: inherit;
+        }
+        .checkout-section textarea:focus {
+            outline: none;
+            border-color: #076694;
+            box-shadow: 0 0 0 0.2vw rgba(59, 130, 246, 0.1);
+        }
 
         .form-group input:focus,
         .form-group select:focus,
         .form-group textarea:focus {
             outline: none;
-            border-color: #3b82f6;
+            border-color: #076694;
             box-shadow: 0 0 0 0.2vw rgba(59, 130, 246, 0.1);
         }
+        
 
         .form-group input:disabled,
         .form-group select:disabled {
@@ -193,7 +213,7 @@
         }
 
         .shipping-cost-display .loading {
-            color: #3b82f6;
+            color: #076694;
         }
 
         .shipping-cost-display .success {
@@ -203,6 +223,55 @@
         .shipping-cost-display .error {
             color: #ef4444;
         }
+
+        .shipping-picker-button {
+            width: 100%;
+            min-height: 4.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 0.85rem 1rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.75rem;
+            background: #fff;
+            color: #0f172a;
+            text-align: left;
+            font: inherit;
+            cursor: pointer;
+            transition: border-color .2s ease, box-shadow .2s ease;
+        }
+
+        .shipping-picker-button:hover:not(:disabled) {
+            border-color: #0284c7;
+            box-shadow: 0 0 0 0.2rem rgba(2, 132, 199, .1);
+        }
+
+        .shipping-picker-button:disabled { cursor: not-allowed; background: #f8fafc; color: #94a3b8; }
+        .shipping-picker-button .picker-title { display: block; font-weight: 600; font-size: 0.84rem; }
+        .shipping-picker-button .picker-subtitle { display: block; margin-top: .2rem; color: #64748b; font-size: .75rem; }
+        .shipping-picker-button .picker-arrow { color: #0284c7; font-size: 1.25rem; }
+
+        .shipping-popup { position: fixed; inset: 0; z-index: 10001; display: grid; place-items: center; padding: 1rem; }
+        .shipping-popup.hidden { display: none; }
+        .shipping-popup-backdrop { position: absolute; inset: 0; background: rgba(15, 23, 42, .55); backdrop-filter: blur(2px); }
+        .shipping-popup-card { position: relative; width: min(100%, 35rem); max-height: min(80vh, 44rem); overflow: hidden; display: flex; flex-direction: column; background: #fff; border-radius: 1rem; box-shadow: 0 1.5rem 4rem rgba(15, 23, 42, .3); }
+        .shipping-popup-header { display: flex; align-items: center; justify-content: space-between; padding: 1.15rem 1.25rem; border-bottom: 1px solid #e2e8f0; }
+        .shipping-popup-header h3 { margin: 0; color: #0f172a; font-size: 1.05rem; }
+        .shipping-popup-close { border: 0; background: transparent; color: #334155; cursor: pointer; font-size: 1.7rem; line-height: 1; }
+        .shipping-popup-body { overflow-y: auto; padding: 1rem 1.25rem; }
+        .shipping-popup-note { margin: 0 0 .9rem; padding: .7rem .8rem; border-radius: .6rem; background: #f0f9ff; color: #075985; font-size: .78rem; }
+        .shipping-courier-group + .shipping-courier-group { margin-top: 1rem; }
+        .shipping-courier-name { margin: 0 0 .45rem; color: #0f172a; font-size: .86vw; font-weight: 600; }
+        .shipping-option { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: .8rem; padding: .85rem .9rem; border: 1px solid #e2e8f0; border-radius: .65rem; background: #fff; text-align: left; cursor: pointer; font: inherit; }
+        .shipping-option + .shipping-option { margin-top: .5rem; }
+        .shipping-option:hover, .shipping-option.selected { border-color: #0284c7; background: #f0f9ff; }
+        .shipping-option-name { display: block; color: #0f172a; font-size: .8vw; font-weight: 400; }
+        .shipping-option-meta { display: block; margin-top: .18rem; color: #64748b; font-size: .72rem; }
+        .shipping-option-price { color: #075985; font-size: .86rem; font-weight: 700; white-space: nowrap; }
+        .shipping-popup-footer { padding: .9rem 1.25rem 1.25rem; border-top: 1px solid #e2e8f0; }
+        .shipping-popup-confirm { width: 100%; padding: .8rem 1rem; border: 0; border-radius: .6rem; background: #076694; color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+        .shipping-popup-confirm:disabled { background: #cbd5e1; cursor: not-allowed; }
 
         /* ============================================
            PAYMENT METHOD
@@ -231,7 +300,7 @@
         .payment-option input[type="radio"] {
             width: 1.2vw;
             height: 1.2vw;
-            accent-color: #3b82f6;
+            accent-color: #076694;
             flex-shrink: 0;
             cursor: pointer;
         }
@@ -492,12 +561,10 @@
         .voucher-summary-section .voucher-header .btn-open-voucher {
             background: none;
             border: none;
-            color: #3b82f6;
+            color: #076694;
             font-size: 0.7vw;
             font-weight: 500;
             cursor: pointer;
-            padding: 0.2vw 0.6vw;
-            border-radius: 0.3vw;
             transition: all 0.2s;
             font-family: inherit;
             display: flex;
@@ -523,6 +590,7 @@
             border: 0.1vw solid #86efac;
             border-radius: 0.6vw;
             margin-top: 0.3vw;
+            margin-bottom:.6vw;
         }
 
         .applied-voucher-summary .voucher-info {
@@ -591,478 +659,613 @@
             }
         }
 
+        /* ============================================
+        🔥 RESPONSIVE MOBILE (max-width: 768px)
+        ============================================ */
         @media (max-width: 768px) {
             .checkout-container {
-                padding: 2vw 3vw;
+                max-width: 100%;
+                padding: 0;
+                background: #f5f6f8;
+            }
+
+            /* ============================================
+            HEADER - MOBILE
+            ============================================ */
+            .checkout-header {
+                padding: 4.5vw 4.5vw;
+                background: #ffffff;
+                margin-bottom: 0;
+                border-bottom: 0.2vw solid #f1f5f9;
+                position: sticky;
+                top: 0;
+                z-index: 10;
             }
 
             .checkout-header h1 {
-                font-size: 3vw;
+                font-size: 6vw;
+                font-weight: 700;
+                color: #0f172a;
+                position: relative;
+                display: inline-block;
             }
 
             .checkout-header p {
-                font-size: 1.2vw;
+                font-size: 3vw;
+                margin-top: 0.2vw;
+                color: #64748b;
             }
 
+            /* ============================================
+            ALERT - MOBILE
+            ============================================ */
+            .checkout-alert {
+                font-size: 2.5vw;
+                padding: 2.5vw 4vw;
+                border-radius: 1.5vw;
+                margin: 2vw 4vw;
+                border-width: 0.15vw;
+            }
+
+            .checkout-alert .alert-title {
+                font-size: 2.8vw;
+                margin-bottom: 0.5vw;
+            }
+
+            .checkout-alert .alert-list {
+                padding-left: 3vw;
+            }
+
+            .checkout-alert .alert-list li {
+                font-size: 2.3vw;
+                margin-bottom: 0.3vw;
+            }
+
+            /* ============================================
+            CHECKOUT GRID - MOBILE
+            ============================================ */
+            .checkout-grid {
+                grid-template-columns: 1fr;
+                gap: 0;
+                padding: 0;
+            }
+
+            /* ============================================
+            FORM SECTION - MOBILE
+            ============================================ */
+            .checkout-section {
+                background: #ffffff;
+                border: none;
+                border-radius: 0;
+                padding: 4vw 4.5vw;
+                margin-bottom: 2vw;
+                box-shadow: 0 0.2vw 1.5vw rgba(0, 0, 0, 0.04);
+            }
+
+            .checkout-section:last-child {
+                margin-bottom: 0;
+            }
+
+            .checkout-section .section-title {
+                font-size: 3.8vw;
+                font-weight: 700;
+                color: #0f172a;
+                margin-bottom: 0.5vw;
+                display: flex;
+                align-items: center;
+                gap: 1.5vw;
+            }
+
+            .checkout-section .section-title .title-icon {
+                font-size: 4.5vw;
+            }
+
+            .checkout-section .section-subtitle {
+                font-size: 3vw;
+                color: #94a3b8;
+                margin-bottom: 2.5vw;
+            }
+
+            /* ============================================
+            FORM ELEMENTS - MOBILE
+            ============================================ */
             .form-grid {
                 grid-template-columns: 1fr;
-                gap: 1.2vw;
+                gap: 2.5vw;
             }
 
             .form-grid .full-width {
                 grid-column: 1;
             }
 
+            .form-group {
+                gap: 0.8vw;
+            }
+
             .form-group label {
-                font-size: 1.2vw;
+                font-size: 3vw;
+                font-weight: 600;
+                color: #1e293b;
+            }
+
+            .form-group label .required {
+                color: #ef4444;
+                font-size: 3vw;
             }
 
             .form-group input,
             .form-group select,
             .form-group textarea {
-                font-size: 1.2vw;
-                padding: 0.8vw 1.2vw;
+                font-size: 3vw;
+                padding: 2.5vw 3.5vw;
+                border-radius: 1.5vw;
+                border: 0.15vw solid #e2e8f0;
+                background: #f8fafc;
+                color: #0f172a;
+                transition: all 0.3s ease;
+            }
+
+            .form-group input:focus,
+            .form-group select:focus,
+            .form-group textarea:focus {
+                border-color: #076694;
+                background: #ffffff;
+                box-shadow: 0 0 0 0.4vw rgba(7, 102, 148, 0.08);
+            }
+
+            .checkout-section textarea {
+                font-size: 3vw;
+                padding: 2.5vw 3.5vw;
+                border-radius: 1.5vw;
+                border: 0.15vw solid #e2e8f0;
+                background: #f8fafc;
+                color: #0f172a;
+                transition: all 0.3s ease;
+            }
+            .checkout-section textarea:focus {
+                outline: none;
+                border-color: #076694;
+                box-shadow: 0 0 0 0.2vw rgba(59, 130, 246, 0.1);
+            }
+
+            .form-group input::placeholder,
+            .form-group select::placeholder,
+            .form-group textarea::placeholder {
+                color: #94a3b8;
+            }
+
+            .form-group .helper-text {
+                font-size: 2.7vw;
+                color: #94a3b8;
+                margin-top: 0.5vw;
+            }
+
+            .form-group .error-text {
+                font-size: 2.2vw;
+                color: #ef4444;
+                margin-top: 0.5vw;
+                padding: 0.5vw 1.5vw;
+                background: #fef2f2;
                 border-radius: 0.8vw;
             }
 
-            .form-group .helper-text {
-                font-size: 1vw;
-            }
-
-            .form-group .error-text {
-                font-size: 1vw;
-            }
-
-            .checkout-section {
-                padding: 2vw;
-                border-radius: 1.5vw;
-            }
-
-            .checkout-section .section-title {
-                font-size: 1.6vw;
-            }
-
-            .checkout-section .section-subtitle {
-                font-size: 1.2vw;
-            }
-
-            .payment-option {
-                padding: 1vw 1.5vw;
-                border-radius: 1vw;
-            }
-
-            .payment-option input[type="radio"] {
-                width: 1.8vw;
-                height: 1.8vw;
-            }
-
-            .payment-option .payment-info .payment-name {
-                font-size: 1.3vw;
-            }
-
-            .payment-option .payment-info .payment-desc {
-                font-size: 1vw;
-            }
-
-            .guest-info {
-                font-size: 1.2vw;
-                padding: 1.2vw 1.8vw;
-            }
-
-            .guest-info .guest-hint {
-                font-size: 1vw;
-            }
-
+            /* ============================================
+            SHIPPING COST - MOBILE
+            ============================================ */
             .shipping-cost-display {
-                font-size: 1.2vw;
-                padding: 0.8vw 1.2vw;
-                min-height: 4vw;
-            }
-
-            .weight-display {
-                font-size: 1.2vw;
-            }
-
-            .weight-display .weight-items {
-                font-size: 1vw;
-            }
-
-            .checkout-summary {
-                padding: 2vw;
+                font-size: 3vw;
+                padding: 2.5vw 3.5vw;
+                min-height: 8vw;
                 border-radius: 1.5vw;
+                border: 0.15vw solid #e2e8f0;
+                background: #f8fafc;
             }
 
-            .checkout-summary .summary-title {
-                font-size: 1.6vw;
+            .shipping-cost-display .loading {
+                color: #076694;
             }
 
-            .checkout-summary .summary-item {
-                font-size: 1.2vw;
-                padding: 0.6vw 0;
+            .shipping-cost-display .success {
+                color: #22c55e;
             }
 
-            .checkout-summary .summary-item .item-variant {
-                font-size: 1vw;
+            .shipping-cost-display .error {
+                color: #ef4444;
             }
 
-            .checkout-summary .summary-item .item-qty {
-                font-size: 1vw;
+            .shipping-popup{
+                padding: 0;
+                transform:translateX(0);
+                transition:.3s all;
             }
-
-            .checkout-summary .summary-row {
-                font-size: 1.2vw;
-            }
-
-            .checkout-summary .summary-total {
-                font-size: 1.6vw;
-            }
-
-            .checkout-summary .btn-submit {
-                font-size: 1.4vw;
-                padding: 1vw 2vw;
-                border-radius: 1vw;
-            }
-
-            .checkout-summary .btn-back {
-                font-size: 1.2vw;
-            }
-
-            .checkout-alert {
-                font-size: 1.2vw;
-                padding: 1.2vw 1.8vw;
-                border-radius: 1vw;
-            }
-
-            .voucher-popup {
-                width: 85vw;
-                right: -85vw;
-            }
-
-            .voucher-popup-header h2 {
-                font-size: 1.8vw;
-            }
-
-            .voucher-popup-body {
-                padding: 2vw;
-            }
-
-            .popup-voucher-input {
-                font-size: 1.2vw;
-                padding: 0.8vw 1.2vw;
-            }
-
-            .popup-btn-apply {
-                font-size: 1.2vw;
-                padding: 0.8vw 1.5vw;
-            }
-
-            .popup-voucher-item .item-info {
-                gap: 0.5vw;
-            }
-
-            .popup-voucher-item .item-code {
-                font-size: 1vw;
-            }
-
-            .popup-voucher-item .item-name {
-                font-size: 1.1vw;
-            }
-
-            .popup-voucher-item .item-discount {
-                font-size: 1vw;
-            }
-
-            .popup-voucher-item .item-min {
-                font-size: 0.9vw;
-            }
-
-            .popup-voucher-item .btn-use {
-                font-size: 0.9vw;
-                padding: 0.3vw 0.8vw;
-            }
-
-            .voucher-summary-section .voucher-header .voucher-label {
-                font-size: 1.2vw;
-            }
-
-            .voucher-summary-section .voucher-header .btn-open-voucher {
-                font-size: 1vw;
-            }
-
-            .applied-voucher-summary .voucher-info .code {
-                font-size: 1vw;
-            }
-
-            .applied-voucher-summary .voucher-info .name {
-                font-size: 1vw;
-            }
-
-            .applied-voucher-summary .voucher-info .discount {
-                font-size: 1.1vw;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .checkout-container {
-                padding: 2vw 2vw;
-            }
-
-            .checkout-header h1 {
-                font-size: 4.5vw;
-            }
-
-            .checkout-header p {
-                font-size: 1.8vw;
-            }
-
-            .form-group label {
-                font-size: 1.8vw;
-            }
-
-            .form-group input,
-            .form-group select,
-            .form-group textarea {
-                font-size: 1.8vw;
-                padding: 1.2vw 1.8vw;
-                border-radius: 1.2vw;
-            }
-
-            .form-group .helper-text {
-                font-size: 1.4vw;
-            }
-
-            .form-group .error-text {
-                font-size: 1.4vw;
-            }
-
-            .checkout-section {
-                padding: 3vw;
-                border-radius: 2vw;
-            }
-
-            .checkout-section .section-title {
-                font-size: 2.4vw;
-            }
-
-            .checkout-section .section-subtitle {
-                font-size: 1.8vw;
-            }
-
-            .payment-option {
-                padding: 1.5vw 2vw;
-                border-radius: 1.5vw;
+            .shipping-popup.hidden{
+                display:grid !important;
+                transform:translateX(-100%);
             }
-
-            .payment-option input[type="radio"] {
-                width: 2.8vw;
-                height: 2.8vw;
-            }
-
-            .payment-option .payment-info .payment-name {
-                font-size: 2vw;
-            }
-
-            .payment-option .payment-info .payment-desc {
-                font-size: 1.6vw;
-            }
-
-            .guest-info {
-                font-size: 1.8vw;
-                padding: 1.8vw 2.5vw;
-                border-radius: 1.2vw;
-            }
-
-            .guest-info .guest-hint {
-                font-size: 1.6vw;
-            }
-
-            .shipping-cost-display {
-                font-size: 1.8vw;
-                padding: 1.2vw 1.8vw;
-                min-height: 6vw;
-            }
-
-            .weight-display {
-                font-size: 1.8vw;
-            }
-
-            .weight-display .weight-items {
-                font-size: 1.4vw;
-            }
-
-            .checkout-summary {
-                padding: 3vw;
-                border-radius: 2vw;
-            }
-
-            .checkout-summary .summary-title {
-                font-size: 2.4vw;
-            }
-
-            .checkout-summary .summary-item {
-                font-size: 1.8vw;
-                padding: 0.8vw 0;
-            }
-
-            .checkout-summary .summary-item .item-variant {
-                font-size: 1.4vw;
-            }
-
-            .checkout-summary .summary-item .item-qty {
-                font-size: 1.4vw;
-            }
-
-            .checkout-summary .summary-row {
-                font-size: 1.8vw;
-            }
-
-            .checkout-summary .summary-total {
-                font-size: 2.4vw;
-            }
-
-            .checkout-summary .btn-submit {
-                font-size: 2.2vw;
-                padding: 1.5vw 3vw;
-                border-radius: 1.5vw;
+            .shipping-popup-card {
+                max-height: 100vh;
+                border-radius: 0;
+                box-shadow: none;
             }
-
-            .checkout-summary .btn-back {
-                font-size: 1.8vw;
-            }
-
-            .checkout-alert {
-                font-size: 1.8vw;
-                padding: 1.8vw 2.5vw;
-                border-radius: 1.5vw;
-            }
-
-            .voucher-popup {
-                width: 100vw;
-                right: -100vw;
-                max-width: 100%;
-            }
-
-            .voucher-popup-header {
-                padding: 2vw 3vw 1.5vw;
-            }
-
-            .voucher-popup-header h2 {
-                font-size: 2.5vw;
-            }
-
-            .voucher-popup-header .close-popup {
-                font-size: 2.5vw;
-            }
-
-            .voucher-popup-body {
-                padding: 3vw;
-            }
-
-            .popup-voucher-input {
-                font-size: 1.8vw;
-                padding: 1.2vw 1.8vw;
-                border-radius: 1.2vw;
-            }
-
-            .popup-btn-apply {
-                font-size: 1.8vw;
-                padding: 1.2vw 2vw;
-                border-radius: 1.2vw;
-            }
-
-            .popup-voucher-item {
-                padding: 1.2vw 1.5vw;
-                border-radius: 1vw;
-            }
-
-            .popup-voucher-item .item-content {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .popup-voucher-item .item-info {
-                width: 100%;
-            }
-
-            .popup-voucher-item .item-code {
-                font-size: 1.4vw;
-            }
-
-            .popup-voucher-item .item-name {
-                font-size: 1.6vw;
-            }
-
-            .popup-voucher-item .item-discount {
-                font-size: 1.4vw;
-            }
-
-            .popup-voucher-item .item-min {
-                font-size: 1.2vw;
+            .shipping-courier-name {
+                font-size: 3.5vw;
+                font-weight: 500;
             }
-
-            .popup-voucher-item .btn-use {
-                width: 100%;
-                text-align: center;
-                padding: 0.6vw 1.2vw;
-                font-size: 1.4vw;
+            .shipping-option-name {
+                font-size: 3vw;
+                font-weight: 400;
             }
 
             .popup-voucher-list .list-title {
-                font-size: 1.6vw;
+                font-size: 3.8vw;
+                margin-bottom: 2.2vw;
+            }
+            .popup-voucher-input {
+                flex: 1;
+                padding: 2.6vw 3.5vw;
+                border: 0.1vw solid #e2e8f0;
+                border-radius: 1.7vw;
+                font-size: 3.5vw;
+                color: #0f172a;
+                background: #ffffff;
+                font-family: inherit;
+                text-transform: uppercase;
+                outline: none;
+                letter-spacing: 0;
+            }
+            .popup-voucher-input-group {
+                display: flex;
+                gap: 2.5vw;
+                margin-bottom: 4vw;
+            }
+            .popup-btn-apply {
+                padding: 0.4vw 4vw;
+                background: #075985;
+                color: #ffffff;
+                border: none;
+                border-radius: 1.7vw;
+                font-size: 3vw;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                font-family: inherit;
+                white-space: nowrap;
             }
 
-            .voucher-summary-section .voucher-header .voucher-label {
-                font-size: 1.8vw;
-            }
-
-            .voucher-summary-section .voucher-header .btn-open-voucher {
-                font-size: 1.4vw;
-            }
-
-            .applied-voucher-summary {
+            /* ============================================
+            WEIGHT DISPLAY - MOBILE
+            ============================================ */
+            .weight-display {
+                font-size: 2.6vw;
+                color: #94a3b8;
+                margin-top: 2vw;
+                padding: 1.5vw 0;
+                border-top: 0.1vw solid #f1f5f9;
+                display: flex;
+                align-items: center;
+                gap: 1vw;
                 flex-wrap: wrap;
-                gap: 0.5vw;
             }
 
-            .applied-voucher-summary .voucher-info .code {
-                font-size: 1.4vw;
+            .weight-display .weight-value {
+                font-weight: 700;
+                color: #0f172a;
+                font-size: 2.8vw;
             }
 
-            .applied-voucher-summary .voucher-info .name {
-                font-size: 1.4vw;
+            .weight-display .weight-unit {
+                color: #94a3b8;
             }
 
-            .applied-voucher-summary .voucher-info .discount {
-                font-size: 1.6vw;
-            }
-
-            .applied-voucher-summary .btn-remove-voucher-sm {
-                font-size: 1.4vw;
-                padding: 0.3vw 0.6vw;
-            }
-        }
-
-        @media (max-width: 360px) {
-            .checkout-summary .summary-item {
-                flex-direction: column;
-                gap: 0.3vw;
-            }
-
-            .checkout-summary .summary-item .item-price {
+            .weight-display .weight-items {
+                font-size: 2.2vw;
+                color: #94a3b8;
                 margin-left: 0;
             }
 
-            .payment-option {
-                flex-wrap: wrap;
+            /* ============================================
+            PAYMENT METHOD - MOBILE
+            ============================================ */
+            .payment-options {
+                gap: 1.5vw;
             }
 
-            .applied-voucher-summary .voucher-info {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 0.3vw;
+            .payment-option {
+                padding: 2.5vw 3.5vw;
+                border-radius: 1.5vw;
+                border: 0.15vw solid #e2e8f0;
+                gap: 2vw;
+                transition: all 0.3s ease;
+            }
+
+            .payment-option:active {
+                transform: scale(0.98);
+            }
+
+            .payment-option input[type="radio"] {
+                width: 3.5vw;
+                height: 3.5vw;
+                accent-color: #076694;
+                flex-shrink: 0;
+            }
+
+            .payment-option .payment-info .payment-name {
+                font-size: 3vw;
+                font-weight: 600;
+                color: #0f172a;
+            }
+
+            .payment-option .payment-info .payment-desc {
+                font-size: 2.2vw;
+                color: #94a3b8;
+                margin-top: 0.2vw;
+            }
+
+            /* ============================================
+            GUEST INFO - MOBILE
+            ============================================ */
+            .guest-info {
+                font-size: 2.6vw;
+                padding: 3vw 4vw;
+                border-radius: 1.5vw;
+                margin-top: 2vw;
+                background: #eff6ff;
+                border: 0.15vw solid #93c5fd;
+            }
+
+            .guest-info .guest-title {
+                font-size: 2.8vw;
+                font-weight: 600;
+                color: #1d4ed8;
+            }
+
+            .guest-info .guest-text {
+                margin-top: 0.5vw;
+                font-size: 2.4vw;
+                color: #2563eb;
+            }
+
+            .guest-info .guest-hint {
+                font-size: 2.2vw;
+                color: #60a5fa;
+                margin-top: 0.5vw;
+            }
+
+            /* ============================================
+            SUMMARY - MOBILE (FIXED BOTTOM)
+            ============================================ */
+            .checkout-summary {
+                z-index: 50;
+                background: #ffffff;
+                border: none;
+                padding: 3vw 4.5vw 4vw;
+                overflow-y: auto;
+                margin-top:3vw;
+            }
+
+            .checkout-summary .summary-title {
+                font-size: 3.8vw;
+                font-weight: 700;
+                color: #0f172a;
+                margin-bottom: 1.5vw;
+                display: flex;
+                align-items: center;
+                gap: 1vw;
+            }
+
+            .checkout-summary .summary-title .summary-badge {
+                background: #076694;
+                color: #ffffff;
+                font-size: 2vw;
+                padding: 0.3vw 1.5vw;
+                border-radius: 100vw;
+                font-weight: 500;
+                margin-left: auto;
+            }
+
+            .checkout-summary .summary-items {
+                max-height: 20vh;
+                overflow-y: auto;
+                margin-bottom: 1.5vw;
+            }
+
+            .checkout-summary .summary-items::-webkit-scrollbar {
+                width: 0.3vw;
+            }
+
+            .checkout-summary .summary-items::-webkit-scrollbar-track {
+                background: #f1f5f9;
+                border-radius: 0.3vw;
+            }
+
+            .checkout-summary .summary-items::-webkit-scrollbar-thumb {
+                background: #cbd5e1;
+                border-radius: 0.3vw;
+            }
+
+            .checkout-summary .summary-item {
+                font-size: 2.6vw;
+                padding: 1.5vw 0;
+                border-bottom: 0.1vw solid #f1f5f9;
+            }
+
+            .checkout-summary .summary-item .item-name {
+                font-size: 3vw;
+                font-weight: 500;
+                padding-right: 6vw;
+            }
+
+            .checkout-summary .summary-item .item-variant {
+                font-size: 3vw;
+                color: #94a3b8;
+            }
+
+            .checkout-summary .summary-item .item-qty {
+                font-size: 3vw;
+                color: #94a3b8;
+            }
+
+            .checkout-summary .summary-item .item-price {
+                font-size: 3vw;
+                font-weight: 700;
+                color: #0f172a;
+            }
+
+            .checkout-summary .summary-divider {
+                border-top: 0.1vw solid #e2e8f0;
+                margin: 2vw 0;
+            }
+
+            .checkout-summary .summary-row {
+                font-size: 3vw;
+                padding: 0.8vw 0;
+            }
+
+            .checkout-summary .summary-row .row-label {
+                color: #94a3b8;
+            }
+
+            .checkout-summary .summary-row .row-value {
+                font-weight: 500;
+                color: #0f172a;
+            }
+
+            .checkout-summary .summary-total {
+                font-size: 3.5vw;
+                font-weight: 700;
+                color: #0f172a;
+                padding-top: 3vw;
+                border-top: 0.2vw solid #076694;
+                margin-top: 1.5vw;
+            }
+
+            /* ============================================
+            VOUCHER - MOBILE
+            ============================================ */
+            .voucher-summary-section {
+                border-top: 0.1vw solid #f1f5f9;
+                padding-top: 3.5vw;
+                margin-top: 2.5vw;
+            }
+
+            .voucher-summary-section .voucher-header .voucher-label {
+                font-size: 3vw;
+                font-weight: 600;
+                color: #0f172a;
+            }
+            .voucher-summary-section .voucher-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 2.5vw;
+            }
+
+            .voucher-summary-section .voucher-header .btn-open-voucher {
+                font-size: 3vw;
+                padding: 0.5vw 1.5vw;
+                border-radius: 1vw;
+                background: #f0f9ff;
+                color: #076694;
+            }
+
+            .applied-voucher-summary {
+                padding: 2vw 3vw;
+                border-radius: 1.2vw;
+                border-width: 0.15vw;
+                flex-wrap: wrap;
+                gap: 1vw;
+                margin-bottom: 2.6vw;
+            }
+
+            .applied-voucher-summary .voucher-info .code {
+                font-size: 2.2vw;
+                padding: 0.3vw 1vw;
+            }
+
+            .applied-voucher-summary .voucher-info .name {
+                font-size: 3vw;
+            }
+
+            .applied-voucher-summary .voucher-info .discount {
+                font-size: 3vw;
+            }
+
+            .applied-voucher-summary .btn-remove-voucher-sm {
+                font-size: 2.8vw;
+                padding: 0.3vw 0.8vw;
+            }
+
+            /* ============================================
+            BUTTON SUBMIT - MOBILE (FIXED)
+            ============================================ */
+            .checkout-summary .btn-submit {
+                font-size: 3.2vw;
+                padding: 2.5vw 4vw;
+                border-radius: 1.5vw;
+                margin-top: 3.5vw;
+                background: linear-gradient(135deg, #076694 0%, #0a8ab8 100%);
+                box-shadow: 0 1vw 3vw rgba(7, 102, 148, 0.25);
+                width: 100%;
+                font-weight: 700;
+                letter-spacing: 0.05vw;
+                transition: all 0.3s ease;
+            }
+
+            .checkout-summary .btn-submit:active {
+                transform: scale(0.97);
+                box-shadow: 0 0.5vw 1.5vw rgba(7, 102, 148, 0.15);
+            }
+
+            .checkout-summary .btn-back {
+                font-size: 3vw;
+                margin-top: 1.5vw;
+                color: #94a3b8;
+                text-align: center;
+                display: block;
+                padding: 1vw 0;
+            }
+
+            .checkout-summary .btn-back:active {
+                color: #0f172a;
+            }
+
+            /* ============================================
+            OVERLAY UNTUK SUMMARY
+            ============================================ */
+            .checkout-summary-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.4);
+                z-index: 40;
+                opacity: 0;
+                visibility: hidden;
+                transition: all 0.3s ease;
+            }
+
+            .checkout-summary-overlay.active {
+                opacity: 1;
+                visibility: visible;
+            }
+
+            /* ============================================
+            BADGE / COUNTER
+            ============================================ */
+            .summary-items-count {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                background: #f1f5f9;
+                color: #475569;
+                font-size: 2vw;
+                padding: 0.2vw 1.2vw;
+                border-radius: 100vw;
+                margin-left: 1vw;
+                font-weight: 600;
             }
         }
-
         /* ============================================
            UTILITY
            ============================================ */
@@ -1117,10 +1320,31 @@
                 <form action="{{ route('customer.checkout.process') }}" method="POST" id="checkout-form">
                     @csrf
 
+                    <input type="hidden" name="voucher_code" id="applied-voucher-code" value="{{ session('voucher_code') }}">
+                    <input type="hidden" name="voucher_discount" id="applied-voucher-discount" value="{{ session('voucher_discount') ?? 0 }}">
+                    <input type="hidden" name="origin_postal_code" id="origin_postal_code" value="{{ config('services.biteship.origin_postal_code', '46191') }}">
+                    <input type="hidden" name="payment_method" value="midtrans">
+
                     {{-- Informasi Pengiriman --}}
                     <div class="checkout-section">
-                        <h2 class="section-title">📍 Informasi Pengiriman</h2>
+                        <h2 class="section-title">Informasi Pengiriman</h2>
                         <p class="section-subtitle">Isi data penerima paket.</p>
+
+                        @if($customer && $addresses->isNotEmpty())
+                            <div class="form-group" style="margin-bottom: 1vw;">
+                                <label for="saved_address">Pilih Alamat Tersimpan</label>
+                                <select id="saved_address">
+                                    <option value="">-- Gunakan alamat baru --</option>
+                                    @foreach($addresses as $address)
+                                        <option value="{{ $address->id }}" {{ $address->is_default ? 'selected' : '' }}>
+                                            {{ $address->label ?: 'Alamat ' . $loop->iteration }} - {{ $address->recipient_name }}, {{ $address->city }}
+                                            {{ $address->is_default ? '(Utama)' : '' }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <span class="helper-text">Anda tetap dapat mengubah data alamat sebelum membuat pesanan.</span>
+                            </div>
+                        @endif
 
                         <div class="form-grid">
                             {{-- Nama Penerima --}}
@@ -1196,75 +1420,45 @@
 
                     {{-- Ekspedisi & Ongkir --}}
                     <div class="checkout-section">
-                        <h2 class="section-title">🚚 Ekspedisi & Ongkir</h2>
+                        <h2 class="section-title">Ekspedisi & Ongkir</h2>
                         <p class="section-subtitle">Pilih kurir dan lihat estimasi ongkir.</p>
 
-                        <div class="form-grid">
-                            {{-- Kurir --}}
-                            <div class="form-group">
-                                <label>Kurir <span class="required">*</span></label>
-                                <select name="courier" id="courier" required disabled>
-                                    <option value="">-- Pilih Kurir --</option>
-                                </select>
-                            </div>
-
-                            {{-- Layanan --}}
-                            <div class="form-group">
-                                <label>Layanan</label>
-                                <select name="shipping_service" id="service" disabled>
-                                    <option value="">-- Pilih Layanan --</option>
-                                </select>
-                            </div>
-
-                            {{-- Estimasi Ongkir --}}
-                            <div class="form-group full-width">
-                                <label>Estimasi Ongkir</label>
-                                <div class="shipping-cost-display" id="shipping-cost-display">
-                                    Pilih kurir dan kota tujuan
-                                </div>
-                                <input type="hidden" name="shipping_cost" id="shipping_cost" value="0">
-                            </div>
+                        {{-- 🔥 WARNING: HARUS PILIH KURIR DULU --}}
+                        <div id="shipping-warning" class="hidden" style="background:#fef3c7;border:0.1vw solid #f59e0b;border-radius:0.7vw;padding:0.8vw 1vw;margin-bottom:1vw;font-size:0.8vw;color:#92400e;">
+                            ⚠️ <strong>Pilih kurir dan layanan pengiriman</strong> terlebih dahulu untuk melihat biaya ongkir.
                         </div>
 
-                        {{-- Berat Total --}}
-                        <div class="weight-display">
-                            <span>Berat total: </span>
-                            <span class="weight-value" id="total-weight">0</span>
-                            <span class="weight-unit"> gram</span>
-                            <span class="weight-items">({{ count($cart) }} produk)</span>
+                        <div class="form-grid">
+                            <div class="form-group full-width">
+                                <label>Layanan Pengiriman <span class="required">*</span></label>
+                                <select name="courier" id="courier" required class="hidden" disabled>
+                                    <option value="">-- Pilih Kurir --</option>
+                                </select>
+                                <select name="shipping_service" id="service" class="hidden" disabled>
+                                    <option value="">-- Pilih Layanan --</option>
+                                </select>
+                                <button type="button" id="shipping-picker-button" class="shipping-picker-button" disabled>
+                                    <span>
+                                        <span class="picker-title">Pilih kurir dan layanan</span>
+                                        <span class="picker-subtitle">Lengkapi alamat tujuan terlebih dahulu</span>
+                                    </span>
+                                    <span class="picker-arrow">›</span>
+                                </button>
+                                <input type="hidden" name="shipping_cost" id="shipping_cost" value="0">
+                            </div>
                         </div>
                     </div>
 
                     {{-- Catatan --}}
                     <div class="checkout-section">
-                        <h2 class="section-title">📝 Catatan</h2>
-                        <textarea name="notes" rows="3" class="full-width" style="width:100%;padding:0.7vw 1vw;border:0.1vw solid #e2e8f0;border-radius:0.7vw;font-size:0.8vw;font-family:inherit;" placeholder="Tambahkan catatan untuk pesanan (opsional)">{{ old('notes') }}</textarea>
-                    </div>
-
-                    {{-- Payment Method --}}
-                    <div class="checkout-section">
-                        <h2 class="section-title">💳 Metode Pembayaran</h2>
-                        <div class="payment-options">
-                            <label class="payment-option">
-                                <input type="radio" name="payment_method" value="transfer" checked>
-                                <div class="payment-info">
-                                    <span class="payment-name">Transfer Bank (Manual)</span>
-                                    <span class="payment-desc">Pembayaran akan dikonfirmasi oleh admin.</span>
-                                </div>
-                            </label>
-                            <label class="payment-option disabled">
-                                <input type="radio" name="payment_method" value="qris" disabled>
-                                <div class="payment-info">
-                                    <span class="payment-name">QRIS <span style="font-size:0.6vw;color:#94a3b8;">(Segera)</span></span>
-                                </div>
-                            </label>
-                        </div>
+                        <h2 class="section-title">Catatan</h2>
+                        <textarea name="notes" rows="3" class="full-width" placeholder="Tambahkan catatan untuk pesanan (opsional)">{{ old('notes') }}</textarea>
                     </div>
 
                     {{-- Info Guest --}}
                     @guest('customer')
                         <div class="guest-info">
-                            <p class="guest-title">💡 Akun akan dibuat otomatis</p>
+                            <p class="guest-title">Akun akan dibuat otomatis</p>
                             <p class="guest-text">Kamu akan login otomatis dengan nomor WhatsApp. Password default: <strong>6 digit terakhir nomor WhatsApp</strong>.</p>
                             <p class="guest-hint">Kamu bisa mengganti password nanti di halaman profil.</p>
                         </div>
@@ -1309,10 +1503,19 @@
                 {{-- VOUCHER SECTION IN SUMMARY --}}
                 <div class="voucher-summary-section">
                     <div class="voucher-header">
-                        <span class="voucher-label">Voucher</span>
+                        <span class="voucher-label">
+                            Voucher
+                        </span>
                         <button type="button" class="btn-open-voucher" id="btn-open-voucher">
-                            <span class="icon">+</span> 
-                            <span id="voucher-action-text">{{ $appliedVoucher ? 'Ganti Voucher' : 'Pilih Voucher' }}</span>
+                            <span id="voucher-action-text">
+                                @if($appliedVoucher && $isAutoApplied)
+                                    Ganti Voucher
+                                @elseif($appliedVoucher)
+                                    Ganti Voucher
+                                @else
+                                    Pilih Voucher
+                                @endif
+                            </span>
                         </button>
                     </div>
                     
@@ -1320,9 +1523,10 @@
                     <div id="applied-voucher-summary" class="{{ $appliedVoucher ? '' : 'hidden' }}">
                         <div class="applied-voucher-summary">
                             <div class="voucher-info">
-                                <span class="code">{{ $appliedVoucher->code ?? '' }}</span>
-                                <span class="name">{{ $appliedVoucher->name ?? '' }}</span>
-                                <span class="discount">-Rp {{ number_format($voucherDiscount ?? 0, 0, ',', '.') }}</span>
+                                <span class="name">
+                                    {{ $appliedVoucher->name ?? '' }}
+                                </span>
+                                <span class="discount">Dapat potongan Rp {{ number_format($totalVoucherDiscount, 0, ',', '.') }}</span>
                             </div>
                             <button type="button" class="btn-remove-voucher-sm" id="btn-remove-voucher" title="Hapus Voucher">
                                 ✕
@@ -1334,7 +1538,7 @@
                     <div class="summary-row" id="voucher-discount-row">
                         <span class="row-label">Diskon Voucher</span>
                         <span class="row-value" id="voucher-discount-text">
-                            -Rp {{ number_format($voucherDiscount ?? 0, 0, ',', '.') }}
+                            -Rp {{ number_format($totalVoucherDiscount, 0, ',', '.') }}
                         </span>
                     </div>
                 </div>
@@ -1342,7 +1546,7 @@
                 {{-- Total --}}
                 <div class="summary-total">
                     <span>Total</span>
-                    <span id="total-display">Rp {{ number_format($subtotal + ($shippingCost ?? 0) - ($voucherDiscount ?? 0), 0, ',', '.') }}</span>
+                    <span id="total-display">Rp {{ number_format($subtotal + $shippingCost - $totalVoucherDiscount, 0, ',', '.') }}</span>
                 </div>
 
                 {{-- Submit Button --}}
@@ -1359,7 +1563,62 @@
 
     </main>
 
-    
+    <div id="shipping-popup" class="shipping-popup hidden" role="dialog" aria-modal="true" aria-labelledby="shipping-popup-title">
+        <div class="shipping-popup-backdrop" data-close-shipping-popup></div>
+        <div class="shipping-popup-card">
+            <div class="shipping-popup-header">
+                <h3 id="shipping-popup-title">Pilih Layanan Pengiriman</h3>
+                <button type="button" class="shipping-popup-close" data-close-shipping-popup aria-label="Tutup">×</button>
+            </div>
+            <div class="shipping-popup-body">
+                <p class="shipping-popup-note">Pilih satu layanan kurir beserta harga dan estimasi pengiriman.</p>
+                <div id="shipping-options"></div>
+            </div>
+            <div class="shipping-popup-footer">
+                <button type="button" id="shipping-popup-confirm" class="shipping-popup-confirm" disabled>Pilih layanan</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const isMobile = window.innerWidth <= 768;
+            const summary = document.querySelector('.checkout-summary');
+            const summaryTitle = document.querySelector('.checkout-summary .summary-title');
+            let isSummaryOpen = false;
+
+            if (isMobile && summary) {
+                // Toggle summary saat klik header
+                summaryTitle?.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    toggleSummary();
+                });
+
+                // Toggle summary saat klik handle
+                const handle = summary.querySelector('::before');
+                if (handle) {
+                    summary.addEventListener('click', function(e) {
+                        if (e.target === this) {
+                            toggleSummary();
+                        }
+                    });
+                }
+            }
+
+            function toggleSummary() {
+                isSummaryOpen = !isSummaryOpen;
+                summary.classList.toggle('active', isSummaryOpen);
+            }
+
+            // Auto open summary saat pertama kali
+            setTimeout(function() {
+                if (isMobile && summary) {
+                    isSummaryOpen = true;
+                    summary.classList.add('active');
+                }
+            }, 600);
+        });
+    </script>
 
     <script>
         $(document).ready(function() {
@@ -1368,16 +1627,265 @@
 
             // 🔥 DATA DEFAULT ADDRESS (dari server)
             const defaultAddress = @json($defaultAddress);
+            const savedAddresses = @json($addresses);
             const isLoggedIn = @json(Auth::guard('customer')->check());
+            let pendingSavedAddress = null;
+            let pendingShippingOption = null;
+
+            function escapeHtml(value) {
+                return String(value || '').replace(/[&<>'"]/g, function(char) {
+                    return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;' })[char];
+                });
+            }
+
+            function resetShippingPicker(message = 'Lengkapi alamat tujuan terlebih dahulu') {
+                pendingShippingOption = null;
+                $('#shipping-popup').addClass('hidden');
+                $('#shipping-popup-confirm').prop('disabled', true).text('Pilih layanan');
+                $('#shipping-picker-button').prop('disabled', true).html(
+                    '<span><span class="picker-title">Pilih kurir dan layanan</span><span class="picker-subtitle">' + escapeHtml(message) + '</span></span><span class="picker-arrow">›</span>'
+                );
+            }
+
+            function renderShippingOptions(couriers) {
+                let html = '';
+                let totalServices = 0;
+
+                const sortedCouriers = [...couriers].sort(function(a, b) {
+                    return String(a.name).localeCompare(String(b.name), 'id');
+                });
+
+                sortedCouriers.forEach(function(courier) {
+                    if (!courier.services || courier.services.length === 0) {
+                        return;
+                    }
+
+                    // 🔥 FILTER SERVICE DUPLIKAT
+                    const seenNames = new Set();
+                    const uniqueServices = courier.services.filter(function(service) {
+                        const name = String(service.name || service.service || 'Reguler').trim();
+                        if (seenNames.has(name)) {
+                            return false;
+                        }
+                        seenNames.add(name);
+                        return true;
+                    });
+
+                    // 🔥 SORT BY COST TERMURAH
+                    const services = uniqueServices
+                        .filter(function(service) {
+                            return parseInt(service.cost) > 0;
+                        })
+                        .sort(function(a, b) {
+                            return (parseInt(a.cost || 0) - parseInt(b.cost || 0));
+                        });
+
+                    if (!services.length) {
+                        return;
+                    }
+
+                    totalServices += services.length;
+
+                    html += `<section class="shipping-courier-group">`;
+                    html += `<h4 class="shipping-courier-name">${escapeHtml(courier.name)}</h4>`;
+
+                    services.forEach(function(service, index) {
+                        let serviceName = service.name || service.service || 'Reguler';
+                        
+                        // 🔥 HAPUS DUPLIKASI NAMA
+                        if (serviceName.includes(' - ')) {
+                            const parts = serviceName.split(' - ');
+                            if (parts[0] === parts[1]) {
+                                serviceName = parts[0];
+                            }
+                        }
+                        serviceName = serviceName.replace(/\s*-\s*$/, '').trim();
+
+                        const cost = parseInt(service.cost || 0);
+                        const etd = service.etd || service.duration || '-';
+
+                        const description = service.description 
+                            ? ' · ' + escapeHtml(service.description) 
+                            : '';
+
+                        const cheapestBadge = index === 0 && services.length > 1
+                            ? `<span style="background:#22c55e;color:white;font-size:.6rem;padding:.1rem .4rem;border-radius:.25rem;margin-left:.3rem;">TERMURAH</span>`
+                            : '';
+
+                        // 🔥 TAMBAHKAN DATA SERVICE LENGKAP
+                        html += `
+                            <button type="button" class="shipping-option" 
+                                data-courier="${escapeHtml(courier.code)}" 
+                                data-service="${escapeHtml(serviceName)}" 
+                                data-service-code="${escapeHtml(service.service || '')}"
+                                data-cost="${cost}" 
+                                data-etd="${escapeHtml(etd)}"
+                                data-description="${escapeHtml(service.description || '')}">
+                                <span>
+                                    <span class="shipping-option-name">
+                                        ${escapeHtml(serviceName)}
+                                        ${cheapestBadge}
+                                        ${description}
+                                    </span>
+                                    <span class="shipping-option-meta">
+                                        Estimasi tiba ${escapeHtml(String(etd))}
+                                    </span>
+                                </span>
+                                <span class="shipping-option-price">
+                                    Rp ${formatNumber(cost)}
+                                </span>
+                            </button>
+                        `;
+                    });
+
+                    html += `</section>`;
+                });
+
+                $('#shipping-options').html(
+                    html || '<p class="shipping-popup-note">Layanan pengiriman belum tersedia.</p>'
+                );
+
+                const totalCouriers = sortedCouriers.filter(function(courier) {
+                    return courier.services && courier.services.length;
+                }).length;
+
+                const buttonText = totalCouriers > 0
+                    ? `${totalCouriers} kurir tersedia (${totalServices} layanan)`
+                    : 'Lengkapi alamat tujuan terlebih dahulu';
+
+                $('#shipping-picker-button')
+                    .prop('disabled', totalCouriers === 0)
+                    .html(`
+                        <span>
+                            <span class="picker-title">Pilih kurir dan layanan</span>
+                            <span class="picker-subtitle">${escapeHtml(buttonText)}</span>
+                        </span>
+                        <span class="picker-arrow">›</span>
+                    `);
+            }
+
+            $('#shipping-picker-button').on('click', function() {
+                if (!$(this).prop('disabled')) $('#shipping-popup').removeClass('hidden');
+            });
+
+            $(document).on('click', '[data-close-shipping-popup]', function() {
+                $('#shipping-popup').addClass('hidden');
+            });
+
+            $(document).on('click', '.shipping-option', function() {
+                const $option = $(this);
+                pendingShippingOption = {
+                    courier: $option.data('courier'),
+                    service: $option.data('service')
+                };
+                $('.shipping-option').removeClass('selected');
+                $option.addClass('selected');
+                $('#shipping-popup-confirm').prop('disabled', false).text('Pilih layanan ini');
+            });
+
+            $('#shipping-popup-confirm').on('click', function() {
+                if (!pendingShippingOption) return;
+
+                const courierCode = pendingShippingOption.courier;
+                const serviceName = pendingShippingOption.service;
+
+                // 🔥 CARI DATA COURIER DAN SERVICE YANG DIPILIH
+                const couriers = $('#courier').data('shipping-rates') || {};
+                const selectedCourier = couriers[courierCode];
+
+                if (!selectedCourier) {
+                    showToast('Data kurir tidak ditemukan.', 'error');
+                    return;
+                }
+
+                // 🔥 CARI SERVICE YANG DIPILIH
+                let selectedService = null;
+                let selectedCost = 0;
+                let selectedEtd = '-';
+
+                if (selectedCourier.services) {
+                    selectedCourier.services.forEach(function(service) {
+                        const serviceNameDisplay = service.name || service.service || 'Reguler';
+                        if (serviceNameDisplay === serviceName || service.service === serviceName) {
+                            selectedService = service;
+                            selectedCost = service.cost || 0;
+                            selectedEtd = service.etd || service.duration || '-';
+                        }
+                    });
+                }
+
+                if (!selectedService || selectedCost <= 0) {
+                    showToast('Layanan tidak valid.', 'error');
+                    return;
+                }
+
+                // 🔥 UPDATE COURIER SELECT
+                $('#courier').val(courierCode).trigger('change');
+
+                // 🔥 UPDATE SERVICE SELECT
+                $('#service').val(serviceName).trigger('change');
+
+                // 🔥 UPDATE SHIPPING COST HIDDEN INPUT
+                $('#shipping_cost').val(selectedCost);
+
+                // 🔥 UPDATE SHIPPING COST DISPLAY
+                const courierName = selectedCourier.name || courierCode.toUpperCase();
+                const costDisplay = 'Rp ' + formatNumber(selectedCost);
+                $('#shipping-cost-text').text(costDisplay);
+                $('#shipping-cost-display').html(`
+                    <div class="success">
+                        <div style="font-weight:600;">${courierName} · ${serviceName}</div>
+                        <div style="font-size:0.65vw;color:#94a3b8;">Estimasi: ${selectedEtd}</div>
+                        <div style="font-size:0.8vw;color:#0f172a;font-weight:700;margin-top:0.2vw;">${costDisplay}</div>
+                    </div>
+                `);
+
+                // 🔥 UPDATE PICKER BUTTON
+                $('#shipping-picker-button').prop('disabled', false).html(
+                    '<span><span class="picker-title">' + escapeHtml(courierName) + ' · ' + escapeHtml(serviceName) + '</span>' +
+                    '<span class="picker-subtitle">Estimasi ' + escapeHtml(selectedEtd) + ' . ' + costDisplay + '</span></span><span class="picker-arrow">›</span>'
+                );
+
+                // 🔥 UPDATE SESSION VIA AJAX
+                $.ajax({
+                    url: '{{ route("customer.checkout.update-shipping") }}',
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    data: JSON.stringify({
+                        shipping_cost: selectedCost,
+                        courier: courierCode,
+                        service: serviceName
+                    }),
+                    success: function(response) {
+                        console.log('Shipping cost saved to session:', response);
+                    },
+                    error: function() {
+                        console.warn('Failed to save shipping cost to session');
+                    }
+                });
+
+                // 🔥 UPDATE TOTAL
+                updateTotal();
+
+                // 🔥 TUTUP POPUP
+                $('#shipping-popup').addClass('hidden');
+
+                // 🔥 SEMBUNYIKAN WARNING
+                $('#shipping-warning').addClass('hidden');
+            });
 
             // ============================================
             // CACHE MANAGEMENT
             // ============================================
 
-            const CACHE_KEY_PROVINCES = 'checkout_provinces';
-            const CACHE_KEY_CITIES = 'checkout_cities_';
-            const CACHE_KEY_DISTRICTS = 'checkout_districts_';
-            const CACHE_KEY_VILLAGES = 'checkout_villages_';
+            const CACHE_KEY_PROVINCES = 'checkout_provinces_v2';
+            const CACHE_KEY_CITIES = 'checkout_cities_v2_';
+            const CACHE_KEY_DISTRICTS = 'checkout_districts_v2_';
+            const CACHE_KEY_VILLAGES = 'checkout_villages_v2_';
 
             function getCache(key) {
                 try {
@@ -1418,12 +1926,12 @@
                 $('#province').html('<option value="">-- Memuat Provinsi --</option>');
 
                 $.ajax({
-                    url: '/api/indonesia-regions/cascade?country_name=ID',
+                    url: '{{ request()->getBaseUrl() }}/api/regions/provinces',
                     method: 'GET',
                     timeout: 30000,
                     success: function(response) {
                         console.log('API Response - Cascade:', response);
-                        const provinces = response?.options?.provinces || [];
+                        const provinces = Array.isArray(response) ? response : [];
                         console.log('Provinces:', provinces);
                         setCache(CACHE_KEY_PROVINCES, provinces);
                         renderProvinces(provinces);
@@ -1440,8 +1948,8 @@
                 let options = '<option value="">-- Pilih Provinsi --</option>';
                 if (data && Array.isArray(data) && data.length > 0) {
                     $.each(data, function(index, province) {
-                        const code = province.value;
-                        const name = province.label;
+                        const code = province.code;
+                        const name = province.name;
                         if (code && name) {
                             options += `<option value="${name}" data-code="${code}">${name}</option>`;
                         }
@@ -1449,8 +1957,35 @@
                 }
                 $('#province').html(options);
 
-                if (defaultAddress && defaultAddress.province) {
+                if (pendingSavedAddress) {
+                    fillSavedAddress(pendingSavedAddress);
+                } else if (defaultAddress && defaultAddress.province) {
                     $('#province').val(defaultAddress.province).trigger('change');
+                }
+            }
+
+            function fillSavedAddress(address) {
+                if (!address) {
+                    return;
+                }
+
+                $('#shipping_name').val(address.recipient_name || '');
+                $('#shipping_phone').val(address.recipient_phone || '');
+                $('#shipping_address').val(address.address || '');
+                $('#shipping_postal_code').val(address.postal_code || '0');
+
+                if (address.province) {
+                    $('#province').val(address.province);
+                    const provinceCode = $('#province').find(':selected').data('code');
+
+                    if (provinceCode) {
+                        loadCities(
+                            provinceCode,
+                            address.city || null,
+                            address.district || null,
+                            address.subdistrict || null
+                        );
+                    }
                 }
             }
 
@@ -1458,25 +1993,25 @@
             // LOAD CITIES
             // ============================================
 
-            function loadCities(provinceCode, selectedCity = null) {
+            function loadCities(provinceCode, selectedCity = null, selectedDistrict = null, selectedSubdistrict = null) {
                 const cacheKey = CACHE_KEY_CITIES + provinceCode;
                 let cached = getCache(cacheKey);
 
                 if (cached) {
-                    renderCities(cached, selectedCity);
+                    renderCities(cached, selectedCity, selectedDistrict, selectedSubdistrict);
                     return;
                 }
 
                 $('#city').html('<option value="">-- Memuat Kota --</option>').prop('disabled', true);
 
                 $.ajax({
-                    url: '/api/indonesia-regions/cascade?region_code=' + provinceCode + '&country_name=ID',
+                    url: '{{ request()->getBaseUrl() }}/api/regions/cities?province_code=' + encodeURIComponent(provinceCode),
                     method: 'GET',
                     success: function(response) {
                         console.log('Cities API response:', response);
-                        const cities = response?.options?.cities || [];
+                        const cities = Array.isArray(response) ? response : [];
                         setCache(cacheKey, cities);
-                        renderCities(cities, selectedCity);
+                        renderCities(cities, selectedCity, selectedDistrict, selectedSubdistrict);
                     },
                     error: function() {
                         $('#city').html('<option value="">-- Gagal memuat --</option>').prop('disabled', true);
@@ -1484,12 +2019,12 @@
                 });
             }
 
-            function renderCities(data, selectedCity) {
+            function renderCities(data, selectedCity, selectedDistrict, selectedSubdistrict) {
                 let options = '<option value="">-- Pilih Kota --</option>';
                 if (data && data.length > 0) {
                     $.each(data, function(index, city) {
-                        const code = city.value;
-                        const name = city.label;
+                        const code = city.code;
+                        const name = city.name;
                         if (code && name) {
                             options += `<option value="${name}" data-code="${code}">${name}</option>`;
                         }
@@ -1499,6 +2034,8 @@
 
                 if (selectedCity) {
                     setTimeout(function() {
+                        $('#city').data('selected-district', selectedDistrict || '');
+                        $('#city').data('selected-subdistrict', selectedSubdistrict || '');
                         $('#city').val(selectedCity).trigger('change');
                     }, 100);
                 }
@@ -1508,25 +2045,25 @@
             // LOAD DISTRICTS
             // ============================================
 
-            function loadDistricts(cityCode, selectedDistrict = null) {
+            function loadDistricts(cityCode, selectedDistrict = null, selectedSubdistrict = null) {
                 const cacheKey = CACHE_KEY_DISTRICTS + cityCode;
                 let cached = getCache(cacheKey);
 
                 if (cached) {
-                    renderDistricts(cached, selectedDistrict);
+                    renderDistricts(cached, selectedDistrict, selectedSubdistrict);
                     return;
                 }
 
                 $('#district').html('<option value="">-- Memuat Kecamatan --</option>').prop('disabled', true);
 
                 $.ajax({
-                    url: '/api/indonesia-regions/cascade?region_code=' + cityCode + '&country_name=ID',
+                    url: '{{ request()->getBaseUrl() }}/api/regions/districts?city_code=' + encodeURIComponent(cityCode),
                     method: 'GET',
                     success: function(response) {
                         console.log('Districts API response:', response);
-                        const districts = response?.options?.districts || [];
+                        const districts = Array.isArray(response) ? response : [];
                         setCache(cacheKey, districts);
-                        renderDistricts(districts, selectedDistrict);
+                        renderDistricts(districts, selectedDistrict, selectedSubdistrict);
                     },
                     error: function() {
                         $('#district').html('<option value="">-- Gagal memuat --</option>').prop('disabled', true);
@@ -1534,12 +2071,12 @@
                 });
             }
 
-            function renderDistricts(data, selectedDistrict) {
+            function renderDistricts(data, selectedDistrict, selectedSubdistrict) {
                 let options = '<option value="">-- Pilih Kecamatan --</option>';
                 if (data && data.length > 0) {
                     $.each(data, function(index, district) {
-                        const code = district.value;
-                        const name = district.label;
+                        const code = district.code;
+                        const name = district.name;
                         if (code && name) {
                             options += `<option value="${name}" data-code="${code}">${name}</option>`;
                         }
@@ -1549,6 +2086,7 @@
 
                 if (selectedDistrict) {
                     setTimeout(function() {
+                        $('#district').data('selected-subdistrict', selectedSubdistrict || '');
                         $('#district').val(selectedDistrict).trigger('change');
                     }, 100);
                 }
@@ -1571,16 +2109,13 @@
                 $('#subdistrict').html('<option value="">-- Memuat Kelurahan --</option>').prop('disabled', true);
 
                 $.ajax({
-                    url: '{{ route("api.villages") }}?district_code=' + districtCode,
+                    url: '{{ request()->getBaseUrl() }}/api/regions/subdistricts?district_code=' + encodeURIComponent(districtCode),
                     method: 'GET',
                     timeout: 30000,
                     success: function(response) {
                         console.log('Villages API response:', response);
 
-                        let villages = response;
-                        if (response && response.data && Array.isArray(response.data)) {
-                            villages = response.data;
-                        }
+                        const villages = Array.isArray(response) ? response : [];
 
                         if (!villages || villages.length === 0) {
                             console.warn('No villages found for district:', districtCode);
@@ -1608,8 +2143,8 @@
 
                 if (data && data.length > 0) {
                     $.each(data, function(index, village) {
-                        const code = village.value;
-                        const name = village.label;
+                        const code = village.code;
+                        const name = village.name;
                         const postalCode = village.postal_code || '';
 
                         if (code && name) {
@@ -1634,171 +2169,313 @@
             // ============================================
 
             function checkShippingCost(destinationPostalCode) {
-                $('#shipping-cost-display')
-                    .html('<span class="loading">⏳ Mencari ongkir...</span>');
 
-                if (!destinationPostalCode || destinationPostalCode === '0' || destinationPostalCode === '') {
-                    $('#shipping-cost-display')
-                        .html('<span class="error">❌ Kode pos tujuan tidak tersedia</span>');
+                const $display = $('#shipping-cost-display');
+                const $courier = $('#courier');
+                const $service = $('#service');
+
+                $display.html(
+                    '<span class="loading">⏳ Mencari ongkir...</span>'
+                );
+
+                $courier
+                    .prop('disabled', true)
+                    .html('<option value="">-- Memuat kurir --</option>');
+
+                $service
+                    .prop('disabled', true)
+                    .html('<option value="">-- Pilih Layanan --</option>');
+
+                if (
+                    !destinationPostalCode ||
+                    destinationPostalCode === '0' ||
+                    destinationPostalCode === ''
+                ) {
+                    $display.html(
+                        '<span class="error">❌ Kode pos tujuan tidak tersedia</span>'
+                    );
+
+                    resetShippingPicker(
+                        'Lengkapi alamat tujuan terlebih dahulu'
+                    );
+
                     return;
                 }
 
+                /*
+                |--------------------------------------------------------------------------
+                | ORIGIN
+                |--------------------------------------------------------------------------
+                */
+
+                const originPostalCode =
+                    $('#origin_postal_code').val()
+                    || '{{ config("services.biteship.origin_postal_code", "46191") }}';
+
+                /*
+                |--------------------------------------------------------------------------
+                | ITEMS
+                |--------------------------------------------------------------------------
+                */
+
                 const items = [];
+
                 @foreach ($cart as $item)
                     items.push({
-                        name: '{{ $item['product_name'] }}',
-                        weight: {{ $item['weight'] ?? 1000 }},
-                        quantity: {{ $item['quantity'] }},
-                        price: {{ $item['price'] }}
+                        name: @json($item['product_name']),
+                        weight: {{ (int) ($item['weight'] ?? 1000) }},
+                        quantity: {{ (int) $item['quantity'] }},
+                        price: {{ (int) $item['price'] }}
                     });
                 @endforeach
 
-                console.log('=== CHECKING BITESHIP RATES ===');
-                console.log('Destination Postal Code:', destinationPostalCode);
-                console.log('Items:', items);
+                if (items.length === 0) {
+
+                    $display.html(
+                        '<span class="error">❌ Tidak ada produk di keranjang</span>'
+                    );
+
+                    return;
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | SEMUA KURIR
+                |--------------------------------------------------------------------------
+                */
+
+                const allCouriers = [
+                    'jne',
+                    'jnt',
+                    'sicepat',
+                    'pos',
+                    'anteraja',
+                    'lion',
+                    'ninja',
+                    'rpx',
+                    'pahala',
+                    'wahana',
+                    'tiki',
+                    'ncs',
+                    'first',
+                    'idexpress',
+                    'star'
+                ];
+
+                const payload = {
+                    origin_postal_code: originPostalCode,
+                    destination_postal_code: destinationPostalCode,
+                    items: items,
+                    couriers: allCouriers
+                };
+
+                console.log('=== BITESHIP RATES ===');
+                console.log('Payload:', payload);
 
                 $.ajax({
                     url: '{{ route("api.biteship.rates") }}',
+
                     method: 'POST',
+
                     headers: {
                         'X-CSRF-TOKEN': csrfToken,
                         'Accept': 'application/json',
                         'Content-Type': 'application/json'
                     },
-                    data: JSON.stringify({
-                        destination_postal_code: destinationPostalCode,
-                        items: items,
-                        couriers: ['jne', 'jnt', 'sicepat', 'pos', 'anteraja']
-                    }),
+
+                    data: JSON.stringify(payload),
+
                     success: function(response) {
+
                         console.log('Biteship Response:', response);
 
                         if (!response.success) {
-                            let errorMsg = response.message || 'Gagal mendapatkan ongkir';
-                            if (response.detail) {
-                                console.error('Detail error:', response.detail);
-                                errorMsg += ' - ' + JSON.stringify(response.detail);
-                            }
-                            
-                            $('#courier')
-                                .prop('disabled', true)
-                                .html('<option value="">-- Kurir tidak tersedia --</option>');
-                            $('#service')
-                                .prop('disabled', true)
-                                .html('<option value="">-- Pilih Layanan --</option>');
-                            $('#shipping-cost-display').html(
-                                '<span class="error">❌ ' + errorMsg + '</span>'
+
+                            $display.html(
+                                '<span class="error">❌ ' +
+                                (response.message || 'Gagal mendapatkan ongkir') +
+                                '</span>'
                             );
+
+                            resetShippingPicker(
+                                'Gagal mendapatkan layanan pengiriman'
+                            );
+
                             return;
                         }
 
-                        if (!response.data || response.data.length === 0) {
-                            $('#courier')
-                                .prop('disabled', true)
-                                .html('<option value="">-- Kurir tidak tersedia --</option>');
-                            $('#service')
-                                .prop('disabled', true)
-                                .html('<option value="">-- Pilih Layanan --</option>');
-                            $('#shipping-cost-display').html(
-                                '<span class="error">❌ Tidak ada layanan pengiriman untuk rute ini</span>'
+                        const couriers = response.data || [];
+
+                        if (!couriers.length) {
+
+                            $display.html(
+                                '<span class="error">' +
+                                '❌ Tidak ada layanan pengiriman untuk rute ini' +
+                                '</span>'
                             );
+
+                            resetShippingPicker(
+                                'Tidak ada kurir tersedia'
+                            );
+
                             return;
                         }
 
-                        const couriers = {};
-                        let hasValidServices = false;
-                        
-                        $.each(response.data, function(index, courier) {
-                            if (courier.services && courier.services.length > 0) {
-                                const validServices = courier.services.filter(s => s.cost > 0);
-                                if (validServices.length > 0) {
-                                    couriers[courier.code] = {
-                                        code: courier.code,
-                                        name: courier.name,
-                                        services: validServices
-                                    };
-                                    hasValidServices = true;
-                                }
-                            }
+                        /*
+                        |--------------------------------------------------------------------------
+                        | FILTER COURIER YANG MEMILIKI SERVICE
+                        |--------------------------------------------------------------------------
+                        */
+
+                        const availableCouriers = couriers.filter(function(courier) {
+
+                            return (
+                                courier.services &&
+                                courier.services.length > 0
+                            );
+
                         });
 
-                        if (!hasValidServices) {
-                            $('#courier')
-                                .prop('disabled', true)
-                                .html('<option value="">-- Kurir tidak tersedia --</option>');
-                            $('#service')
-                                .prop('disabled', true)
-                                .html('<option value="">-- Pilih Layanan --</option>');
-                            $('#shipping-cost-display').html(
-                                '<span class="error">❌ Tidak ada layanan pengiriman dengan harga valid</span>'
+                        if (!availableCouriers.length) {
+
+                            $display.html(
+                                '<span class="error">' +
+                                '❌ Tidak ada layanan pengiriman tersedia' +
+                                '</span>'
                             );
+
+                            resetShippingPicker(
+                                'Tidak ada layanan tersedia'
+                            );
+
                             return;
                         }
 
-                        console.log('Available couriers:', couriers);
+                        /*
+                        |--------------------------------------------------------------------------
+                        | SIMPAN RATE
+                        |--------------------------------------------------------------------------
+                        */
 
-                        let courierOptions = '<option value="">-- Pilih Kurir --</option>';
-                        $.each(couriers, function(code, courier) {
-                            courierOptions += `<option value="${code}">${courier.name}</option>`;
+                        const courierMap = {};
+
+                        availableCouriers.forEach(function(courier) {
+
+                            courierMap[courier.code] = courier;
+
                         });
 
-                        $('#courier')
+                        /*
+                        |--------------------------------------------------------------------------
+                        | SELECT COURIER
+                        |--------------------------------------------------------------------------
+                        */
+
+                        let courierOptions =
+                            '<option value="">-- Pilih Kurir --</option>';
+
+                        availableCouriers.forEach(function(courier) {
+
+                            courierOptions += `
+                                <option value="${escapeHtml(courier.code)}">
+                                    ${escapeHtml(courier.name)}
+                                </option>
+                            `;
+
+                        });
+
+                        $courier
                             .html(courierOptions)
                             .prop('disabled', false)
-                            .data('shipping-rates', couriers);
+                            .data('shipping-rates', courierMap);
 
-                        $('#service')
+                        /*
+                        |--------------------------------------------------------------------------
+                        | RENDER POPUP
+                        |--------------------------------------------------------------------------
+                        */
+
+                        renderShippingOptions(availableCouriers);
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | RESET SERVICE
+                        |--------------------------------------------------------------------------
+                        */
+
+                        $service
                             .prop('disabled', true)
-                            .html('<option value="">-- Pilih Layanan --</option>');
+                            .html(
+                                '<option value="">-- Pilih Layanan --</option>'
+                            );
 
-                        $('#shipping-cost-display').html(
-                            `<span class="success">✅ ${Object.keys(couriers).length} kurir tersedia</span>`
-                        );
+                        /*
+                        |--------------------------------------------------------------------------
+                        | DISPLAY
+                        |--------------------------------------------------------------------------
+                        */
 
-                        if (Object.keys(couriers).length === 1) {
-                            const firstCourier = Object.keys(couriers)[0];
-                            $('#courier').val(firstCourier).trigger('change');
-                        }
-                    },
-                    error: function(xhr, status, error) {
-                        console.error('Biteship AJAX Error:', {
-                            status: status,
-                            error: error,
-                            response: xhr.responseText,
-                            statusCode: xhr.status
+                        let totalServices = 0;
+
+                        availableCouriers.forEach(function(courier) {
+                            totalServices += courier.services.length;
                         });
 
-                        let message = '❌ Gagal mendapatkan ongkir';
-                        
+                        $display.html(`
+                            <span class="success">
+                                ✅ ${availableCouriers.length} kurir tersedia
+                                (${totalServices} layanan)
+                            </span>
+                        `);
+
+                    },
+
+                    error: function(xhr) {
+
+                        console.error(
+                            'Biteship AJAX Error:',
+                            xhr.responseText
+                        );
+
+                        let message = 'Gagal mendapatkan ongkir';
+
                         try {
-                            const response = JSON.parse(xhr.responseText);
+
+                            const response =
+                                JSON.parse(xhr.responseText);
+
                             if (response.message) {
                                 message += ': ' + response.message;
                             }
-                            if (response.detail) {
-                                console.error('Detail error:', response.detail);
-                            }
-                        } catch(e) {
-                            console.error('Error parsing response:', e);
+
+                        } catch (e) {
+
+                            console.error(
+                                'Gagal membaca response Biteship',
+                                e
+                            );
+
                         }
 
-                        if (xhr.status === 400) {
-                            message += ' (Bad Request - periksa kode pos)';
-                        } else if (xhr.status === 401) {
-                            message += ' (API Key tidak valid)';
-                        } else if (xhr.status === 404) {
-                            message += ' (Rute tidak ditemukan)';
-                        } else if (xhr.status === 500) {
-                            message += ' (Server error)';
-                        }
+                        $courier
+                            .prop('disabled', true)
+                            .html(
+                                '<option value="">-- Gagal memuat kurir --</option>'
+                            );
 
-                        $('#courier')
+                        $service
                             .prop('disabled', true)
-                            .html('<option value="">-- Gagal memuat kurir --</option>');
-                        $('#service')
-                            .prop('disabled', true)
-                            .html('<option value="">-- Pilih Layanan --</option>');
-                        $('#shipping-cost-display').html(`<span class="error">${message}</span>`);
+                            .html(
+                                '<option value="">-- Pilih Layanan --</option>'
+                            );
+
+                        $display.html(
+                            '<span class="error">❌ ' +
+                            escapeHtml(message) +
+                            '</span>'
+                        );
+
+                        resetShippingPicker(message);
                     }
                 });
             }
@@ -1820,8 +2497,10 @@
                 updateTotal();
 
                 if (provinceCode) {
-                    const selectedCity = defaultAddress?.city || null;
-                    loadCities(provinceCode, selectedCity);
+                    const selectedCity = pendingSavedAddress?.city || defaultAddress?.city || null;
+                    const selectedDistrict = pendingSavedAddress?.district || defaultAddress?.district || null;
+                    const selectedSubdistrict = pendingSavedAddress?.subdistrict || defaultAddress?.subdistrict || null;
+                    loadCities(provinceCode, selectedCity, selectedDistrict, selectedSubdistrict);
                 } else {
                     $('#city').html('<option value="">-- Pilih Kota --</option>').prop('disabled', true);
                     $('#district').html('<option value="">-- Pilih Kecamatan --</option>').prop('disabled', true);
@@ -1836,6 +2515,8 @@
             // City Change
             $('#city').on('change', function() {
                 const cityCode = $(this).find(':selected').data('code');
+                const selectedDistrict = $(this).data('selected-district') || pendingSavedAddress?.district || defaultAddress?.district || null;
+                const selectedSubdistrict = $(this).data('selected-subdistrict') || pendingSavedAddress?.subdistrict || defaultAddress?.subdistrict || null;
 
                 $('#city_id').val(cityCode);
                 $('#district_id').val('');
@@ -1848,7 +2529,7 @@
                 $('#subdistrict').html('<option value="">-- Pilih Kelurahan --</option>').prop('disabled', true);
 
                 if (cityCode) {
-                    loadDistricts(cityCode);
+                    loadDistricts(cityCode, selectedDistrict, selectedSubdistrict);
                 }
 
                 $('#courier').prop('disabled', true);
@@ -1859,6 +2540,7 @@
             // District Change
             $('#district').on('change', function() {
                 const districtCode = $(this).find(':selected').data('code');
+                const selectedSubdistrict = $(this).data('selected-subdistrict') || pendingSavedAddress?.subdistrict || defaultAddress?.subdistrict || null;
 
                 $('#district_id').val(districtCode);
                 $('#subdistrict_id').val('');
@@ -1869,7 +2551,7 @@
                 $('#subdistrict').html('<option value="">-- Pilih Kelurahan --</option>').prop('disabled', true);
 
                 if (districtCode) {
-                    loadVillages(districtCode);
+                    loadVillages(districtCode, selectedSubdistrict);
                 }
 
                 $('#courier').prop('disabled', true);
@@ -1934,6 +2616,18 @@
                 console.log('Weight:', weight);
 
                 checkShippingCost(zipCode);
+            });
+
+            $('#saved_address').on('change', function() {
+                const addressId = String($(this).val());
+                const address = savedAddresses.find(function(item) {
+                    return String(item.id) === addressId;
+                });
+
+                if (address) {
+                    pendingSavedAddress = address;
+                    fillSavedAddress(address);
+                }
             });
 
             // Courier Change
@@ -2001,11 +2695,13 @@
                 const cost = parseInt(selected.data('cost')) || 0;
                 const etd = selected.data('etd') || '-';
                 const serviceName = selected.val();
+                const courierName = $('#courier option:selected').text();
 
                 console.log('=== SERVICE SELECTED ===');
                 console.log('Service:', serviceName);
                 console.log('Cost:', cost);
                 console.log('ETD:', etd);
+                console.log('Courier:', courierName);
 
                 if (!serviceName || cost <= 0) {
                     $('#shipping_cost').val(0);
@@ -2014,26 +2710,73 @@
                     return;
                 }
 
+                // 🔥 UPDATE SHIPPING COST
                 $('#shipping_cost').val(cost);
                 $('#shipping-cost-text').text('Rp ' + formatNumber(cost));
 
+                // 🔥 UPDATE DISPLAY
+                const costDisplay = 'Rp ' + formatNumber(cost);
                 $('#shipping-cost-display').html(`
                     <div class="success">
-                        <div style="font-weight:600;">${serviceName}</div>
+                        <div style="font-weight:600;">${courierName} · ${serviceName}</div>
                         <div style="font-size:0.65vw;color:#94a3b8;">Estimasi: ${etd} hari</div>
+                        <div style="font-size:0.8vw;color:#0f172a;font-weight:700;margin-top:0.2vw;">${costDisplay}</div>
                     </div>
                 `);
 
+                // 🔥 UPDATE PICKER BUTTON
+                $('#shipping-picker-button').prop('disabled', false).html(
+                    '<span><span class="picker-title">' + escapeHtml(courierName) + ' · ' + escapeHtml(serviceName) + '</span>' +
+                    '<span class="picker-subtitle">Estimasi ' + escapeHtml(etd) + ' . ' + costDisplay + '</span></span><span class="picker-arrow">›</span>'
+                );
+
+                // 🔥 UPDATE SESSION
+                $.ajax({
+                    url: '{{ route("customer.checkout.update-shipping") }}',
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    data: JSON.stringify({
+                        shipping_cost: cost,
+                        courier: $('#courier').val(),
+                        service: serviceName
+                    }),
+                    success: function(response) {
+                        console.log('Shipping cost saved to session:', response);
+                    },
+                    error: function() {
+                        console.warn('Failed to save shipping cost to session');
+                    }
+                });
+
+                // Sembunyikan warning
+                $('#shipping-warning').addClass('hidden');
+
+                // 🔥 UPDATE TOTAL
                 updateTotal();
             });
+
 
             // ============================================
             // INIT - Load Provinces & Auto Fill
             // ============================================
 
+            if ($('#saved_address').val()) {
+                const selectedAddress = savedAddresses.find(function(item) {
+                    return String(item.id) === String($('#saved_address').val());
+                });
+
+                if (selectedAddress) {
+                    pendingSavedAddress = selectedAddress;
+                }
+            }
+
             loadProvinces();
 
-            if (defaultAddress) {
+            if (!pendingSavedAddress && defaultAddress) {
                 console.log('Auto-fill address for logged-in user:', defaultAddress);
 
                 function autoFillAddress() {
@@ -2186,6 +2929,7 @@
                 const voucherDiscount = parseInt($('#voucher-discount-text').text().replace(/[^0-9]/g, '')) || 0;
                 const total = subtotal + shippingCost - voucherDiscount;
                 $('#total-display').text('Rp ' + formatNumber(total));
+                console.log('🔄 Total updated:', { subtotal, shippingCost, voucherDiscount, total });
             }
 
             function formatNumber(num) {
@@ -2201,7 +2945,7 @@
                     success: '#22c55e',
                     error: '#ef4444',
                     warning: '#f59e0b',
-                    info: '#3b82f6'
+                    info: '#076694'
                 };
 
                 const toast = $(`

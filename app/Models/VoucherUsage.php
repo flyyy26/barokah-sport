@@ -15,6 +15,9 @@ class VoucherUsage extends Model
         'user_id',
         'order_id',
         'discount_applied',
+        'product_discount',    
+        'shipping_discount',   
+        'is_free_shipping',    
     ];
 
     protected $casts = [
@@ -22,6 +25,9 @@ class VoucherUsage extends Model
         'user_id'          => 'integer',
         'order_id'         => 'integer',
         'discount_applied' => 'decimal:2',
+        'product_discount' => 'decimal:2',    
+        'shipping_discount' => 'decimal:2',   
+        'is_free_shipping' => 'boolean',      
     ];
 
     /**

@@ -49,11 +49,11 @@ class RegionController extends Controller
 
             $provinceCode = $request->province_code;
 
-            // 🔥 PERBAIKAN: Cari kota dengan code LIKE province_code.%
+            // Kode kota memakai format provinsi.nomor kota, misalnya 11.01.
             $cities = IndonesiaRegion::query()
                 ->where('status', 'active')
                 ->where('code', 'LIKE', $provinceCode . '.%')
-                ->whereRaw("LENGTH(code) = 4")
+                ->whereRaw("LENGTH(code) = 5")
                 ->orderBy('name')
                 ->get(['code', 'name']);
 
@@ -84,11 +84,11 @@ class RegionController extends Controller
 
             $cityCode = $request->city_code;
 
-            // Ambil data kecamatan: code dengan format city_code.xx (6 digit total)
+            // Kode kecamatan memakai format provinsi.kota.nomor kecamatan.
             $districts = IndonesiaRegion::query()
                 ->where('status', 'active')
                 ->where('code', 'LIKE', $cityCode . '.%')
-                ->whereRaw("LENGTH(code) = 6")
+                ->whereRaw("LENGTH(code) = 8")
                 ->orderBy('name')
                 ->get(['code', 'name']);
 
@@ -120,11 +120,11 @@ class RegionController extends Controller
 
             $districtCode = $request->district_code;
 
-            // Ambil data kelurahan: code dengan format district_code.xx (8 digit total)
+            // Kode kelurahan memakai format provinsi.kota.kecamatan.nomor kelurahan.
             $subdistricts = IndonesiaRegion::query()
                 ->where('status', 'active')
                 ->where('code', 'LIKE', $districtCode . '.%')
-                ->whereRaw("LENGTH(code) = 8")
+                ->whereRaw("LENGTH(code) = 13")
                 ->orderBy('name')
                 ->get(['code', 'name', 'postal_code']);
 

@@ -12,7 +12,7 @@ use Illuminate\Http\Request;
 use App\Traits\ProductDiscountTrait;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
-use Intervention\Image\ImageManager; // 🔥 PERUBAHAN
+use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
 use Illuminate\Support\Facades\Auth;
 
@@ -275,6 +275,18 @@ class CustomerProductController extends Controller
 
         $this->attachDiscountData($product);
 
+        // 🔥 CEK FLASH SALE
+        $isFlashSale = $product->isOnFlashSale();
+        $flashSaleEndDate = null;
+        $flashSaleDiscountPercent = 0;
+        
+        if ($isFlashSale) {
+            $flashSaleEndDate = $product->flash_sale_end_date;
+            // Hitung persentase diskon dari harga termurah
+            $minPrice = $product->variants->min('price') ?? 0;
+            $flashSaleDiscountPercent = $product->getFlashSaleDiscountPercent($minPrice);
+        }
+
         // 🔥 CEK APAKAH PRODUK ADA DI WISHLIST
         $inWishlist = false;
         $user = Auth::guard('customer')->user();
@@ -416,7 +428,210 @@ class CustomerProductController extends Controller
             'maxEffective',
             'minPrice',
             'maxPrice',
-            'inWishlist'
+            'inWishlist',
+            'isFlashSale',      
+            'flashSaleEndDate', 
+            'flashSaleDiscountPercent'
+        ));
+    }
+
+    public function flashSale(Request $request)
+    {
+        $query = Product::with([
+            'category', 
+            'images', 
+            'variants', 
+            'variants.values', 
+            'variants.values.option'
+        ])
+        ->where('is_active', true)
+        ->where('is_flash_sale', true)
+        ->whereNotNull('flash_sale_value')
+        ->where('flash_sale_value', '>', 0)
+        ->where(function($q) {
+            $q->whereNull('flash_sale_start_date')
+              ->orWhere('flash_sale_start_date', '<=', now());
+        })
+        ->where(function($q) {
+            $q->whereNull('flash_sale_end_date')
+              ->orWhere('flash_sale_end_date', '>=', now());
+        });
+
+        // 🔥 SEARCH
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', '%' . $search . '%')
+                  ->orWhere('description', 'like', '%' . $search . '%')
+                  ->orWhereHas('category', function($cat) use ($search) {
+                      $cat->where('name', 'like', '%' . $search . '%');
+                  });
+            });
+        }
+
+        // 🔥 CATEGORY FILTER
+        if ($request->filled('category')) {
+            $query->where('category_id', $request->category);
+        }
+
+        // 🔥 GENDER FILTER
+        if ($request->filled('gender')) {
+            $selectedGender = $request->gender;
+            if (in_array($selectedGender, ['pria', 'wanita'])) {
+                $query->where(function($q) use ($selectedGender) {
+                    $q->where('gender', $selectedGender)
+                      ->orWhere('gender', 'unisex');
+                });
+            } else {
+                $query->where('gender', $selectedGender);
+            }
+        }
+
+        // 🔥 SIZE FILTER
+        if ($request->filled('size')) {
+            $query->whereHas('variants', function($q) use ($request) {
+                $q->whereHas('values', function($qq) use ($request) {
+                    $qq->where('value', $request->size);
+                });
+            });
+        }
+
+        // 🔥 COLOR FILTER
+        $selectedColor = null;
+        if ($request->filled('color')) {
+            $selectedColor = $request->color;
+            $query->whereHas('variants', function($q) use ($request) {
+                $q->whereHas('values', function($qq) use ($request) {
+                    $qq->where('value', $request->color);
+                });
+            });
+        }
+
+        // 🔥 SORTING
+        switch ($request->sort) {
+            case 'discount_desc':
+                $query->orderBy('flash_sale_value', 'desc');
+                break;
+            case 'price_asc':
+                $query->select('products.*')
+                    ->addSelect(DB::raw('(SELECT MIN(COALESCE(discount_price, price)) FROM product_variants WHERE product_variants.product_id = products.id) as min_price'))
+                    ->orderBy('min_price', 'asc');
+                break;
+            case 'price_desc':
+                $query->select('products.*')
+                    ->addSelect(DB::raw('(SELECT MIN(COALESCE(discount_price, price)) FROM product_variants WHERE product_variants.product_id = products.id) as min_price'))
+                    ->orderBy('min_price', 'desc');
+                break;
+            case 'name':
+                $query->orderBy('name', 'asc');
+                break;
+            case 'newest':
+            default:
+                $query->latest('created_at');
+                break;
+        }
+
+        $nearestFlashSale = Product::where('is_active', true)
+            ->where('is_flash_sale', true)
+            ->whereNotNull('flash_sale_value')
+            ->where('flash_sale_value', '>', 0)
+            ->where(function($q) {
+                $q->whereNull('flash_sale_start_date')
+                  ->orWhere('flash_sale_start_date', '<=', now());
+            })
+            ->where(function($q) {
+                $q->whereNull('flash_sale_end_date')
+                  ->orWhere('flash_sale_end_date', '>=', now());
+            })
+            ->whereNotNull('flash_sale_end_date')
+            ->orderBy('flash_sale_end_date', 'asc')
+            ->first();
+
+        $flashSaleEndDate = null;
+        $flashSaleLabel = '';
+
+        if ($nearestFlashSale) {
+            $flashSaleEndDate = $nearestFlashSale->flash_sale_end_date;
+            
+            // 🔥 HITUNG TOTAL PRODUK FLASH SALE
+            $totalFlashProducts = Product::where('is_active', true)
+                ->where('is_flash_sale', true)
+                ->whereNotNull('flash_sale_value')
+                ->where('flash_sale_value', '>', 0)
+                ->where(function($q) {
+                    $q->whereNull('flash_sale_start_date')
+                      ->orWhere('flash_sale_start_date', '<=', now());
+                })
+                ->where(function($q) {
+                    $q->whereNull('flash_sale_end_date')
+                      ->orWhere('flash_sale_end_date', '>=', now());
+                })
+                ->count();
+
+            // 🔥 HITUNG DISKON TERBESAR
+            $maxDiscount = Product::where('is_active', true)
+                ->where('is_flash_sale', true)
+                ->whereNotNull('flash_sale_value')
+                ->where('flash_sale_value', '>', 0)
+                ->where(function($q) {
+                    $q->whereNull('flash_sale_start_date')
+                      ->orWhere('flash_sale_start_date', '<=', now());
+                })
+                ->where(function($q) {
+                    $q->whereNull('flash_sale_end_date')
+                      ->orWhere('flash_sale_end_date', '>=', now());
+                })
+                ->max('flash_sale_value');
+
+            $flashSaleLabel = '⚡ ' . $totalFlashProducts . ' produk - Diskon hingga ' . round($maxDiscount) . '%';
+        }
+
+        $products = $query->paginate(12);
+
+        if ($request->filled('search')) {
+            $products->appends(['search' => $request->search]);
+        }
+
+        // 🔥 TAMBAHKAN DATA DISKON DAN GAMBAR VARIAN
+        foreach ($products as $product) {
+            if (!$product->relationLoaded('variants')) {
+                $product->load('variants', 'variants.values', 'variants.values.option');
+            }
+            $this->attachDiscountData($product);
+            $this->attachVariantImageByColor($product, $selectedColor);
+            
+            // 🔥 TAMBAHKAN FLASH SALE END DATE UNTUK TIMER
+            $product->flash_sale_end_date_formatted = $product->flash_sale_end_date?->toIso8601String();
+        }
+
+        $categories = Category::where('is_active', true)->orderBy('name')->get();
+
+        $genders = ['pria', 'wanita', 'unisex'];
+        
+        $sizes = ProductOptionValue::whereHas('option', function($q) {
+            $q->whereRaw('LOWER(name) LIKE ?', ['%ukuran%'])
+              ->orWhereRaw('LOWER(name) LIKE ?', ['%size%']);
+        })->distinct()->pluck('value')->toArray();
+        sort($sizes);
+
+        $colors = ProductOptionValue::whereHas('option', function($q) {
+            $q->whereRaw('LOWER(name) LIKE ?', ['%warna%'])
+              ->orWhereRaw('LOWER(name) LIKE ?', ['%color%']);
+        })->distinct()->pluck('value')->toArray();
+        sort($colors);
+
+        $selectedGender = $request->filled('gender') ? $request->gender : null;
+
+        return view('customer.products.flash-sale', compact(
+            'products', 
+            'categories', 
+            'genders', 
+            'sizes', 
+            'colors', 
+            'selectedColor', 
+            'selectedGender',
+            'flashSaleEndDate', 
+            'flashSaleLabel'  
         ));
     }
 

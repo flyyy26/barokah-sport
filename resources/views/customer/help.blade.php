@@ -287,7 +287,7 @@
     .help_whatsapp .wa_icon {
         font-size: 5vw;
         color: #25D366;
-        margin-bottom: .7vw;
+        margin-bottom: 0;
         display: block;
     }
 
@@ -373,175 +373,370 @@
        RESPONSIVE
        ============================================ */
     @media (max-width: 768px) {
+        /* ============================================
+        HEADER - MOBILE
+        ============================================ */
         .help_top_container {
-            padding: 2vw 5vw;
+            padding: 4.5vw 4.5vw;
+            background: #f9fafb;
         }
 
         .help-header h1 {
-            font-size: 5vw;
+            font-size: 6vw;
+            position: relative;
+            display: inline-block;
+        }
+
+        .help-header h1::after {
+            content: '';
+            position: absolute;
+            bottom: -1vw;
+            left: 0;
+            width: 20vw;
+            height: 0.4vw;
+            background: #076694;
+            border-radius: 0.2vw;
         }
 
         .help-header p {
-            font-size: 2.5vw;
+            font-size: 3vw;
+            margin-top: 2vw;
+            color: #64748b;
         }
 
+        /* ============================================
+        TABS - MOBILE
+        ============================================ */
         .help_tabs_container {
-            padding: 2vw 5vw;
+            padding: 3vw 4.5vw;
+            background: #ffffff;
+            border-bottom: 0.15vw solid #e2e8f0;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+
+        .help_tabs_container::-webkit-scrollbar {
+            display: none;
+        }
+
+        .help_tabs {
+            gap: 1.5vw;
+            flex-wrap: nowrap;
+            min-width: max-content;
+            padding-bottom: 0.5vw;
         }
 
         .help_tab_btn {
-            font-size: 2.2vw;
-            padding: 1.5vw 3vw;
+            font-size: 2.8vw;
+            padding: 2vw 4.5vw;
+            border-bottom: 0.3vw solid transparent;
+            white-space: nowrap;
+            font-weight: 600;
+            color: #94a3b8;
+            background: transparent;
+            transition: all 0.3s ease;
         }
 
+        .help_tab_btn:active {
+            transform: scale(0.95);
+        }
+
+        .help_tab_btn.active {
+            color: #076694;
+            border-bottom-color: #076694;
+        }
+
+        /* ============================================
+        CONTENT CONTAINER - MOBILE
+        ============================================ */
         .help_content_container {
-            padding: 3vw 5vw;
+            padding: 4vw 4.5vw 10vw;
+            min-height: auto;
+            background: #ffffff;
         }
 
+        .help_tab_content {
+            animation: fadeInMobile 0.3s ease;
+        }
+
+        @keyframes fadeInMobile {
+            from { opacity: 0; transform: translateY(2vw); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ============================================
+        TAB 1 - KONTAK KAMI (MOBILE)
+        ============================================ */
         .help_contact_layout {
             grid-template-columns: 1fr;
+            gap: 3vw;
         }
 
         .help_contact_maps {
-            height: 50vw;
+            height: 45vw;
+            border-radius: 2vw;
+            order: 2;
+            box-shadow: 0 0.5vw 2vw rgba(0, 0, 0, 0.06);
+        }
+
+        .help_contact_maps iframe {
+            border-radius: 2vw;
         }
 
         .help_contact_info {
-            padding: 4vw;
+            padding: 4.5vw;
+            border-radius: 2vw;
+            border: 0.15vw solid #e8edf4;
+            order: 1;
+            box-shadow: 0 0.5vw 2vw rgba(0, 0, 0, 0.04);
         }
 
         .help_contact_info h3 {
-            font-size: 3.5vw;
+            font-size: 4vw;
+            margin-bottom: 0.8vw;
+            display: flex;
+            align-items: center;
+            gap: 1.5vw;
         }
 
         .help_contact_info p {
-            font-size: 2.5vw;
+            font-size: 2.8vw;
+            margin-bottom: 2.5vw;
+            color: #94a3b8;
         }
 
         .help_contact_info ul li {
-            font-size: 2.5vw;
+            font-size: 2.8vw;
+            margin-bottom: 1.5vw;
+            padding: 0.5vw 0;
+            gap: 1.5vw;
+            border-bottom: 0.1vw solid #f8fafc;
+        }
+
+        .help_contact_info ul li:last-child {
+            border-bottom: none;
         }
 
         .help_contact_info ul li iconify-icon {
-            font-size: 3.5vw;
+            font-size: 4vw;
+            flex-shrink: 0;
+            width: 5vw;
+            text-align: center;
+        }
+
+        .help_contact_info ul li a {
+            color: #076694;
+            text-decoration: none;
+            font-weight: 500;
+            word-break: break-all;
+        }
+
+        .help_contact_social {
+            padding-top: 2.5vw;
+            margin-top: 1.5vw;
+            gap: 2vw;
+            border-top: 0.15vw solid #e8edf4;
         }
 
         .help_contact_social_box {
-            width: 6vw;
-            height: 6vw;
+            width: 7vw;
+            height: 7vw;
+            border-radius: 100vw;
+            border: 0.15vw solid #e2e8f0;
+            background: #ffffff;
+            transition: all 0.3s ease;
+        }
+
+        .help_contact_social_box:active {
+            background: #076694;
+            border-color: #076694;
+            transform: scale(0.92);
+        }
+
+        .help_contact_social_box:active iconify-icon {
+            color: #ffffff;
         }
 
         .help_contact_social_box iconify-icon {
-            font-size: 3vw;
+            font-size: 3.5vw;
+            color: #475569;
+            transition: color 0.3s ease;
         }
 
+        /* ============================================
+        TAB 2 - CARA PESAN (MOBILE)
+        ============================================ */
         .help_cara_pesan {
             max-width: 100%;
         }
 
         .help_cara_pesan h3 {
-            font-size: 4vw;
+            font-size: 4.5vw;
+            margin-bottom: 0.5vw;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5vw;
         }
 
         .help_cara_pesan .subtitle {
-            font-size: 2.5vw;
+            font-size: 2.8vw;
+            margin-bottom: 4vw;
+            color: #94a3b8;
+            padding: 0 2vw;
         }
 
         .help_steps {
             grid-template-columns: 1fr;
-            gap: 2vw;
+            gap: 2.5vw;
         }
 
         .help_step {
-            padding: 4vw 3vw;
+            padding: 4vw 4.5vw;
+            border-radius: 2vw;
+            border: 0.15vw solid #e8edf4;
+            display: flex;
+            align-items: center;
+            gap: 3.5vw;
+            text-align: left;
+            transition: all 0.3s ease;
+            box-shadow: 0 0.3vw 1.5vw rgba(0, 0, 0, 0.04);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .help_step::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 0.6vw;
+            height: 100%;
+            background: #076694;
+            border-radius: 0.3vw 0 0 0.3vw;
+        }
+
+        .help_step:active {
+            transform: scale(0.98);
         }
 
         .help_step .step_number {
-            width: 8vw;
-            height: 8vw;
-            font-size: 3.5vw;
+            width: 9vw;
+            height: 9vw;
+            min-width: 9vw;
+            font-size: 4vw;
+            margin-bottom: 0;
+            background: linear-gradient(135deg, #076694 0%, #0a8ab8 100%);
+            box-shadow: 0 0.5vw 1.5vw rgba(7, 102, 148, 0.2);
+            flex-shrink: 0;
+        }
+
+        .help_step .step_content {
+            flex: 1;
+            min-width: 0;
         }
 
         .help_step h4 {
-            font-size: 3vw;
+            font-size: 3.2vw;
+            margin-bottom: 0.3vw;
+            color: #0f172a;
+            font-weight: 600;
         }
 
         .help_step p {
-            font-size: 2.5vw;
+            font-size: 2.6vw;
+            color: #64748b;
+            line-height: 1.5;
+            margin: 0;
         }
 
+        /* ============================================
+        TAB 3 - WHATSAPP (MOBILE)
+        ============================================ */
         .help_whatsapp {
             max-width: 100%;
         }
 
         .help_whatsapp .wa_icon {
-            font-size: 12vw;
+            font-size: 14vw;
+            margin-bottom: 0;
+            display: block;
+            animation: waPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes waPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
         }
 
         .help_whatsapp h3 {
-            font-size: 4vw;
+            font-size: 4.5vw;
+            margin-bottom: 0.5vw;
         }
 
         .help_whatsapp p {
-            font-size: 2.5vw;
+            font-size: 2.8vw;
+            margin-bottom: 3vw;
+            color: #94a3b8;
         }
 
         .help_whatsapp .wa_info {
             padding: 4vw;
+            border-radius: 2vw;
+            border: 0.15vw solid #e8edf4;
+            margin-bottom: 3vw;
+            box-shadow: 0 0.3vw 1.5vw rgba(0, 0, 0, 0.04);
         }
 
         .help_whatsapp .wa_info .info_item {
-            font-size: 2.5vw;
+            font-size: 2.8vw;
             padding: 1.5vw 0;
+            gap: 1.5vw;
+            border-bottom: 0.1vw solid #f1f5f9;
+        }
+
+        .help_whatsapp .wa_info .info_item:last-child {
+            border-bottom: none;
         }
 
         .help_whatsapp .wa_info .info_item iconify-icon {
-            font-size: 3vw;
+            font-size: 3.5vw;
+            flex-shrink: 0;
+            width: 4.5vw;
+            text-align: center;
+        }
+
+        .help_whatsapp .wa_info .info_item strong {
+            color: #0f172a;
+            font-weight: 600;
         }
 
         .btn_whatsapp {
-            padding: 2.5vw 6vw;
-            font-size: 2.8vw;
+            padding: 3vw 7vw;
+            font-size: 3.2vw;
+            border-radius: 2vw;
+            gap: 1.5vw;
+            background: linear-gradient(135deg, #25D366 0%, #1da851 100%);
+            box-shadow: 0 1vw 3vw rgba(37, 211, 102, 0.3);
+            width: 80%;
+            justify-content: center;
+        }
+
+        .btn_whatsapp:active {
+            transform: scale(0.96);
+            box-shadow: 0 0.5vw 1.5vw rgba(37, 211, 102, 0.15);
         }
 
         .btn_whatsapp iconify-icon {
-            font-size: 4vw;
+            font-size: 4.5vw;
         }
 
         .help_whatsapp .wa_note {
-            font-size: 2vw;
-        }
-    }
-
-    @media (max-width: 480px) {
-        .help_tab_btn {
-            font-size: 2.8vw;
-            padding: 2vw 4vw;
-        }
-
-        .help_contact_info ul li {
-            font-size: 3vw;
-        }
-
-        .help_step h4 {
-            font-size: 3.5vw;
-        }
-
-        .help_step p {
-            font-size: 3vw;
-        }
-
-        .help_whatsapp h3 {
-            font-size: 5vw;
-        }
-
-        .help_whatsapp p {
-            font-size: 3vw;
-        }
-
-        .btn_whatsapp {
-            font-size: 3.5vw;
-            padding: 3vw 8vw;
+            font-size: 2.2vw;
+            margin-top: 2vw;
+            color: #94a3b8;
+            padding: 0 2vw;
         }
     }
 </style>

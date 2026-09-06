@@ -34,6 +34,8 @@ use App\Http\Controllers\Customer\CustomerAboutController;
 use App\Http\Controllers\Customer\CustomerSizeGuideController;
 use App\Http\Controllers\Customer\HelpController;
 use App\Http\Controllers\Customer\CaraPesanController;
+use App\Http\Controllers\Customer\MidtransController;
+use App\Http\Controllers\Customer\CustomerVoucherController;
 use App\Http\Controllers\Admin\FaqCategoryController;
 use App\Http\Controllers\Admin\StockController;
 use App\Http\Controllers\Admin\VoucherController;
@@ -57,6 +59,7 @@ Route::get('/api/articles/get-comments', [CustomerArticleController::class, 'get
 Route::post('/api/articles/post-comment', [CustomerArticleController::class, 'postComment'])->name('customer.articles.post-comment');
 Route::delete('/api/articles/delete-comment', [CustomerArticleController::class, 'deleteComment'])->name('customer.articles.delete-comment');
 Route::get('/cara-pesan', [CaraPesanController::class, 'index'])->name('customer.cara-pesan');
+Route::get('/flash-sale', [CustomerProductController::class, 'flashSale'])->name('customer.products.flash-sale');
 
 Route::post('/checkout/apply-voucher', [CheckoutController::class, 'applyVoucher'])
     ->name('customer.checkout.apply-voucher');
@@ -271,39 +274,64 @@ Route::get('/checkout/success/{order}', [CheckoutController::class, 'success'])-
 
 Route::get('/test-biteship', function () {
     $apiKey = config('services.biteship.api_key');
+    $originPostalCode = config('services.biteship.origin_postal_code', '46191');
+    
+    // 🔥 TEST DENGAN DESTINATION SAMA
+    $payload = [
+        'origin_postal_code' => $originPostalCode,
+        'destination_postal_code' => $originPostalCode, // SAMA DENGAN ORIGIN
+        'couriers' => 'jne,jnt,sicepat,pos,anteraja',
+        'items' => [
+            [
+                'name' => 'Test Product',
+                'weight' => 1000,
+                'quantity' => 1,
+                'value' => 100000
+            ]
+        ]
+    ];
+    
+    Log::info('Test Biteship Same Postal Code:', $payload);
     
     $response = Http::withHeaders([
         'Authorization' => 'Bearer ' . $apiKey,
         'Content-Type' => 'application/json',
-    ])->post('https://api.biteship.com/v1/rates/couriers', [
-        'origin_postal_code' => '10110',
-        'destination_postal_code' => '40111',
-        'couriers' => ['jne'],
-        'items' => [
-            [
-                'name' => 'Test Product',
-                'value' => 100000,
-                'weight' => 1000,
-                'quantity' => 1,
-            ]
-        ]
-    ]);
+    ])->post('https://api.biteship.com/v1/rates/couriers', $payload);
+    
+    $data = $response->json();
     
     return response()->json([
         'status' => $response->status(),
-        'body' => $response->json(),
-        'headers' => $response->headers(),
+        'success' => $response->successful(),
+        'payload_sent' => $payload,
+        'response' => $data,
+        'pricing' => $data['pricing'] ?? []
     ]);
 });
 
-Route::get('/api/villages', [VillageController::class, 'getVillages'])->name('api.villages');
-Route::prefix('api/biteship')->group(function () {
-    Route::get('/search-location', [BiteshipController::class, 'searchLocation'])->name('api.biteship.search');
-    Route::post('/rates', [BiteshipController::class, 'getRates'])->name('api.biteship.rates');
-    Route::post('/order', [BiteshipController::class, 'createOrder'])->name('api.biteship.order');
-    Route::get('/track/{orderId}', [BiteshipController::class, 'trackOrder'])->name('api.biteship.track');
-    Route::get('/waybill/{orderId}', [BiteshipController::class, 'getWaybill'])->name('api.biteship.waybill');
+Route::prefix('midtrans')->name('customer.midtrans.')->group(function () {
+    Route::get('/pay/{order}', [MidtransController::class, 'pay'])->name('pay');
+    Route::get('/finish', [MidtransController::class, 'finish'])->name('finish');
+    Route::get('/error', [MidtransController::class, 'error'])->name('error');
+    Route::post('/notification', [MidtransController::class, 'notificationHandler'])->name('notification');
+    Route::get('/check-status/{order}', [MidtransController::class, 'checkStatus'])->name('check-status');
 });
+Route::get('/midtrans/refresh-token/{order}', [MidtransController::class, 'refreshToken'])
+    ->name('customer.midtrans.refresh-token');
+Route::post('/customer/midtrans/{order:order_number}/refresh-token', [MidtransController::class, 'refreshToken'])
+    ->name('customer.midtrans.refresh');
+
+Route::get('/api/villages', [VillageController::class, 'getVillages'])->name('api.villages');
+Route::post('/api/biteship/rates', [CheckoutController::class, 'getShippingCost'])
+    ->name('api.biteship.rates');
+Route::post('/checkout/update-shipping', [CheckoutController::class, 'updateShipping'])
+    ->name('customer.checkout.update-shipping');
+// Route::prefix('api/biteship')->group(function () {
+//     Route::post('/get-shipping-cost', [CheckoutController::class, 'getShippingCost'])
+//         ->name('api.biteship.shipping-cost');
+//     Route::get('/search-location', [CheckoutController::class, 'searchLocation'])
+//         ->name('api.biteship.search-location');
+// });
 
 // ============================================
 // CUSTOMER ACCOUNT (with auth middleware)
@@ -316,11 +344,17 @@ Route::middleware(['customer'])->group(function () {
     Route::get('/akun/pesanan', [AccountController::class, 'orders'])->name('customer.orders');
     Route::get('/akun/pesanan/{order}', [AccountController::class, 'showOrder'])->name('customer.orders.show');
 
+    Route::get('/akun/alamat', [AccountController::class, 'indexAddresses'])->name('customer.addresses.index');
     Route::get('/akun/alamat/tambah', [AccountController::class, 'createAddress'])->name('customer.addresses.create');
     Route::post('/akun/alamat', [AccountController::class, 'storeAddress'])->name('customer.addresses.store');
     Route::get('/akun/alamat/{address}/edit', [AccountController::class, 'editAddress'])->name('customer.addresses.edit');
     Route::put('/akun/alamat/{address}', [AccountController::class, 'updateAddress'])->name('customer.addresses.update');
     Route::delete('/akun/alamat/{address}', [AccountController::class, 'destroyAddress'])->name('customer.addresses.destroy');
+
+    Route::get('/vouchers', [CustomerVoucherController::class, 'index'])->name('customer.vouchers.index');
+    Route::get('/vouchers/{voucher}', [CustomerVoucherController::class, 'show'])->name('customer.vouchers.show'); 
+    Route::post('/vouchers/{voucher}/use', [CustomerVoucherController::class, 'use'])->name('customer.vouchers.use');
+    Route::delete('/vouchers/remove', [CustomerVoucherController::class, 'remove'])->name('customer.vouchers.remove');
 
 });
 

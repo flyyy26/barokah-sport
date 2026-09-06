@@ -22,6 +22,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot()
     {
         View::composer('layouts.customer', MarketplaceComposer::class);
+        View::composer('layouts.account', MarketplaceComposer::class);
+        View::composer('customer.partials.navbar', MarketplaceComposer::class);
+        View::composer('customer.partials.footer', MarketplaceComposer::class);
         View::composer('customer.home', MarketplaceComposer::class);
     }
 }

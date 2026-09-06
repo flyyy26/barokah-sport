@@ -22,7 +22,8 @@
         <meta name="user-role" content="guest">
     @endif
     <title>@yield('title', config('app.name'))</title>
-    <link rel="icon" href="{{ asset('images/favicon.png') }}" type="image/png">
+    <link rel="icon" src="{{ $setting?->favicon ? Storage::url($setting->favicon) : asset('images/favicon.png') }}" type="image/png">
+    <link rel="shortcut icon" href="{{ $setting?->favicon ? Storage::url($setting->favicon) : asset('images/favicon.png') }}" type="image/x-icon">
     
     {{-- CSS --}}
     <link rel="stylesheet" href="{{ asset('css/style.css') }}">
@@ -68,7 +69,7 @@
             background: #ffffff !important;
             z-index: 99999 !important;
             transform: translateX(100%) !important;
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            transition: transform 0.3s !important;
             box-shadow: -4px 0 25px rgba(0, 0, 0, 0.2) !important;
             display: flex !important;
             flex-direction: column !important;
@@ -125,27 +126,21 @@
 
         .popup-voucher-input {
             flex: 1;
-            padding: 0.7vw 1vw;
+            padding: 0.6vw .8vw;
             border: 0.1vw solid #e2e8f0;
             border-radius: 0.7vw;
             font-size: 0.8vw;
             color: #0f172a;
             background: #ffffff;
-            transition: border-color 0.2s, box-shadow 0.2s;
             font-family: inherit;
             text-transform: uppercase;
+            outline:none;
             letter-spacing: 0.05em;
         }
 
-        .popup-voucher-input:focus {
-            outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 0.2vw rgba(59, 130, 246, 0.1);
-        }
-
         .popup-btn-apply {
-            padding: 0.7vw 1.5vw;
-            background: #0f172a;
+            padding: 0.4vw 1vw;
+            background: #075985;
             color: #ffffff;
             border: none;
             border-radius: 0.7vw;
@@ -155,14 +150,6 @@
             transition: all 0.2s ease;
             font-family: inherit;
             white-space: nowrap;
-        }
-
-        .popup-btn-apply:hover {
-            background: #1e293b;
-        }
-
-        .popup-btn-apply:active {
-            transform: scale(0.97);
         }
 
         .popup-btn-apply:disabled {
@@ -185,68 +172,91 @@
         }
 
         .popup-voucher-item {
-            padding: 0.8vw 1vw;
+            padding: 0.9vw 1vw 0.8vw;
             border: 0.1vw solid #e2e8f0;
+            border-left: 0.25vw solid #94a3b8;
             border-radius: 0.7vw;
             background: #ffffff;
-            transition: all 0.2s ease;
+            box-shadow: 0 0.1vw 0.3vw rgba(15, 23, 42, 0.04);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+            margin-bottom: 0.8vw;
         }
 
         .popup-voucher-item.applicable {
             border-color: #86efac;
+            border-left-color: #22c55e;
             background: #f0fdf4;
         }
 
         .popup-voucher-item.applicable:hover {
             border-color: #22c55e;
-            box-shadow: 0 0.1vw 0.4vw rgba(34, 197, 94, 0.15);
+            box-shadow: 0 0.3vw 0.8vw rgba(34, 197, 94, 0.15);
+            transform: translateY(-0.1vw);
         }
 
         .popup-voucher-item.not-applicable {
-            opacity: 0.5;
+            background: #f8fafc;
         }
 
         .popup-voucher-item .item-content {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             justify-content: space-between;
-            gap: 0.5vw;
+            gap: 0.8vw;
         }
 
         .popup-voucher-item .item-info {
             display: flex;
-            align-items: center;
-            gap: 0.6vw;
-            flex-wrap: wrap;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 0.3vw;
             flex: 1;
+            min-width: 0;
+        }
+
+        .popup-voucher-item .voucher-card-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.6vw;
         }
 
         .popup-voucher-item .item-code {
             font-family: monospace;
             font-weight: 700;
             font-size: 0.65vw;
-            padding: 0.1vw 0.5vw;
-            background: #e2e8f0;
-            color: #0f172a;
-            border-radius: 0.3vw;
+            padding: 0.2vw 0.45vw;
+            background: #e0f2fe;
+            color: #075985;
+            border-radius: 0.25vw;
             letter-spacing: 0.05em;
+            width: fit-content;
         }
 
         .popup-voucher-item .item-name {
-            font-size: 0.75vw;
-            font-weight: 500;
+            font-size: .87vw;
+            font-weight: 600;
             color: #0f172a;
+            line-height: 1.3;
         }
 
         .popup-voucher-item .item-discount {
-            font-size: 0.7vw;
-            font-weight: 600;
-            color: #16a34a;
+            font-size: 0.72vw;
+            font-weight: 800;
+            color: #15803d;
+            white-space: nowrap;
         }
 
         .popup-voucher-item .item-min {
             font-size: 0.6vw;
-            color: #94a3b8;
+            color: #64748b;
+        }
+
+        .popup-voucher-item .voucher-card-meta {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.3vw;
+            margin-top: 0.15vw;
         }
 
         .popup-voucher-item .btn-use {
@@ -274,8 +284,43 @@
 
         .popup-voucher-item .status-unavailable {
             font-size: 0.6vw;
-            color: #94a3b8;
+            color: #b45309;
+            line-height: 1.35;
+        }
+
+        .popup-voucher-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5vw;
+            margin-top: 0.7vw;
+            padding-top: 0.6vw;
+            border-top: 0.1vw dashed #cbd5e1;
+            font-size: 0.6vw;
+        }
+
+        .popup-voucher-expiry {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25vw;
+            color: #64748b;
+        }
+
+        .popup-voucher-expiry iconify-icon {
+            color: #f59e0b;
+            font-size: 0.75vw;
+        }
+
+        .popup-voucher-terms {
+            color: #076694;
+            font-weight: 600;
+            text-decoration: none;
             white-space: nowrap;
+        }
+
+        .popup-voucher-terms:hover {
+            color: #054b6e;
+            text-decoration: underline;
         }
 
         .popup-empty {
@@ -283,6 +328,72 @@
             padding: 2vw 0;
             color: #94a3b8;
             font-size: 0.8vw;
+        }
+
+        @media (max-width: 768px) {
+            .popup-voucher-item {
+                padding: 3.5vw 3.5vw 3vw;
+                margin-bottom: 3vw;
+                border-left-width: 1vw;
+                border-radius: 2.5vw;
+            }
+
+            .popup-voucher-item .item-content {
+                gap: 3vw;
+            }
+
+            .popup-voucher-item .item-info {
+                gap: 1.2vw;
+            }
+
+            .popup-voucher-item .voucher-card-top {
+                gap: 2vw;
+            }
+
+            .popup-voucher-item .item-code {
+                padding: 0.8vw 1.6vw;
+                font-size: 2.8vw;
+                border-radius: 1vw;
+            }
+
+            .popup-voucher-item .item-name {
+                font-size: 3.5vw;
+            }
+
+            .popup-voucher-item .item-discount {
+                font-size: 3.2vw;
+            }
+
+            .popup-voucher-item .voucher-card-meta {
+                gap: 1vw;
+                margin-top: 0.8vw;
+            }
+
+            .popup-voucher-item .item-min,
+            .popup-voucher-item .status-unavailable {
+                font-size: 2.6vw;
+            }
+
+            .popup-voucher-item .btn-use {
+                padding: 1.5vw 2.5vw;
+                border-radius: 1.5vw;
+                font-size: 2.8vw;
+            }
+
+            .popup-voucher-footer {
+                margin-top: 2.5vw;
+                padding-top: 2vw;
+                gap: 2vw;
+                font-size: 2.7vw;
+            }
+
+            .popup-voucher-expiry {
+                gap: 1vw;
+            }
+
+            .popup-voucher-expiry iconify-icon {
+                font-size: 3.4vw;
+            }
         }
     </style>
     
@@ -297,6 +408,8 @@
     @include('customer.partials.search-popup')
 
     <main>
+        <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
         @yield('content')
     </main>
 
@@ -395,31 +508,38 @@
     {{-- ============================================
     VOUCHER POPUP (Right Side)
     ============================================ --}}
-    <div class="voucher-popup-overlay" id="voucher-popup-overlay"></div>
-    <div class="voucher-popup" id="voucher-popup">
-        <div class="voucher-popup-header">
-            <h2>Pilih Voucher</h2>
-            <button type="button" class="close-popup" id="close-voucher-popup">✕</button>
-        </div>
-        <div class="voucher-popup-body">
-            {{-- Input Kode Voucher --}}
-            <div class="popup-voucher-input-group">
-                <input type="text" 
-                    id="popup-voucher-input" 
-                    placeholder="Masukkan kode promo..." 
-                    class="popup-voucher-input"
-                    maxlength="50">
-                <button type="button" class="popup-btn-apply" id="btn-apply-manual-voucher">
-                    Pakai
-                </button>
+    <div  class="popup-slide" id="voucher-popup">
+        <div class="popup_slide_overlay"></div>
+        <div class="popup-slide-box">
+            <div class="popup-header">
+                <h2>
+                    <iconify-icon icon="mdi:ticket-percent-outline"></iconify-icon>
+                    Pilih Voucher
+                </h2>
+                <div class="popup-header-actions">
+                    <button type="button" class="btn-close" id="close-voucher-popup" aria-label="Tutup">✕</button>
+                </div>
             </div>
+            <div class="popup-body">
+                {{-- Input Kode Voucher --}}
+                <div class="popup-voucher-input-group">
+                    <input type="text" 
+                        id="popup-voucher-input" 
+                        placeholder="Masukkan kode promo..." 
+                        class="popup-voucher-input"
+                        maxlength="50">
+                    <button type="button" class="popup-btn-apply" id="btn-apply-manual-voucher">
+                        Pakai
+                    </button>
+                </div>
 
-            {{-- Daftar Voucher Tersedia --}}
-            <div class="popup-voucher-list" id="popup-voucher-list">
-                <p class="list-title">Voucher tersedia untuk kamu:</p>
-                {{-- Will be populated by JavaScript --}}
-                <div id="popup-voucher-items">
-                    {{-- Voucher items loaded via AJAX --}}
+                {{-- Daftar Voucher Tersedia --}}
+                <div class="popup-voucher-list" id="popup-voucher-list">
+                    <p class="list-title">Voucher tersedia untuk kamu:</p>
+                    {{-- Will be populated by JavaScript --}}
+                    <div id="popup-voucher-items">
+                        {{-- Voucher items loaded via AJAX --}}
+                    </div>
                 </div>
             </div>
         </div>
@@ -432,7 +552,6 @@
     {{-- ============================================ --}}
     {{-- SCRIPTS --}}
     {{-- ============================================ --}}
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 
@@ -1326,401 +1445,644 @@
     </style>
 
     <script>
-// ============================================
-// VOUCHER POPUP FUNCTIONS - GLOBAL SCOPE
-// ============================================
+        // ============================================
+        // VOUCHER POPUP FUNCTIONS - GLOBAL SCOPE
+        // ============================================
 
-// Open voucher popup
-function openVoucherPopup() {
-    var overlay = document.getElementById('voucher-popup-overlay');
-    var popup = document.getElementById('voucher-popup');
-    
-    if (overlay && popup) {
-        overlay.classList.add('active');
-        popup.classList.add('active');
-        document.body.style.overflow = 'hidden';
-        
-        // Refresh voucher list
-        refreshVoucherList();
-        
-        // Focus input after animation
-        setTimeout(function() {
-            var input = document.getElementById('popup-voucher-input');
-            if (input) input.focus();
-        }, 350);
-    }
-}
-
-// Close voucher popup
-function closeVoucherPopup() {
-    var overlay = document.getElementById('voucher-popup-overlay');
-    var popup = document.getElementById('voucher-popup');
-    
-    if (overlay && popup) {
-        overlay.classList.remove('active');
-        popup.classList.remove('active');
-        document.body.style.overflow = '';
-    }
-}
-
-// Refresh voucher list via AJAX
-function refreshVoucherList() {
-    var container = document.getElementById('popup-voucher-items');
-    if (!container) return;
-    
-    container.innerHTML = '<p style="text-align:center;padding:1vw 0;color:#94a3b8;">Memuat voucher...</p>';
-    
-    fetch('{{ route("customer.checkout.vouchers-ajax") }}', {
-        method: 'GET',
-        headers: {
-            'Accept': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
-        }
-    })
-    .then(function(response) { 
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        return response.json(); 
-    })
-    .then(function(data) {
-        if (data.success && data.vouchers && data.vouchers.length > 0) {
-            var html = '';
-            data.vouchers.forEach(function(voucher) {
-                var isApplicable = voucher.is_applicable;
-                var discountText = voucher.discount_type === 'fixed' 
-                    ? 'Rp ' + formatNumber(voucher.discount_value)
-                    : voucher.discount_value + '%' + (voucher.max_discount_amount ? ' (Maks. Rp ' + formatNumber(voucher.max_discount_amount) + ')' : '');
+        // Open voucher popup
+        function openVoucherPopup() {
+            var popup = document.getElementById('voucher-popup');
+            
+            if (popup) {
+                popup.classList.add('active');
+                document.body.classList.add('popup-open');
                 
-                html += `
-                    <div class="popup-voucher-item ${isApplicable ? 'applicable' : 'not-applicable'}">
-                        <div class="item-content">
-                            <div class="item-info">
-                                <span class="item-code">${voucher.code}</span>
-                                <span class="item-name">${voucher.name}</span>
-                                <span class="item-discount">${discountText}</span>
-                                <span class="item-min">Min. Rp ${formatNumber(voucher.min_transaction_amount)}</span>
-                            </div>
-                            ${isApplicable ? 
-                                `<button type="button" data-code="${voucher.code}" class="btn-use btn-apply-item">Pakai</button>` :
-                                `<span class="status-unavailable">${voucher.message || 'Tidak tersedia'}</span>`
+                // Refresh voucher list
+                refreshVoucherList();
+                
+                // Focus input after animation
+                setTimeout(function() {
+                    var input = document.getElementById('popup-voucher-input');
+                    if (input) input.focus();
+                }, 350);
+            }
+        }
+
+        // Close voucher popup
+        function closeVoucherPopup() {
+            var popup = document.getElementById('voucher-popup');
+            
+            if (popup) {
+                popup.classList.remove('active');
+                document.body.classList.remove('popup-open');
+            }
+        }
+
+        // Refresh voucher list via AJAX
+        function refreshVoucherList() {
+            var container = document.getElementById('popup-voucher-items');
+            if (!container) return;
+            
+            container.innerHTML = '<p style="text-align:center;padding:1vw 0;color:#94a3b8;">Memuat voucher...</p>';
+            
+            fetch('{{ route("customer.checkout.vouchers-ajax") }}', {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(function(response) { 
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json(); 
+            })
+            .then(function(data) {
+                if (data.success && data.vouchers && data.vouchers.length > 0) {
+                    var html = '';
+                    data.vouchers.forEach(function(voucher) {
+                        var isApplicable = voucher.is_applicable;
+                        var discountText = '';
+                        
+                        // 🔥 TAMPILKAN JENIS DISKON
+                        if (voucher.discount_target === 'shipping') {
+                            if (voucher.is_free_shipping) {
+                                discountText = 'Gratis Ongkir';
+                            } else {
+                                discountText = voucher.discount_type === 'fixed' 
+                                    ? 'Rp ' + formatNumber(voucher.discount_value) + ' (Ongkir)'
+                                    : voucher.discount_value + '% (Ongkir)' + (voucher.max_discount_amount ? ' (Maks. Rp ' + formatNumber(voucher.max_discount_amount) + ')' : '');
                             }
+                        } else {
+                             if (voucher.discount_type === 'fixed') {
+                                // Nominal Tetap
+                                discountText = 'Diskon s/d Rp ' + formatNumber(voucher.discount_value);
+                                maxDiscountText = '';
+                            } else {
+                                // Persentase
+                                var percentText = voucher.discount_value + '%';
+                                if (voucher.max_discount_amount && voucher.max_discount_amount > 0) {
+                                    // 🔥 TAMPILKAN MAKSIMAL POTONGAN SAJA
+                                    maxDiscountText = formatNumber(voucher.max_discount_amount);
+                                    discountText = 'Diskon s/d Rp ' + formatNumber(voucher.max_discount_amount);
+                                } else {
+                                    discountText = percentText;
+                                    maxDiscountText = '';
+                                }
+                            }
+                        }
+                        
+                        var badge = '';
+                        
+                        html += `
+                            <div class="popup-voucher-item ${isApplicable ? 'applicable' : 'not-applicable'}">
+                                <div class="item-content">
+                                    <div class="item-info">
+                                        <span class="item-name">${voucher.name} ${badge}</span>
+                                        <div class="voucher-card-meta">
+                                            <span class="item-min">Min. belanja Rp ${formatNumber(voucher.min_transaction_amount)}, ${discountText}</span>
+                                        </div>
+                                    </div>
+                                    ${isApplicable ? 
+                                        `<button type="button" data-code="${voucher.code}" class="btn-use btn-apply-item">Pakai</button>` :
+                                        ''
+                                    }
+                                </div>
+                                <div class="popup-voucher-footer">
+                                    <span class="popup-voucher-expiry">
+                                        <iconify-icon icon="mdi:calendar-clock-outline"></iconify-icon>
+                                        Berlaku sampai ${voucher.end_date_label}
+                                    </span>
+                                    <a href="${voucher.detail_url}" class="popup-voucher-terms" target="_blank" rel="noopener">
+                                        Syarat &amp; Ketentuan
+                                    </a>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = `
+                        <div class="popup-empty">
+                            <p>Belum ada voucher tersedia saat ini.</p>
+                            <p style="font-size:0.7vw;margin-top:0.3vw;">Cek kembali nanti untuk promo menarik!</p>
                         </div>
-                    </div>
-                `;
-            });
-            container.innerHTML = html;
-        } else {
-            container.innerHTML = `
-                <div class="popup-empty">
-                    <p>Belum ada voucher tersedia saat ini.</p>
-                    <p style="font-size:0.7vw;margin-top:0.3vw;">Cek kembali nanti untuk promo menarik!</p>
-                </div>
-            `;
-        }
-    })
-    .catch(function(error) {
-        console.error('Error loading vouchers:', error);
-        container.innerHTML = '<p style="text-align:center;padding:1vw 0;color:#ef4444;">Gagal memuat voucher. Silakan refresh halaman.</p>';
-    });
-}
-
-// Apply voucher from popup
-function applyVoucherFromPopup(code) {
-    var voucherCode = code || document.getElementById('popup-voucher-input').value;
-    
-    if (!voucherCode) {
-        showToast('Masukkan kode voucher terlebih dahulu.', 'warning');
-        return;
-    }
-
-    voucherCode = voucherCode.trim().toUpperCase();
-
-    // Show loading state
-    var btn = document.getElementById('btn-apply-manual-voucher');
-    var originalText = btn.textContent;
-    btn.disabled = true;
-    btn.textContent = 'Memproses...';
-
-    fetch('{{ route("customer.checkout.apply-voucher") }}', {
-        method: 'POST',
-        headers: {
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ voucher_code: voucherCode })
-    })
-    .then(function(response) { 
-        if (!response.ok) {
-            return response.json().then(function(err) {
-                throw new Error(err.message || 'Gagal menerapkan voucher');
+                    `;
+                }
+            })
+            .catch(function(error) {
+                console.error('Error loading vouchers:', error);
+                container.innerHTML = '<p style="text-align:center;padding:1vw 0;color:#ef4444;">Gagal memuat voucher. Silakan refresh halaman.</p>';
             });
         }
-        return response.json(); 
-    })
-    .then(function(data) {
-        if (data.success) {
-            // Update summary UI
-            updateVoucherUI(data);
-            
-            // Close popup
-            closeVoucherPopup();
-            
-            showToast(data.message || 'Voucher berhasil diterapkan!', 'success');
-            
-            // Refresh page to update all states
-            setTimeout(function() {
-                location.reload();
-            }, 1000);
-        } else {
-            showToast(data.message || 'Gagal menerapkan voucher.', 'error');
-        }
-    })
-    .catch(function(error) {
-        showToast(error.message || 'Terjadi kesalahan. Silakan coba lagi.', 'error');
-    })
-    .finally(function() {
-        btn.disabled = false;
-        btn.textContent = originalText;
-    });
-}
 
-// Remove voucher
-function removeVoucher() {
-    fetch('{{ route("customer.checkout.remove-voucher") }}', {
-        method: 'POST',
-        headers: {
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
+        // 🔥 CEK APAKAH VOUCHER ADALAH VOUCHER ONGKIR
+        function isShippingVoucherCode(voucherCode) {
+            var isShipping = false;
+            var voucherItems = document.querySelectorAll('.popup-voucher-item');
+            voucherItems.forEach(function(item) {
+                var codeEl = item.querySelector('.item-code');
+                if (codeEl && codeEl.textContent === voucherCode) {
+                    var nameEl = item.querySelector('.item-name');
+                    var discountEl = item.querySelector('.item-discount');
+                    if (nameEl && (nameEl.textContent.includes('ONGKIR') || nameEl.textContent.includes('GRATIS'))) {
+                        isShipping = true;
+                    }
+                    if (discountEl && discountEl.textContent.includes('Ongkir')) {
+                        isShipping = true;
+                    }
+                }
+            });
+            return isShipping;
         }
-    })
-    .then(function(response) { return response.json(); })
-    .then(function(data) {
-        if (data.success) {
-            // Update summary UI
+
+        // Apply voucher from popup
+        function applyVoucherFromPopup(code) {
+            var voucherCode = code || document.getElementById('popup-voucher-input').value;
+            
+            if (!voucherCode) {
+                showToast('Masukkan kode voucher terlebih dahulu.', 'warning');
+                return;
+            }
+
+            voucherCode = voucherCode.trim().toUpperCase();
+
+            // 🔥 CEK SHIPPING COST SEBELUM REQUEST
+            var shippingCost = parseInt(document.getElementById('shipping_cost')?.value || 0);
+            
+            console.log('🔥 Current Shipping Cost:', {
+                value: shippingCost,
+                voucherCode: voucherCode
+            });
+
+            // 🔥 CEK APAKAH VOUCHER ADALAH DISKON ONGKIR
+            var isShipping = isShippingVoucherCode(voucherCode);
+
+            // 🔥 JIKA VOUCHER ONGKIR DAN SHIPPING COST = 0
+            if (isShipping && shippingCost <= 0) {
+                showToast('⚠️ Pilih kurir dan layanan pengiriman terlebih dahulu sebelum menggunakan voucher ongkir!', 'warning');
+                return;
+            }
+
+            // Show loading state
+            var btn = document.getElementById('btn-apply-manual-voucher');
+            var originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'Memproses...';
+
+            fetch('{{ route("customer.checkout.apply-voucher") }}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ 
+                    voucher_code: voucherCode,
+                    shipping_cost: shippingCost
+                })
+            })
+            .then(function(response) { 
+                return response.json().then(function(data) {
+                    if (!response.ok) {
+                        throw {
+                            status: response.status,
+                            data: data,
+                            message: data.message || 'Gagal menerapkan voucher'
+                        };
+                    }
+                    return data;
+                });
+            })
+            .then(function(data) {
+                if (data.success) {
+                    updateVoucherUI(data);
+                    updateVoucherSession(data);
+                    
+                    // 🔥 TUTUP POPUP SETELAH BERHASIL
+                    closeVoucherPopup();
+                    
+                    var message = data.message || 'Voucher berhasil diterapkan!';
+                    if (data.is_free_shipping) {
+                        message = 'Gratis Ongkir berhasil diterapkan!';
+                    } else if (data.shipping_discount > 0) {
+                        message = 'Diskon Ongkir Rp ' + formatNumber(data.shipping_discount) + ' berhasil diterapkan!';
+                    }
+                    showToast(message, 'success');
+                } else {
+                    showToast(data.message || 'Gagal menerapkan voucher.', 'error');
+                }
+            })
+            .catch(function(error) {
+                console.error('Apply voucher error:', error);
+                var message = error.message || 'Terjadi kesalahan. Silakan coba lagi.';
+                if (error.data && error.data.message) {
+                    message = error.data.message;
+                }
+                showToast('❌ ' + message, 'error');
+            })
+            .finally(function() {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            });
+        }
+
+        // Remove voucher
+        function removeVoucher() {
+            // Show loading state
+            var removeBtn = document.getElementById('btn-remove-voucher');
+            if (removeBtn) {
+                removeBtn.disabled = true;
+                removeBtn.textContent = '...';
+            }
+
+            fetch('{{ route("customer.checkout.remove-voucher") }}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(function(response) { 
+                if (!response.ok) {
+                    return response.json().then(function(err) {
+                        throw new Error(err.message || 'Gagal membatalkan voucher');
+                    });
+                }
+                return response.json(); 
+            })
+            .then(function(data) {
+                if (data.success) {
+                    // 🔥 RESET ALL VOUCHER UI TANPA REFRESH
+                    resetVoucherUI();
+                    
+                    // 🔥 UPDATE SESSION
+                    updateVoucherSession(null);
+                    
+                    showToast(data.message || 'Voucher dibatalkan.', 'info');
+                } else {
+                    showToast(data.message || 'Gagal membatalkan voucher.', 'error');
+                }
+            })
+            .catch(function(error) {
+                showToast(error.message || 'Gagal membatalkan voucher.', 'error');
+            })
+            .finally(function() {
+                if (removeBtn) {
+                    removeBtn.disabled = false;
+                    removeBtn.textContent = '✕';
+                }
+            });
+        }
+
+        // Update voucher UI in summary
+        function updateVoucherUI(data) {
+            // Update applied voucher summary
+            var summary = document.getElementById('applied-voucher-summary');
+            if (summary) {
+                summary.classList.remove('hidden');
+                var codeEl = summary.querySelector('.code');
+                var nameEl = summary.querySelector('.name');
+                var discountEl = summary.querySelector('.discount');
+                if (codeEl) codeEl.textContent = data.voucher.code;
+                if (nameEl) nameEl.textContent = data.voucher.name + (data.is_free_shipping ? ' 🎁' : '');
+                if (discountEl) discountEl.textContent = 'Dapat potongan Rp ' + formatNumber(data.discount);
+            }
+            
+            // 🔥 UPDATE VOUCHER DISCOUNT ROW
+            var voucherRow = document.getElementById('voucher-discount-row');
+            var discountText = document.getElementById('voucher-discount-text');
+            if (discountText) {
+                if (data.discount > 0) {
+                    discountText.textContent = '-Rp ' + formatNumber(data.discount);
+                    if (voucherRow) voucherRow.classList.remove('hidden');
+                } else {
+                    if (voucherRow) voucherRow.classList.add('hidden');
+                }
+            }
+            
+            // 🔥 UPDATE PRODUCT DISCOUNT ROW
+            var productRow = document.getElementById('product-discount-row');
+            var productText = document.getElementById('product-discount-text');
+            if (productRow && productText) {
+                if (data.product_discount > 0) {
+                    productRow.classList.remove('hidden');
+                    productText.textContent = '-Rp ' + formatNumber(data.product_discount);
+                } else {
+                    productRow.classList.add('hidden');
+                }
+            }
+            
+            // 🔥 UPDATE SHIPPING DISCOUNT ROW
+            var shippingRow = document.getElementById('shipping-discount-row');
+            var shippingText = document.getElementById('shipping-discount-text');
+            var shippingLabel = document.getElementById('shipping-discount-label');
+            
+            if (shippingRow && shippingText) {
+                if (data.shipping_discount > 0 || data.is_free_shipping) {
+                    shippingRow.classList.remove('hidden');
+                    if (data.is_free_shipping) {
+                        shippingText.textContent = '🎁 Gratis Ongkir';
+                        if (shippingLabel) shippingLabel.textContent = '🎁 Gratis Ongkir';
+                    } else {
+                        shippingText.textContent = '-Rp ' + formatNumber(data.shipping_discount);
+                        if (shippingLabel) shippingLabel.textContent = 'Diskon Ongkir';
+                    }
+                } else {
+                    shippingRow.classList.add('hidden');
+                }
+            }
+            
+            // 🔥 UPDATE SHIPPING COST
+            if (data.new_shipping_cost !== undefined) {
+                var shippingCostText = document.getElementById('shipping-cost-text');
+                if (shippingCostText) {
+                    shippingCostText.textContent = 'Rp ' + formatNumber(data.new_shipping_cost);
+                }
+                // Update hidden input
+                var shippingCostInput = document.getElementById('shipping_cost');
+                if (shippingCostInput) {
+                    shippingCostInput.value = data.new_shipping_cost;
+                }
+            }
+            
+            // 🔥 UPDATE ACTION BUTTON
+            var actionText = document.getElementById('voucher-action-text');
+            if (actionText) actionText.textContent = 'Ganti Voucher';
+            
+            // 🔥 UPDATE TOTAL
+            updateTotalWithVoucher(data.discount);
+        }
+
+        function resetVoucherUI() {
+            // Hide applied voucher summary
             var summary = document.getElementById('applied-voucher-summary');
             if (summary) summary.classList.add('hidden');
             
+            // Hide discount rows
+            var productRow = document.getElementById('product-discount-row');
+            if (productRow) productRow.classList.add('hidden');
+            
+            var shippingRow = document.getElementById('shipping-discount-row');
+            if (shippingRow) shippingRow.classList.add('hidden');
+            
+            var voucherRow = document.getElementById('voucher-discount-row');
+            if (voucherRow) voucherRow.classList.add('hidden');
+            
+            // Reset voucher discount text
             var discountText = document.getElementById('voucher-discount-text');
             if (discountText) discountText.textContent = 'Rp 0';
             
+            // Reset action button
             var actionText = document.getElementById('voucher-action-text');
             if (actionText) actionText.textContent = 'Pilih Voucher';
             
+            // Reset shipping cost
+            var shippingCostText = document.getElementById('shipping-cost-text');
+            var shippingCostInput = document.getElementById('shipping_cost');
+            if (shippingCostText && shippingCostInput) {
+                var defaultShipping = parseInt(shippingCostInput.value) || 0;
+                shippingCostText.textContent = 'Rp ' + formatNumber(defaultShipping);
+            }
+            
+            // Reset input
             var input = document.getElementById('popup-voucher-input');
             if (input) input.value = '';
             
-            updateTotalWithVoucher(0);
+            // 🔥 UPDATE TOTAL (subtotal + shipping)
+            var subtotalEl = document.getElementById('subtotal-display');
+            var totalEl = document.getElementById('total-display');
+            if (subtotalEl && totalEl) {
+                var subtotal = parseFloat(subtotalEl.textContent.replace(/[^0-9]/g, '')) || 0;
+                var shippingCost = parseInt(document.getElementById('shipping_cost').value) || 0;
+                var total = subtotal + shippingCost;
+                totalEl.textContent = 'Rp ' + formatNumber(total);
+            }
+        }
 
-            showToast('Voucher dibatalkan.', 'info');
+        function updateVoucherSession(data) {
+            if (data && data.voucher) {
+                // Simpan ke session via hidden input
+                var hiddenVoucher = document.getElementById('applied-voucher-code');
+                if (!hiddenVoucher) {
+                    hiddenVoucher = document.createElement('input');
+                    hiddenVoucher.type = 'hidden';
+                    hiddenVoucher.id = 'applied-voucher-code';
+                    hiddenVoucher.name = 'voucher_code';
+                    var form = document.getElementById('checkout-form');
+                    if (form) form.appendChild(hiddenVoucher);
+                }
+                if (hiddenVoucher) hiddenVoucher.value = data.voucher.code;
+                
+                var hiddenDiscount = document.getElementById('applied-voucher-discount');
+                if (!hiddenDiscount) {
+                    hiddenDiscount = document.createElement('input');
+                    hiddenDiscount.type = 'hidden';
+                    hiddenDiscount.id = 'applied-voucher-discount';
+                    hiddenDiscount.name = 'voucher_discount';
+                    var form = document.getElementById('checkout-form');
+                    if (form) form.appendChild(hiddenDiscount);
+                }
+                if (hiddenDiscount) hiddenDiscount.value = data.discount;
+                
+            } else {
+                // Hapus hidden inputs
+                var hiddenVoucher = document.getElementById('applied-voucher-code');
+                if (hiddenVoucher) hiddenVoucher.remove();
+                
+                var hiddenDiscount = document.getElementById('applied-voucher-discount');
+                if (hiddenDiscount) hiddenDiscount.remove();
+            }
+        }
+
+        // Update total with voucher discount
+        function updateTotalWithVoucher(discount) {
+            var subtotalEl = document.getElementById('subtotal-display');
+            var shippingEl = document.getElementById('shipping_cost');
+            var totalEl = document.getElementById('total-display');
             
-            // Refresh page
+            if (!subtotalEl || !totalEl) return;
+            
+            var subtotal = parseFloat(subtotalEl.textContent.replace(/[^0-9]/g, '')) || 0;
+            var shippingCost = parseInt(shippingEl ? shippingEl.value : 0) || 0;
+            var total = subtotal + shippingCost - discount;
+            totalEl.textContent = 'Rp ' + formatNumber(total);
+        }
+
+        // Format number with dots
+        function formatNumber(num) {
+            if (num === undefined || num === null) num = 0;
+            return Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        }
+
+        // Show toast notification
+        function showToast(message, type) {
+            type = type || 'info';
+            var colors = {
+                success: '#22c55e',
+                error: '#ef4444',
+                warning: '#f59e0b',
+                info: '#3b82f6'
+            };
+
+            var existing = document.querySelector('.voucher-toast');
+            if (existing) {
+                existing.remove();
+            }
+
+            var toast = document.createElement('div');
+            toast.className = 'voucher-toast';
+            toast.style.cssText = `
+                position: fixed;
+                bottom: 2vw;
+                right: 2vw;
+                padding: 1vw 1.5vw;
+                background: ${colors[type] || colors.info};
+                color: white;
+                border-radius: 0.7vw;
+                font-size: 0.85vw;
+                box-shadow: 0 0.2vw 1vw rgba(0,0,0,0.15);
+                z-index: 99999;
+                max-width: 25vw;
+                transform: translateY(120%);
+                transition: transform 0.3s ease;
+                font-family: inherit;
+            `;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
             setTimeout(function() {
-                location.reload();
-            }, 500);
+                toast.style.transform = 'translateY(0)';
+            }, 100);
+
+            setTimeout(function() {
+                toast.style.transform = 'translateY(120%)';
+                setTimeout(function() {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 300);
+            }, 3000);
         }
-    })
-    .catch(function() {
-        showToast('Gagal membatalkan voucher.', 'error');
-    });
-}
 
-// Update voucher UI in summary
-function updateVoucherUI(data) {
-    var summary = document.getElementById('applied-voucher-summary');
-    if (summary) {
-        summary.classList.remove('hidden');
-        var codeEl = summary.querySelector('.code');
-        var nameEl = summary.querySelector('.name');
-        var discountEl = summary.querySelector('.discount');
-        if (codeEl) codeEl.textContent = data.voucher.code;
-        if (nameEl) nameEl.textContent = data.voucher.name;
-        if (discountEl) discountEl.textContent = '-Rp ' + formatNumber(data.discount);
-    }
-    
-    var discountText = document.getElementById('voucher-discount-text');
-    if (discountText) discountText.textContent = '-Rp ' + formatNumber(data.discount);
-    
-    var actionText = document.getElementById('voucher-action-text');
-    if (actionText) actionText.textContent = 'Ganti Voucher';
-    
-    updateTotalWithVoucher(data.discount);
-}
-
-// Update total with voucher discount
-function updateTotalWithVoucher(discount) {
-    var subtotalEl = document.getElementById('subtotal-display');
-    var shippingEl = document.getElementById('shipping_cost');
-    var totalEl = document.getElementById('total-display');
-    
-    if (!subtotalEl || !totalEl) return;
-    
-    var subtotal = parseFloat(subtotalEl.textContent.replace(/[^0-9]/g, '')) || 0;
-    var shippingCost = parseInt(shippingEl ? shippingEl.value : 0) || 0;
-    var total = subtotal + shippingCost - discount;
-    totalEl.textContent = 'Rp ' + formatNumber(total);
-}
-
-// Format number with dots
-function formatNumber(num) {
-    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-}
-
-// Show toast notification
-function showToast(message, type) {
-    type = type || 'info';
-    var colors = {
-        success: '#22c55e',
-        error: '#ef4444',
-        warning: '#f59e0b',
-        info: '#3b82f6'
-    };
-
-    var existing = document.querySelector('.voucher-toast');
-    if (existing) {
-        existing.remove();
-    }
-
-    var toast = document.createElement('div');
-    toast.className = 'voucher-toast';
-    toast.style.cssText = `
-        position: fixed;
-        bottom: 2vw;
-        right: 2vw;
-        padding: 1vw 1.5vw;
-        background: ${colors[type] || colors.info};
-        color: white;
-        border-radius: 0.7vw;
-        font-size: 0.85vw;
-        box-shadow: 0 0.2vw 1vw rgba(0,0,0,0.15);
-        z-index: 99999;
-        max-width: 25vw;
-        transform: translateY(120%);
-        transition: transform 0.3s ease;
-        font-family: inherit;
-    `;
-    toast.textContent = message;
-    document.body.appendChild(toast);
-
-    setTimeout(function() {
-        toast.style.transform = 'translateY(0)';
-    }, 100);
-
-    setTimeout(function() {
-        toast.style.transform = 'translateY(120%)';
-        setTimeout(function() {
-            if (toast.parentNode) {
-                toast.parentNode.removeChild(toast);
+        // ============================================
+        // EVENT BINDINGS - Run when DOM ready
+        // ============================================
+        document.addEventListener('DOMContentLoaded', function() {
+            // Open popup
+            var openBtn = document.getElementById('btn-open-voucher');
+            if (openBtn) {
+                openBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openVoucherPopup();
+                });
             }
-        }, 300);
-    }, 3000);
-}
-
-// ============================================
-// EVENT BINDINGS - Run when DOM ready
-// ============================================
-document.addEventListener('DOMContentLoaded', function() {
-    // Open popup - using both ID and class for compatibility
-    var openBtn = document.getElementById('btn-open-voucher');
-    if (openBtn) {
-        openBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            openVoucherPopup();
-        });
-    }
-    
-    // Also handle if button uses class .btn-open-voucher
-    var openBtns = document.querySelectorAll('.btn-open-voucher');
-    openBtns.forEach(function(btn) {
-        if (btn.id !== 'btn-open-voucher') {
-            btn.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                openVoucherPopup();
+            
+            // Also handle if button uses class .btn-open-voucher
+            var openBtns = document.querySelectorAll('.btn-open-voucher');
+            openBtns.forEach(function(btn) {
+                if (btn.id !== 'btn-open-voucher') {
+                    btn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        openVoucherPopup();
+                    });
+                }
             });
-        }
-    });
 
-    // Close popup - overlay
-    var overlay = document.getElementById('voucher-popup-overlay');
-    if (overlay) {
-        overlay.addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeVoucherPopup();
+            // Close popup - close button
+            var closeBtn = document.getElementById('close-voucher-popup');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    closeVoucherPopup();
+                });
             }
-        });
-    }
 
-    // Close popup - close button
-    var closeBtn = document.getElementById('close-voucher-popup');
-    if (closeBtn) {
-        closeBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            closeVoucherPopup();
-        });
-    }
-
-    // Apply manual voucher
-    var applyBtn = document.getElementById('btn-apply-manual-voucher');
-    if (applyBtn) {
-        applyBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            applyVoucherFromPopup();
-        });
-    }
-
-    // Enter key on input
-    var input = document.getElementById('popup-voucher-input');
-    if (input) {
-        input.addEventListener('keypress', function(e) {
-            if (e.which === 13) {
-                e.preventDefault();
-                applyVoucherFromPopup();
+            // Overlay memakai perilaku yang sama seperti popup cart dan wishlist.
+            var overlay = document.querySelector('#voucher-popup .popup_slide_overlay');
+            if (overlay) {
+                overlay.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    closeVoucherPopup();
+                });
             }
-        });
-    }
 
-    // Apply from list - delegated
-    document.addEventListener('click', function(e) {
-        if (e.target && e.target.matches('.btn-apply-item')) {
-            var code = e.target.getAttribute('data-code');
-            if (code) {
-                applyVoucherFromPopup(code);
+            // Apply manual voucher
+            var applyBtn = document.getElementById('btn-apply-manual-voucher');
+            if (applyBtn) {
+                applyBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    applyVoucherFromPopup();
+                });
             }
-        }
-    });
 
-    // Remove voucher
-    var removeBtn = document.getElementById('btn-remove-voucher');
-    if (removeBtn) {
-        removeBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            removeVoucher();
+            // Enter key on input
+            var input = document.getElementById('popup-voucher-input');
+            if (input) {
+                input.addEventListener('keypress', function(e) {
+                    if (e.which === 13) {
+                        e.preventDefault();
+                        applyVoucherFromPopup();
+                    }
+                });
+            }
+
+            // Apply from list - delegated
+            document.addEventListener('click', function(e) {
+                if (e.target && e.target.matches('.btn-apply-item')) {
+                    var code = e.target.getAttribute('data-code');
+                    if (code) {
+                        applyVoucherFromPopup(code);
+                    }
+                }
+            });
+
+            // Remove voucher
+            var removeBtn = document.getElementById('btn-remove-voucher');
+            if (removeBtn) {
+                removeBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    removeVoucher();
+                });
+            }
+
+            // 🔥 TUTUP POPUP DENGAN ESC
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeVoucherPopup();
+                }
+            });
+
+            // 🔥 TUTUP POPUP DENGAN KLIK DI LUAR POPUP
+            document.addEventListener('click', function(e) {
+                var popup = document.getElementById('voucher-popup');
+                if (popup && popup.classList.contains('active')) {
+                    // Cek apakah klik di dalam popup
+                    var isInside = popup.contains(e.target);
+                    // Cek apakah klik di tombol open (agar tidak langsung close)
+                    var isOpenBtn = e.target.closest('#btn-open-voucher') || e.target.closest('.btn-open-voucher');
+                    
+                    if (!isInside && !isOpenBtn) {
+                        closeVoucherPopup();
+                    }
+                }
+            });
         });
-    }
 
-    // ESC key to close
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            closeVoucherPopup();
-        }
-    });
-});
-
-// Make functions globally accessible
-window.openVoucherPopup = openVoucherPopup;
-window.closeVoucherPopup = closeVoucherPopup;
-window.applyVoucherFromPopup = applyVoucherFromPopup;
-window.removeVoucher = removeVoucher;
-window.showToast = showToast;
-window.formatNumber = formatNumber;
-window.refreshVoucherList = refreshVoucherList;
-
-console.log('🎟️ Voucher popup initialized!');
-</script>
+        // Make functions globally accessible
+        window.openVoucherPopup = openVoucherPopup;
+        window.closeVoucherPopup = closeVoucherPopup;
+        window.applyVoucherFromPopup = applyVoucherFromPopup;
+        window.removeVoucher = removeVoucher;
+        window.showToast = showToast;
+        window.formatNumber = formatNumber;
+        window.refreshVoucherList = refreshVoucherList;
+        window.isShippingVoucherCode = isShippingVoucherCode;
+    </script>
 
     <script src="{{ asset('js/cart.js') }}"></script>
     <script src="{{ asset('js/popup.js') }}"></script>

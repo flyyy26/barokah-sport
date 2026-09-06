@@ -39,14 +39,14 @@
 
         {{-- Logo --}}
         <a href="{{ route('customer.home') }}" class="logo-wrapper">
-            <img src="{{ asset('images/logo.png') }}" alt="Logo" class="logo_dekstop">
-            <img src="{{ asset('images/favicon.png') }}" alt="Logo" class="logo_mobile">
+            <img src="{{ $setting?->logo ? Storage::url($setting->logo) : asset('images/logo.png') }}" alt="Logo" class="logo_dekstop">
+            <img src="{{ $setting?->favicon ? Storage::url($setting->favicon) : asset('images/favicon.png') }}" alt="Logo" class="logo_mobile">
         </a>
 
         {{-- Navigation Menu --}}
         <nav class="nav-menu" id="navMenu">
             <div class="logo_mobile_nav">
-                <img src="{{ asset('images/logo.png') }}" alt="Logo">
+                <img src="{{ $setting?->logo ? Storage::url($setting->logo) : asset('images/logo.png') }}" alt="Logo">
                 <button class="close-btn-nav" id="closeBtn" aria-label="Close Menu">
                     <iconify-icon icon="mingcute:close-line"></iconify-icon>
                 </button>
@@ -73,12 +73,6 @@
                 <a href="{{ route('customer.products.promo') }}" class="{{ request()->is('katalog/promo') ? 'active' : '' }}">
                     <li>
                         Promo
-                        <iconify-icon icon="eva:chevron-right-outline"></iconify-icon>
-                    </li>
-                </a>
-                <a href="/testimoni" class="{{ request()->is('testimoni') ? 'active' : '' }}">
-                    <li>
-                        Testimoni
                         <iconify-icon icon="eva:chevron-right-outline"></iconify-icon>
                     </li>
                 </a>
@@ -126,6 +120,16 @@
             <button onclick="openSearchPopup()" class="icon-btn" aria-label="Search">
                 <iconify-icon icon="mingcute:search-line"></iconify-icon>
             </button>
+
+            @php
+                $isLoggedIn = Auth::guard('customer')->check();
+                $profileUrl = $isLoggedIn ? route('customer.account') : route('customer.login');
+            @endphp
+            <a href="{{ $profileUrl }}" class="icon-btn-link icon-btn-profile" aria-label="Profile">
+                <button class="icon-btn">
+                    <iconify-icon icon="iconamoon:profile-light"></iconify-icon>
+                </button>
+            </a>
 
             <button id="wishlist-toggle" class="icon-btn" style="position:relative;" aria-label="Wishlist">
                 <iconify-icon icon="mynaui:heart"></iconify-icon>

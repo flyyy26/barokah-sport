@@ -1,7 +1,7 @@
  <div class="footer">
     <div class="footer_first">
         <div class="footer_identity">
-            <img src="{{ asset('images/logo.png') }}" alt="Bean Event Organizer">
+            <img src="{{ $setting?->logo ? Storage::url($setting->logo) : asset('images/logo.png') }}" alt="Barokah Sport"class="logo-image">
             <p>Toko online terpercaya untuk jaket dan celana olahraga berkualitas dengan harga bersahabat. Nikmati produk olahraga terbaik dengan material unggulan, desain modern, dan promo menarik setiap bulannya.</p>
             <div class="social_media_footer">
                 @forelse($marketplaces ?? [] as $marketplace)
@@ -56,7 +56,7 @@
                     <li><a href="{{ route('customer.contact', ['category' => 'pengiriman']) }}#faq-section">Pengiriman</a></li>
                     <li><a href="{{ route('customer.contact', ['category' => 'pembayaran']) }}#faq-section">Pembayaran</a></li>
                     <li><a href="{{ route('customer.size-guide') }}">Panduan Ukuran</a></li>
-                    <li><a href="{{ route('customer.contact', ['category' => 'pengembalian']) }}#faq-section">Pengembalian</a></li>
+                    <li><a href="/testimoni">Testimoni</a></li>
                 </ul>
             </div>
         </div>

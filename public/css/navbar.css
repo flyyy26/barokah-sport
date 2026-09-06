@@ -95,6 +95,9 @@
 .mobile-nav-footer{
     display:none;
 }
+.icon-btn{
+    display: flex;
+}
 
 .btn_header_bottom{
     display:flex;
@@ -272,6 +275,8 @@
         top: -0.5vw;
     }
 
+    
+
     /* === NAV MENU - Full Screen Overlay === */
     .nav-menu {
         display: block;
@@ -437,5 +442,9 @@
 
     #wishlist-toggle{
         display:none;
+    }
+
+    .icon-btn-profile{
+        display: none !important;
     }
 }

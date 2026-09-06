@@ -24,6 +24,10 @@
     <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
 
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,100..900;1,100..900&display=swap');
+        *{
+            font-family: "Hanken Grotesk", sans-serif;
+        }
         .ql-editor {
             min-height: 250px;
             font-size: 14px;
@@ -63,6 +67,50 @@
         }
         
         .dark .ql-editor.ql-blank::before {
+            color: #6b7280;
+        }
+        #quill-editor-terms .ql-editor {
+            min-height: 180px !important;
+            max-height: 400px !important;
+            font-size: 14px;
+            line-height: 1.8;
+            background: #ffffff;
+        }
+
+        #quill-editor-terms .ql-toolbar.ql-snow {
+            border-radius: 8px 8px 0 0;
+            border-color: #d1d5db !important;
+            background: #f9fafb;
+        }
+
+        #quill-editor-terms .ql-container.ql-snow {
+            border-radius: 0 0 8px 8px;
+            border-color: #d1d5db !important;
+            background: white;
+            min-height: 180px;
+        }
+
+        #quill-editor-terms .ql-container.ql-snow:focus-within {
+            border-color: #3b82f6 !important;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        /* Dark mode support */
+        .dark #quill-editor-terms .ql-toolbar.ql-snow {
+            background: #1f2937;
+            border-color: #374151 !important;
+        }
+
+        .dark #quill-editor-terms .ql-container.ql-snow {
+            background: #1f2937;
+            border-color: #374151 !important;
+        }
+
+        .dark #quill-editor-terms .ql-editor {
+            color: #e5e7eb;
+        }
+
+        .dark #quill-editor-terms .ql-editor.ql-blank::before {
             color: #6b7280;
         }
     </style>
@@ -437,52 +485,92 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Cek apakah Quill tersedia
-            if (typeof Quill !== 'undefined') {
-                const editorContainer = document.getElementById('quill-editor');
-                const hiddenInput = document.getElementById('description');
+            // ============================================
+            // 🔥 QUILL.JS - SYARAT & KETENTUAN
+            // ============================================
+            
+            const hiddenInput = document.getElementById('terms_and_conditions');
+            const editorContainer = document.getElementById('quill-editor-terms');
+            const form = document.querySelector('form');
+            
+            let quill = null;
+            
+            if (editorContainer && typeof Quill !== 'undefined') {
+                // 🔥 Toolbar configuration
+                const toolbarOptions = [
+                    [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                    ['bold', 'italic', 'underline', 'strike'],
+                    [{ 'color': [] }, { 'background': [] }],
+                    [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                    [{ 'indent': '-1' }, { 'indent': '+1' }],
+                    [{ 'align': [] }],
+                    ['blockquote', 'code-block'],
+                    ['link'],
+                    ['clean']
+                ];
                 
-                if (editorContainer && hiddenInput) {
-                    // Inisialisasi Quill
-                    const quill = new Quill(editorContainer, {
-                        theme: 'snow',
-                        placeholder: 'Masukkan deskripsi produk...',
-                        modules: {
-                            toolbar: [
-                                [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-                                [{ 'font': [] }],
-                                ['bold', 'italic', 'underline', 'strike'],
-                                [{ 'color': [] }, { 'background': [] }],
-                                [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-                                [{ 'indent': '-1' }, { 'indent': '+1' }],
-                                [{ 'align': [] }],
-                                ['blockquote', 'code-block'],
-                                ['link', 'image', 'video'],
-                                ['clean']
-                            ]
-                        }
-                    });
-
-                    // 🔥 SYNC: Setiap perubahan di Quill, update hidden input
-                    quill.on('text-change', function() {
-                        const content = quill.root.innerHTML;
-                        hiddenInput.value = content;
-                    });
-
-                    // 🔥 SYNC: Saat form submit, pastikan hidden input terisi
-                    const form = document.getElementById('product-form');
-                    if (form) {
-                        form.addEventListener('submit', function() {
-                            hiddenInput.value = quill.root.innerHTML;
-                        });
+                quill = new Quill(editorContainer, {
+                    theme: 'snow',
+                    placeholder: '1. Berlaku untuk seluruh produk.\n2. Tidak dapat digabung dengan promo lain.\n3. Dll...',
+                    modules: {
+                        toolbar: toolbarOptions
                     }
-
-                    // 🔥 SYNC: Set initial content jika ada
-                    const initialContent = hiddenInput.value;
-                    if (initialContent) {
-                        quill.root.innerHTML = initialContent;
+                });
+                
+                // 🔥 Set initial content
+                const initialContent = hiddenInput.value;
+                if (initialContent) {
+                    quill.root.innerHTML = initialContent;
+                }
+                
+                // 🔥 Sync to hidden input on change
+                quill.on('text-change', function() {
+                    hiddenInput.value = quill.root.innerHTML;
+                });
+                
+                console.log('✅ Quill.js initialized for Terms & Conditions');
+            } else {
+                console.error('❌ Quill.js not loaded');
+            }
+            
+            // ============================================
+            // 🔥 SUBMIT FORM - SYNC CONTENT
+            // ============================================
+            
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    // 🔥 SYNC QUILL CONTENT TO HIDDEN INPUT
+                    if (quill) {
+                        hiddenInput.value = quill.root.innerHTML;
+                        console.log('📝 Quill content saved before submit');
+                    }
+                });
+            }
+            
+            // ============================================
+            // 🔥 DISCOUNT TYPE HANDLER
+            // ============================================
+            
+            var discountType = document.getElementById('discount_type');
+            var maxWrapper = document.getElementById('max_discount_wrapper');
+            var unitLabel = document.getElementById('discount_unit_label');
+            var valInput = document.getElementById('discount_value');
+            
+            if (discountType) {
+                function updateFields() {
+                    if (discountType.value === 'percentage') {
+                        maxWrapper?.classList.remove('hidden');
+                        unitLabel.textContent = '(%)';
+                        valInput.placeholder = 'Contoh: 20';
+                    } else {
+                        maxWrapper?.classList.add('hidden');
+                        unitLabel.textContent = '(Rp)';
+                        valInput.placeholder = 'Contoh: 100000';
                     }
                 }
+                
+                discountType.addEventListener('change', updateFields);
+                updateFields();
             }
         });
     </script>

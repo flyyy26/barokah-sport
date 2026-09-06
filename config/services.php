@@ -36,11 +36,18 @@ return [
     ],
 
     'biteship' => [
-        'api_key' => env('BITESHIP_API_KEY'),
-        'base_url' => env('BITESHIP_BASE_URL', 'https://api.biteship.com/v1'),
-        'origin' => [
-            'postal_code' => env('BITESHIP_ORIGIN_POSTAL_CODE', '46196'),
-        ],
+        'api_key' => env('BITESHIP_API_KEY', ''),
+        'origin_postal_code' => env('BITESHIP_ORIGIN_POSTAL_CODE', '46191'), // 🔥 PASTIKAN 46191
+        'origin_city' => env('BITESHIP_ORIGIN_CITY', 'Tasikmalaya'),
+        'origin_province' => env('BITESHIP_ORIGIN_PROVINCE', 'Jawa Barat'),
+        'origin_country' => env('BITESHIP_ORIGIN_COUNTRY', 'Indonesia'),
     ],
 
+    'midtrans' => [
+        'server_key' => env('MIDTRANS_SERVER_KEY'),
+        'client_key' => env('MIDTRANS_CLIENT_KEY'),
+        'is_production' => env('MIDTRANS_IS_PRODUCTION', false),
+        'sanitization' => env('MIDTRANS_SANITIZATION', true),
+        '3ds' => env('MIDTRANS_3DS', true),
+    ],
 ];

@@ -37,6 +37,8 @@ class Order extends Model
         'biteship_order_id',
         'biteship_waybill_id',
         'biteship_tracking_url',
+        'payment_method',
+        'midtrans_status',
     ];
 
     protected $casts = [

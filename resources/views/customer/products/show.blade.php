@@ -116,11 +116,38 @@
                             class="fade-in">
                         
                         <div class="magnifier-glass" id="magnifier-glass"></div>
-                        
-                        <div class="zoom-indicator">
-                            <iconify-icon icon="mdi:magnify-plus-outline" width="16"></iconify-icon>
-                            Hover untuk zoom
-                        </div>
+
+                        {{-- 🔥 FLASH SALE TIMER --}}
+                        @if($isFlashSale && $flashSaleEndDate)
+                            <div class="flash-sale-timer" id="flash-sale-timer" data-end="{{ $flashSaleEndDate }}">
+                                <span class="timer-label">
+                                    <span class="flash-icon">⚡</span>
+                                    FLASH SALE
+                                    <span class="timer-discount-badge">{{ round($flashSaleDiscountPercent) }}% OFF</span>
+                                </span>
+                                <div class="timer-group" id="timer-group">
+                                    <div class="timer-block">
+                                        <span class="timer-number" id="timer-days">00</span>
+                                        <span class="timer-label-small">Hari</span>
+                                    </div>
+                                    <span class="timer-separator">:</span>
+                                    <div class="timer-block">
+                                        <span class="timer-number" id="timer-hours">00</span>
+                                        <span class="timer-label-small">Jam</span>
+                                    </div>
+                                    <span class="timer-separator">:</span>
+                                    <div class="timer-block">
+                                        <span class="timer-number" id="timer-minutes">00</span>
+                                        <span class="timer-label-small">Menit</span>
+                                    </div>
+                                    <span class="timer-separator">:</span>
+                                    <div class="timer-block">
+                                        <span class="timer-number" id="timer-seconds">00</span>
+                                        <span class="timer-label-small">Detik</span>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
                     @else
                         <div class="placeholder">📦</div>
                     @endif
@@ -425,15 +452,6 @@
                                                 @endforeach
                                             </tbody>
                                         </table>
-                                    </div>
-
-                                    <div class="size-guide-note">
-                                        <p><strong>Tips memilih ukuran:</strong></p>
-                                        <ul>
-                                            <li>Ukur menggunakan meteran kain pada posisi yang tepat</li>
-                                            <li>Pilih ukuran yang sesuai dengan ukuran tubuh Anda</li>
-                                            <li>Jika di antara dua ukuran, pilih ukuran yang lebih besar</li>
-                                        </ul>
                                     </div>
                                 @else
                                     <p style="color: #94a3b8; font-size: 3vw;">Belum ada panduan ukuran untuk kategori ini.</p>
@@ -1697,6 +1715,45 @@
     };
 </script>
 
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const timerElement = document.getElementById('flash-sale-timer');
+        
+        if (!timerElement) return;
+        
+        const endDate = new Date(timerElement.dataset.end);
+        
+        function updateTimer() {
+            const now = new Date().getTime();
+            const distance = endDate.getTime() - now;
+            
+            if (distance < 0) {
+                // Timer expired
+                timerElement.classList.add('expired');
+                document.getElementById('timer-group').innerHTML = `
+                    <span class="timer-expired-text">⏰ Flash Sale Telah Berakhir</span>
+                `;
+                return;
+            }
+            
+            // Hitung waktu
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+            
+            // Update DOM
+            document.getElementById('timer-days').textContent = String(days).padStart(2, '0');
+            document.getElementById('timer-hours').textContent = String(hours).padStart(2, '0');
+            document.getElementById('timer-minutes').textContent = String(minutes).padStart(2, '0');
+            document.getElementById('timer-seconds').textContent = String(seconds).padStart(2, '0');
+        }
+        
+        // Update setiap detik
+        updateTimer();
+        setInterval(updateTimer, 1000);
+    });
+</script>
 
 {{-- ============================================ --}}
 {{-- JAVASCRIPT --}}
