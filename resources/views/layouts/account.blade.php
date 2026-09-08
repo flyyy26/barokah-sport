@@ -433,7 +433,7 @@
                         {{ strtoupper(substr(Auth::guard('customer')->user()->name ?? 'U', 0, 1)) }}
                     </div>
                     <div class="profile-info">
-                        <div class="name">{{ Auth::guard('customer')->user()->name ?? 'Customer' }}</div>
+                        <div class="name">{{ Auth::guard('customer')->user()->name ?? 'User' }}</div>
                         <div class="email">{{ Auth::guard('customer')->user()->email ?? '' }}</div>
                     </div>
                 </div>

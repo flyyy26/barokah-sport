@@ -155,7 +155,7 @@ class ProductVariant extends Model
         $this->stockHistories()->create([
             'product_id' => $this->product_id,
             'product_variant_id' => $this->id,
-            'user_id' => auth()->id() ?? 1,
+            'user_id' => auth()->id(),
             'old_stock' => $oldStock,
             'new_stock' => $newStock,
             'quantity_change' => $quantityChange,

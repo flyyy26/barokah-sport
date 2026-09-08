@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
+use App\Models\Order;
 use App\Services\BiteshipService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -158,7 +159,20 @@ class BiteshipController extends Controller
      */
     public function trackOrder($orderId)
     {
-        $result = $this->biteship->trackOrder($orderId);
+        $order = Order::where('biteship_order_id', $orderId)->first();
+
+        if (!$order) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Order tidak ditemukan'
+            ], 404);
+        }
+
+        $result = $this->biteship->trackOrder(
+            $order->biteship_order_id,
+            $order->tracking_number,
+            $order->biteship_tracking_url
+        );
 
         if (isset($result['error'])) {
             return response()->json([

@@ -11,7 +11,6 @@ class CustomerAddress extends Model
 
     protected $fillable = [
         'user_id',
-        'customer_id',
         'label',
         'recipient_name',
         'recipient_phone',
@@ -28,8 +27,8 @@ class CustomerAddress extends Model
         'is_default' => 'boolean',
     ];
 
-    public function customer(): BelongsTo
+    public function user(): BelongsTo
     {
-        return $this->belongsTo(Customer::class);
+        return $this->belongsTo(User::class);
     }
 }

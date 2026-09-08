@@ -673,6 +673,40 @@
 
                 </div>
 
+                {{-- POSTAL CODE --}}
+
+                <div>
+
+                    <label
+                        class="block
+                               text-sm
+                               font-medium
+                               text-gray-700"
+                    >
+                        Kode Pos
+                    </label>
+
+
+                    <input
+                        type="text"
+                        name="postal_code"
+                        value="{{ old(
+                            'postal_code',
+                            $setting?->postal_code
+                        ) }}"
+                        class="mt-2
+                               block
+                               w-full
+                               rounded-lg
+                               border-gray-300
+                               shadow-sm
+                               focus:border-blue-500
+                               focus:ring-blue-500"
+                        placeholder="Contoh: 46195"
+                    >
+
+                </div>
+
                 <div class="md:col-span-2">
                     <label class="block text-sm font-medium text-gray-700">
                         Google Maps

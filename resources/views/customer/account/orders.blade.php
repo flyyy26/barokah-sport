@@ -6,6 +6,44 @@
 
 @section('account-content')
 
+{{-- 🔥 TABS --}}
+<div class="mb-6 border-b border-gray-200">
+    <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+        <a href="{{ route('customer.orders', ['tab' => 'unpaid']) }}" 
+           class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm
+               @if($activeTab == 'unpaid') border-orange-500 text-orange-600
+               @else border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700
+               @endif">
+            Belum Bayar
+            <span class="ml-2 rounded-full bg-orange-100 px-2.5 py-0.5 text-xs text-orange-600">{{ $unpaidCount ?? 0 }}</span>
+        </a>
+        <a href="{{ route('customer.orders', ['tab' => 'processing']) }}" 
+           class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm
+               @if($activeTab == 'processing') border-indigo-500 text-indigo-600
+               @else border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700
+               @endif">
+            Sedang Dikemas
+            <span class="ml-2 rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs text-indigo-600">{{ $processingCount ?? 0 }}</span>
+        </a>
+        <a href="{{ route('customer.orders', ['tab' => 'shipped']) }}" 
+           class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm
+               @if($activeTab == 'shipped') border-blue-500 text-blue-600
+               @else border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700
+               @endif">
+            Dikirim
+            <span class="ml-2 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs text-blue-600">{{ $shippedCount ?? 0 }}</span>
+        </a>
+        <a href="{{ route('customer.orders', ['tab' => 'completed']) }}" 
+           class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm
+               @if($activeTab == 'completed') border-emerald-500 text-emerald-600
+               @else border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700
+               @endif">
+            Selesai
+            <span class="ml-2 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs text-emerald-600">{{ $completedCount ?? 0 }}</span>
+        </a>
+    </nav>
+</div>
+
 @if ($orders->isEmpty())
     <div class="text-center py-10">
         <div class="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-gray-100 text-4xl">
@@ -31,12 +69,18 @@
                                 #{{ $order->order_number }}
                             </span>
                             <span class="rounded-full px-2.5 py-0.5 text-xs font-medium
-                                @if($order->status == 'delivered' || $order->status == 'completed') bg-emerald-100 text-emerald-700
-                                @elseif($order->status == 'cancelled') bg-red-100 text-red-700
-                                @elseif($order->status == 'shipped') bg-blue-100 text-blue-700
-                                @elseif($order->status == 'processing') bg-indigo-100 text-indigo-700
+                                @if($order->shipping_status == 'delivered') bg-emerald-100 text-emerald-700
+                                @elseif($order->shipping_status == 'cancelled') bg-red-100 text-red-700
+                                @elseif($order->shipping_status == 'shipped') bg-blue-100 text-blue-700
+                                @elseif($order->shipping_status == 'processing') bg-indigo-100 text-indigo-700
                                 @else bg-yellow-100 text-yellow-700 @endif">
-                                {{ ucfirst($order->status ?? 'Pending') }}
+                                @if($order->shipping_status == 'pending') Menunggu
+                                @elseif($order->shipping_status == 'processing') Diproses
+                                @elseif($order->shipping_status == 'shipped') Dikirim
+                                @elseif($order->shipping_status == 'delivered') Selesai
+                                @elseif($order->shipping_status == 'cancelled') Dibatalkan
+                                @else {{ ucfirst($order->shipping_status ?? 'Pending') }}
+                                @endif
                             </span>
                             <span class="rounded-full px-2.5 py-0.5 text-xs font-medium
                                 @if($order->payment_status == 'paid') bg-emerald-100 text-emerald-700
@@ -93,6 +137,16 @@
                        class="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50">
                         Lihat Detail
                     </a>
+                    @if($order->shipping_status == 'shipped')
+                        <form action="{{ route('customer.orders.confirm-received', $order) }}" method="POST" class="inline">
+                            @csrf
+                            <button type="submit"
+                                    onclick="return confirm('Anda yakin sudah menerima pesanan #{{ $order->order_number }}?\n\nSetelah dikonfirmasi, status pesanan akan berubah menjadi Selesai.')"
+                                    class="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-green-700">
+                                ✅ Pesanan Diterima
+                            </button>
+                        </form>
+                    @endif
                 </div>
             </div>
         @endforeach
@@ -100,7 +154,7 @@
 
     {{-- Pagination --}}
     <div class="mt-6">
-        {{ $orders->links() }}
+        {{ $orders->appends(['tab' => $activeTab])->links() }}
     </div>
 @endif
 

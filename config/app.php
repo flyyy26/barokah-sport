@@ -123,4 +123,7 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    'orders_auto_complete_minutes' => env('ORDERS_AUTO_COMPLETE_MINUTES', 60),
+    'orders_auto_cancel_minutes' => env('ORDERS_AUTO_CANCEL_MINUTES', 1440),
+
 ];

@@ -346,6 +346,23 @@
 
                 </a>
 
+                {{-- Retur --}}
+                <a
+                    href="{{ route('admin.returns.index') }}"
+                    class="flex items-center gap-3 px-4 py-3
+                           rounded-lg text-sm font-medium
+                           text-gray-700 hover:bg-blue-50
+                           hover:text-blue-600"
+                >
+
+                    <span>🔄</span>
+
+                    <span>
+                        Retur
+                    </span>
+
+                </a>
+
 
                 {{-- Pelanggan --}}
                 <a

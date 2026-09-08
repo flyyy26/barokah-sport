@@ -28,7 +28,7 @@ class MidtransController extends Controller
      */
     public function pay(Order $order)
     {
-        if ($order->customer_id !== Auth::guard('customer')->id()) {
+        if ($order->user_id !== Auth::guard('customer')->id()) {
             abort(403);
         }
 
@@ -38,21 +38,25 @@ class MidtransController extends Controller
 
         $order->load(['items.product']);
 
-        // 🔥 GENERATE SNAP TOKEN SETIAP KALI HALAMAN DIMUAT
-        // Ini memastikan token selalu fresh
+        // 🔥 GENERATE SNAP TOKEN
         $params = $this->buildTransactionParams($order);
         
         try {
             $snapToken = Snap::getSnapToken($params);
             
-            // 🔥 SIMPAN SNAP TOKEN KE SESSION ATAU DATABASE (OPSIONAL)
-            // Untuk memastikan token yang sama bisa digunakan ulang
+            // 🔥 LOG UNTUK DEBUG
+            Log::info('Midtrans Pay:', [
+                'order_id' => $order->order_number,
+                'snap_token' => $snapToken,
+                'gross_amount' => $order->total,
+            ]);
             
             return view('customer.midtrans.pay', compact('order', 'snapToken'));
         } catch (\Exception $e) {
             Log::error('Midtrans Get Snap Token Error:', [
                 'message' => $e->getMessage(),
-                'order_id' => $order->order_number
+                'order_id' => $order->order_number,
+                'trace' => $e->getTraceAsString(),
             ]);
             
             return redirect()
@@ -63,7 +67,7 @@ class MidtransController extends Controller
 
     public function refreshToken(Order $order)
     {
-        if ($order->customer_id !== Auth::guard('customer')->id()) {
+        if ($order->user_id !== Auth::guard('customer')->id()) {
             return response()->json(['success' => false], 403);
         }
 
@@ -126,7 +130,7 @@ class MidtransController extends Controller
 
         return [
             'transaction_details' => [
-                'order_id' => $order->order_number . '-' . time(), 
+                'order_id' => $order->order_number,
                 'gross_amount' => (int) $order->total,
             ],
             'item_details' => $items,
@@ -163,93 +167,83 @@ class MidtransController extends Controller
      */
     public function notificationHandler(Request $request)
     {
+        // 🔥 LOG REQUEST
+        Log::info('Midtrans Notification Received:', [
+            'method' => $request->method(),
+            'payload' => $request->all(),
+            'raw_body' => $request->getContent(),
+        ]);
+
         try {
             $notification = new Notification();
 
             $midtransOrderId = $notification->order_id;
-
-            $orderNumber = explode('-', $midtransOrderId)[0];
             $transactionStatus = $notification->transaction_status;
             $fraudStatus = $notification->fraud_status;
             $paymentType = $notification->payment_type ?? 'unknown';
             $grossAmount = $notification->gross_amount;
 
-            Log::info('Midtrans Notification:', [
-                'order_id' => $orderNumber,
+            // 🔥 CARI ORDER - LANGSUNG PAKAI ORDER_NUMBER (TANPA SUFFIX)
+            $order = Order::where('order_number', $midtransOrderId)->first();
+
+            // 🔥 JIKA TIDAK DITEMUKAN, COBA HAPUS SUFFIX
+            if (!$order) {
+                $orderNumber = explode('-', $midtransOrderId)[0];
+                $order = Order::where('order_number', $orderNumber)->first();
+            }
+
+            Log::info('Midtrans Notification Parsed:', [
+                'midtrans_order_id' => $midtransOrderId,
+                'order_number' => $order?->order_number,
                 'transaction_status' => $transactionStatus,
-                'fraud_status' => $fraudStatus,
                 'payment_type' => $paymentType,
+                'gross_amount' => $grossAmount,
             ]);
 
-            $order = Order::where('order_number', $orderNumber)->first();
-
             if (!$order) {
-                Log::warning('Order not found:', ['order_id' => $orderNumber]);
+                Log::warning('Order not found:', ['midtrans_order_id' => $midtransOrderId]);
                 return response()->json(['status' => 'Order not found'], 404);
             }
 
-            // Jika sudah diproses, skip
-            if (in_array($order->payment_status, ['paid', 'settlement'])) {
-                Log::info('Order already processed:', ['order_id' => $orderNumber]);
-                return response()->json(['status' => 'Order already processed'], 200);
+            // 🔥 CEK GROSS AMOUNT
+            if ((int) $grossAmount != (int) $order->total) {
+                Log::warning('Gross amount mismatch:', [
+                    'midtrans' => $grossAmount,
+                    'order' => $order->total,
+                ]);
+                return response()->json(['status' => 'Amount mismatch'], 400);
             }
 
-            switch ($transactionStatus) {
-                case 'capture':
-                    if ($fraudStatus === 'accept') {
-                        $this->handlePaymentSuccess($order, $paymentType);
-                    }
-                    break;
-                    
-                case 'settlement':
-                    $this->handlePaymentSuccess($order, $paymentType);
-                    break;
-                    
-                case 'pending':
-                    $order->update([
-                        'payment_status' => 'pending',
-                        'payment_method' => $paymentType,
-                        'midtrans_status' => $transactionStatus,
-                    ]);
-                    break;
-                    
-                case 'deny':
-                    $order->update([
-                        'payment_status' => 'failed',
-                        'midtrans_status' => $transactionStatus,
-                    ]);
-                    break;
-                    
-                case 'expire':
-                    $order->update([
-                        'payment_status' => 'expired',
-                        'midtrans_status' => $transactionStatus,
-                    ]);
-                    break;
-                    
-                case 'cancel':
-                    $order->update([
-                        'payment_status' => 'canceled',
-                        'midtrans_status' => $transactionStatus,
-                    ]);
-                    break;
-                    
-                default:
-                    $order->update([
-                        'midtrans_status' => $transactionStatus,
-                    ]);
-                    break;
+            // 🔥 UPDATE ORDER
+            if ($transactionStatus == 'settlement' || ($transactionStatus == 'capture' && $fraudStatus == 'accept')) {
+                $order->update([
+                    'payment_status' => 'paid',
+                    'shipping_status' => 'processing',
+                    'payment_method' => $paymentType,
+                    'paid_at' => now(),
+                    'midtrans_status' => $transactionStatus,
+                ]);
+
+                Log::info('Payment success updated:', [
+                    'order_id' => $order->order_number,
+                    'payment_status' => $order->payment_status,
+                ]);
+            } else {
+                $order->update([
+                    'midtrans_status' => $transactionStatus,
+                    'payment_method' => $paymentType,
+                ]);
             }
 
-            return response()->json(['status' => 'OK']);
+            return response()->json(['status' => 'OK'], 200);
 
         } catch (\Exception $e) {
             Log::error('Midtrans Notification Error:', [
                 'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
-            return response()->json(['status' => 'Error'], 500);
+            return response()->json(['status' => 'Error: ' . $e->getMessage()], 500);
         }
     }
 
@@ -258,71 +252,92 @@ class MidtransController extends Controller
      */
     private function handlePaymentSuccess($order, $paymentType)
     {
+        // 🔥 UPDATE ORDER
         $order->update([
             'payment_status' => 'paid',
-            'status' => 'processing',
+            'shipping_status' => 'processing',
             'payment_method' => $paymentType,
             'paid_at' => now(),
             'midtrans_status' => 'settlement',
         ]);
 
-        // Update voucher usage
-        if ($order->discount > 0) {
-            $voucherUsage = VoucherUsage::where('order_id', $order->id)->first();
-            if ($voucherUsage && $voucherUsage->voucher) {
-                // Sudah di-increment di CheckoutController, skip
-            }
-        }
+        // 🔥 REFRESH ORDER
+        $order->refresh();
 
         Log::info('Payment successful:', [
             'order_id' => $order->order_number,
-            'payment_type' => $paymentType
+            'payment_type' => $paymentType,
+            'payment_status' => $order->payment_status,
+            'total' => $order->total,
         ]);
     }
 
-    /**
-     * 🔥 FINISH PAGE
-     */
     public function finish(Request $request)
     {
-        // 🔥 AMBIL ID DARI MIDTRANS (BER-SUFFIX WAKTU)
         $midtransOrderId = $request->query('order_id');
+        $status = $request->query('status');
+        $paymentType = $request->query('payment_type', 'unknown');
+        
+        Log::info('Midtrans Finish Page:', [
+            'order_id' => $midtransOrderId,
+            'status' => $status,
+            'payment_type' => $paymentType,
+        ]);
         
         if (!$midtransOrderId) {
             return redirect()->route('customer.home');
         }
 
-        // 🔥 AMBIL ORDER NUMBER ASLI
-        $orderNumber = explode('-', $midtransOrderId)[0];
-        $order = Order::where('order_number', $orderNumber)->first();
+        // 🔥 CARI ORDER
+        $order = Order::where('order_number', $midtransOrderId)->first();
+        
+        if (!$order) {
+            $orderNumber = explode('-', $midtransOrderId)[0];
+            $order = Order::where('order_number', $orderNumber)->first();
+        }
 
         if (!$order) {
             return redirect()->route('customer.home')->with('error', 'Order tidak ditemukan.');
         }
 
-        // 🔥 CEK APAKAH ORDER SUDAH PAID
+        // 🔥 CEK STATUS DI DATABASE
         if ($order->payment_status === 'paid') {
             return redirect()->route('customer.checkout.success', $order)
                 ->with('success', 'Pembayaran berhasil!');
         }
 
-        // 🔥 CEK STATUS TRANSAKSI DARI MIDTRANS (Gunakan ID yang ada suffix-nya!)
+        // 🔥 CEK STATUS KE MIDTRANS
         try {
-            $status = $this->checkTransactionStatus($midtransOrderId);
+            $statusResponse = $this->checkTransactionStatus($midtransOrderId);
             
-            if ($status && in_array($status['transaction_status'] ?? '', ['settlement', 'capture'])) {
-                $this->handlePaymentSuccess($order, $status['payment_type'] ?? 'unknown');
+            Log::info('Midtrans Status Check:', [
+                'order_id' => $midtransOrderId,
+                'response' => $statusResponse,
+            ]);
+            
+            $transactionStatus = $statusResponse['transaction_status'] ?? null;
+            
+            if (in_array($transactionStatus, ['settlement', 'capture'])) {
+                // 🔥 UPDATE MANUAL
+                $order->update([
+                    'payment_status' => 'paid',
+                    'shipping_status' => 'processing',
+                    'payment_method' => $statusResponse['payment_type'] ?? 'unknown',
+                    'paid_at' => now(),
+                    'midtrans_status' => $transactionStatus,
+                ]);
+                
                 return redirect()->route('customer.checkout.success', $order)
                     ->with('success', 'Pembayaran berhasil!');
             }
             
-            if ($status && in_array($status['transaction_status'] ?? '', ['pending', 'challenge'])) {
+            if ($transactionStatus === 'pending') {
                 return redirect()->route('customer.midtrans.pay', $order)
-                    ->with('info', 'Pembayaran sedang diproses. Silakan selesaikan pembayaran Anda.');
+                    ->with('info', 'Pembayaran sedang diproses.');
             }
             
         } catch (\Exception $e) {
-            Log::error('Check transaction status error:', [
+            Log::error('Check status error:', [
                 'order_id' => $midtransOrderId,
                 'error' => $e->getMessage()
             ]);
@@ -334,7 +349,7 @@ class MidtransController extends Controller
 
     public function checkStatus(Order $order)
     {
-        if ($order->customer_id !== Auth::guard('customer')->id()) {
+        if ($order->user_id !== Auth::guard('customer')->id()) {
             return response()->json(['paid' => false], 403);
         }
 

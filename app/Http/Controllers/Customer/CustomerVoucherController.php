@@ -265,7 +265,7 @@ class CustomerVoucherController extends Controller
             ];
         }
 
-        $orderCount = \App\Models\Order::where('customer_id', $customer->id)->count();
+        $orderCount = \App\Models\Order::where('user_id', $customer->id)->count();
         $wishlistCount = \App\Models\Wishlist::where('user_id', $customer->id)->count();
         
         $availableVouchers = Voucher::where('is_active', true)

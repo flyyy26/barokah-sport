@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class UserAddress extends Model
 {
@@ -16,6 +17,8 @@ class UserAddress extends Model
         'recipient_phone',
         'address',
         'city',
+        'district',
+        'subdistrict',
         'province',
         'postal_code',
         'is_default',
@@ -25,7 +28,7 @@ class UserAddress extends Model
         'is_default' => 'boolean',
     ];
 
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }

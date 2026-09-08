@@ -5,6 +5,28 @@
     <div class="ml-64 p-8">
         <div class="mx-auto max-w-5xl">
 
+            {{-- Flash Messages --}}
+            @if (session('success'))
+                <div class="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-emerald-800">
+                    <div class="flex items-center">
+                        <svg class="h-5 w-5 flex-shrink-0" fill="currentColor" viewBox="0 020 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3-8a3 3 0 11-6 0 3 3 0 016 0z" clip-rule="evenodd" />
+                        </svg>
+                        <span class="ml-2 text-sm font-medium">{{ session('success') }}</span>
+                    </div>
+                </div>
+            @endif
+            @if (session('error'))
+                <div class="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-red-800">
+                    <div class="flex items-center">
+                        <svg class="h-5 w-5 flex-shrink-0" fill="currentColor" viewBox="0 020 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 9.293a1 1 0 000 1.414l3 3 3-3a1 1 0 00-1.414-1.414L10 11.586l-2.293-2.293a1 1 0 00-1.414 0z" clip-rule="evenodd" />
+                        </svg>
+                        <span class="ml-2 text-sm font-medium">{{ session('error') }}</span>
+                    </div>
+                </div>
+            @endif
+
             {{-- Header --}}
             <div class="mb-6 flex items-center justify-between">
                 <div>
@@ -12,29 +34,168 @@
                     <h1 class="mt-1 text-2xl font-bold text-slate-900">Detail Pesanan</h1>
                     <p class="text-sm text-slate-500">#{{ $order->order_number }}</p>
                 </div>
-                <div class="flex gap-2">
-                    <a href="{{ route('admin.orders.invoice', $order) }}" target="_blank" 
-                       class="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
-                        🖨️ Invoice
+                <div class="flex flex-wrap gap-2">
+                    <a href="{{ route('admin.orders.label', $order) }}" target="_blank" 
+                    class="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                        🏷️ Print Label
+                    </a>
+                    {{-- 🔥 TOMBOL TRACKING SELALU MUNCUL --}}
+                    <a href="{{ route('admin.orders.tracking', $order) }}" 
+                    class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
+                        📦 Tracking
                     </a>
                 </div>
+                @if($order->cancellation_status === 'pending')
+                    <div class="rounded-xl border border-yellow-200 bg-yellow-50 p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-yellow-800">
+                                    ⏳ Permintaan Pembatalan
+                                </p>
+                                <p class="text-sm text-yellow-700">
+                                    {{ $order->cancellation_reason }}
+                                </p>
+                                <p class="text-xs text-yellow-600 mt-1">
+                                    Diminta: {{ $order->cancellation_requested_at->format('d M Y H:i') }}
+                                </p>
+                            </div>
+                            <div class="flex gap-2">
+                                <form action="{{ route('admin.orders.approve-cancellation', $order) }}" method="POST">
+                                    @csrf
+                                    <button type="submit"
+                                            onclick="return confirm('Setujui pembatalan pesanan #{{ $order->order_number }}?\n\nStok produk akan dikembalikan dan pesanan akan dibatalkan.')"
+                                            class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700">
+                                        ✅ Setujui
+                                    </button>
+                                </form>
+                                <form action="{{ route('admin.orders.reject-cancellation', $order) }}" method="POST">
+                                    @csrf
+                                    <button type="submit"
+                                            onclick="return confirm('Tolak permintaan pembatalan pesanan #{{ $order->order_number }}?\n\nStatus pesanan akan kembali ke: {{ $order->previous_shipping_status_label ?? 'Menunggu' }}')"
+                                            class="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700">
+                                        ❌ Tolak
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
+                @if($order->shipping_status === 'cancelled')
+                    <div class="rounded-xl border border-red-200 bg-red-50 p-4">
+                        <p class="text-sm font-medium text-red-800">❌ Pesanan Dibatalkan</p>
+                        @if($order->cancellation_reason)
+                            <p class="text-sm text-red-700 mt-1">Alasan: {{ $order->cancellation_reason }}</p>
+                        @endif
+                        <p class="text-xs text-red-600 mt-1">
+                            Dibatalkan: {{ $order->cancelled_at->format('d M Y H:i') }}
+                        </p>
+                    </div>
+                @endif
+
+                {{-- Retur Section --}}
+                @if($order->return_status === 'pending')
+                    <div class="rounded-xl border border-yellow-200 bg-yellow-50 p-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1">
+                                <p class="text-sm font-medium text-yellow-800">
+                                    ⏳ Permintaan Retur / Pengembalian
+                                </p>
+                                @if($order->return_reason)
+                                    <p class="text-sm text-yellow-700 mt-1">
+                                        <strong>Alasan:</strong> {{ $order->return_reason }}
+                                    </p>
+                                @endif
+                                <p class="text-xs text-yellow-600 mt-1">
+                                    Diminta: {{ $order->return_requested_at->format('d M Y H:i') }}
+                                </p>
+                                <p class="text-xs text-yellow-600 mt-1">
+                                    🔎 Barang belum dikembalikan ke gudang. Setelah disetujui, klik "Selesai Retur" saat barang sudah diterima.
+                                </p>
+                            </div>
+                            <div class="flex gap-2">
+                                <form action="{{ route('admin.orders.approve-return', $order) }}" method="POST">
+                                    @csrf
+                                    <button type="submit"
+                                            onclick="return confirm('Setujui permintaan retur pesanan #{{ $order->order_number }}?\n\nStok akan dikembalikan saat tombol Selesai Retur ditekan.')"
+                                            class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
+                                        ✅ Setujui
+                                    </button>
+                                </form>
+                                <form action="{{ route('admin.orders.reject-return', $order) }}" method="POST">
+                                    @csrf
+                                    <button type="submit"
+                                            onclick="return confirm('Tolak permintaan retur pesanan #{{ $order->order_number }}?')"
+                                            class="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700">
+                                        ❌ Tolak
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
+                @if($order->return_status === 'approved')
+                    <div class="rounded-xl border border-blue-200 bg-blue-50 p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-blue-800">
+                                    🔵 Retur Disetujui
+                                </p>
+                                <p class="text-xs text-blue-600 mt-1">
+                                    Disetujui: {{ $order->return_processed_at->format('d M Y H:i') }}
+                                </p>
+                                <p class="text-xs text-blue-600 mt-1">
+                                    <a href="{{ route('admin.returns.index') }}" class="text-blue-700 underline">Kelola retur di halaman retur</a> untuk mengembalikan stok barang.
+                                </p>
+                            </div>
+                            <a href="{{ route('admin.returns.show', $order) }}"
+                                class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
+                                📦 Lihat Retur
+                            </a>
+                        </div>
+                    </div>
+                @endif
+
+                @if($order->return_status === 'rejected')
+                    <div class="rounded-xl border border-red-200 bg-red-50 p-4">
+                        <p class="text-sm font-medium text-red-800">❌ Retur Ditolak</p>
+                        @if($order->return_reason)
+                            <p class="text-sm text-red-700 mt-1">Alasan: {{ $order->return_reason }}</p>
+                        @endif
+                        <p class="text-xs text-red-600 mt-1">
+                            Ditolak: {{ $order->return_processed_at->format('d M Y H:i') }}
+                        </p>
+                    </div>
+                @endif
+
+                @if($order->return_status === 'completed')
+                    <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                        <p class="text-sm font-medium text-emerald-800">✅ Retur Selesai</p>
+                        <p class="text-xs text-emerald-600 mt-1">
+                            Stok telah dikembalikan. Selesai: {{ $order->return_processed_at->format('d M Y H:i') }}
+                        </p>
+                    </div>
+                @endif
             </div>
+
+            
 
             {{-- Status Summary --}}
             <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div class="rounded-xl border border-slate-200 bg-white p-4">
                     <p class="text-xs text-slate-400">Status Pesanan</p>
-                    <p class="mt-1 text-lg font-semibold">
-                        <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium
-                            @if($order->status == 'pending') bg-yellow-100 text-yellow-800
-                            @elseif($order->status == 'processing') bg-blue-100 text-blue-800
-                            @elseif($order->status == 'shipped') bg-indigo-100 text-indigo-800
-                            @elseif($order->status == 'delivered') bg-emerald-100 text-emerald-800
-                            @elseif($order->status == 'cancelled') bg-red-100 text-red-800
-                            @else bg-gray-100 text-gray-800 @endif">
-                            {{ $order->status_label }}
-                        </span>
-                    </p>
+                        <p class="mt-1 text-lg font-semibold">
+                            <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium
+                                @if($order->shipping_status == 'pending') bg-yellow-100 text-yellow-800
+                                @elseif($order->shipping_status == 'processing') bg-blue-100 text-blue-800
+                                @elseif($order->shipping_status == 'shipped') bg-indigo-100 text-indigo-800
+                                @elseif($order->shipping_status == 'delivered') bg-emerald-100 text-emerald-800
+                                @elseif($order->shipping_status == 'cancelled') bg-red-100 text-red-800
+                                @else bg-gray-100 text-gray-800 @endif">
+                                {{ $order->shipping_status_label }}
+                            </span>
+                        </p>
                 </div>
                 <div class="rounded-xl border border-slate-200 bg-white p-4">
                     <p class="text-xs text-slate-400">Status Pembayaran</p>
@@ -60,6 +221,21 @@
                         </span>
                     </p>
                 </div>
+                @if($order->return_status)
+                    <div class="rounded-xl border border-slate-200 bg-white p-4">
+                        <p class="text-xs text-slate-400">Status Retur</p>
+                        <p class="mt-1 text-lg font-semibold">
+                            <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium
+                                @if($order->return_status == 'completed') bg-emerald-100 text-emerald-800
+                                @elseif($order->return_status == 'approved') bg-blue-100 text-blue-800
+                                @elseif($order->return_status == 'pending') bg-yellow-100 text-yellow-800
+                                @elseif($order->return_status == 'rejected') bg-red-100 text-red-800
+                                @else bg-gray-100 text-gray-800 @endif">
+                                {{ $order->return_status_label }}
+                            </span>
+                        </p>
+                    </div>
+                @endif
             </div>
 
             <div class="grid gap-6 lg:grid-cols-3">
@@ -118,21 +294,21 @@
                         </div>
                     </div>
 
-                    {{-- Customer Info --}}
+                    {{-- User Info --}}
                     <div class="rounded-2xl border border-slate-200 bg-white p-6">
-                        <h2 class="font-semibold text-slate-900">Informasi Customer</h2>
+                        <h2 class="font-semibold text-slate-900">Informasi User</h2>
                         <div class="mt-4 grid grid-cols-2 gap-4 text-sm">
                             <div>
                                 <p class="text-slate-500">Nama</p>
-                                <p class="font-medium text-slate-900">{{ $order->customer->name ?? 'Guest' }}</p>
+                                <p class="font-medium text-slate-900">{{ $order->user->name ?? 'Guest' }}</p>
                             </div>
                             <div>
                                 <p class="text-slate-500">Email</p>
-                                <p class="font-medium text-slate-900">{{ $order->customer->email ?? '-' }}</p>
+                                <p class="font-medium text-slate-900">{{ $order->user->email ?? '-' }}</p>
                             </div>
                             <div>
                                 <p class="text-slate-500">Telepon</p>
-                                <p class="font-medium text-slate-900">{{ $order->customer->phone ?? '-' }}</p>
+                                <p class="font-medium text-slate-900">{{ $order->user->phone ?? '-' }}</p>
                             </div>
                             <div>
                                 <p class="text-slate-500">Tanggal Order</p>
@@ -158,64 +334,15 @@
                         </div>
                         @if ($order->notes)
                             <div class="mt-3 border-t border-slate-100 pt-3">
-                                <p class="text-xs text-slate-400">Catatan Customer:</p>
+                                <p class="text-xs text-slate-400">Catatan User:</p>
                                 <p class="text-sm text-slate-600">{{ $order->notes }}</p>
                             </div>
                         @endif
                     </div>
 
-                    {{-- Update Status --}}
+                    {{-- Atur Pengiriman --}}
                     <div class="rounded-2xl border border-slate-200 bg-white p-6">
-                        <h2 class="font-semibold text-slate-900">Update Status</h2>
-
-                        {{-- Status Pesanan --}}
-                        <form action="{{ route('admin.orders.status', $order) }}" method="POST" class="mt-4">
-                            @csrf
-                            @method('PUT')
-                            <div>
-                                <label class="text-sm font-medium text-slate-700">Status Pesanan</label>
-                                <select name="status" class="mt-1 block w-full rounded-lg border-slate-200 text-sm focus:border-blue-500 focus:ring-blue-500">
-                                    <option value="pending" {{ $order->status == 'pending' ? 'selected' : '' }}>Menunggu</option>
-                                    <option value="processing" {{ $order->status == 'processing' ? 'selected' : '' }}>Diproses</option>
-                                    <option value="shipped" {{ $order->status == 'shipped' ? 'selected' : '' }}>Dikirim</option>
-                                    <option value="delivered" {{ $order->status == 'delivered' ? 'selected' : '' }}>Selesai</option>
-                                    <option value="cancelled" {{ $order->status == 'cancelled' ? 'selected' : '' }}>Dibatalkan</option>
-                                </select>
-                            </div>
-                            <div class="mt-3">
-                                <label class="text-sm font-medium text-slate-700">Catatan Admin</label>
-                                <textarea name="admin_notes" rows="2" class="mt-1 block w-full rounded-lg border-slate-200 text-sm focus:border-blue-500 focus:ring-blue-500">{{ $order->admin_notes }}</textarea>
-                            </div>
-                            <button type="submit" class="mt-3 w-full rounded-lg bg-blue-600 py-2 text-sm font-medium text-white hover:bg-blue-700">
-                                Update Status
-                            </button>
-                        </form>
-                    </div>
-
-                    {{-- Update Payment --}}
-                    <div class="rounded-2xl border border-slate-200 bg-white p-6">
-                        <h2 class="font-semibold text-slate-900">💳 Pembayaran</h2>
-                        <form action="{{ route('admin.orders.payment', $order) }}" method="POST" class="mt-4">
-                            @csrf
-                            @method('PUT')
-                            <select name="payment_status" class="block w-full rounded-lg border-slate-200 text-sm focus:border-blue-500 focus:ring-blue-500">
-                                <option value="unpaid" {{ $order->payment_status == 'unpaid' ? 'selected' : '' }}>Belum Bayar</option>
-                                <option value="paid" {{ $order->payment_status == 'paid' ? 'selected' : '' }}>Lunas</option>
-                                <option value="failed" {{ $order->payment_status == 'failed' ? 'selected' : '' }}>Gagal</option>
-                                <option value="refunded" {{ $order->payment_status == 'refunded' ? 'selected' : '' }}>Dikembalikan</option>
-                            </select>
-                            <button type="submit" class="mt-3 w-full rounded-lg bg-emerald-600 py-2 text-sm font-medium text-white hover:bg-emerald-700">
-                                Update Pembayaran
-                            </button>
-                        </form>
-                        @if ($order->paid_at)
-                            <p class="mt-2 text-xs text-slate-400">Dibayar: {{ $order->paid_at->format('d M Y H:i') }}</p>
-                        @endif
-                    </div>
-
-                    {{-- Update Shipping --}}
-                    <div class="rounded-2xl border border-slate-200 bg-white p-6">
-                        <h2 class="font-semibold text-slate-900">🚚 Pengiriman</h2>
+                        <h2 class="font-semibold text-slate-900">🚚 Atur Pengiriman</h2>
                         <form action="{{ route('admin.orders.shipping', $order) }}" method="POST" class="mt-4 space-y-3">
                             @csrf
                             @method('PUT')
@@ -230,21 +357,35 @@
                                        class="mt-1 block w-full rounded-lg border-slate-200 text-sm focus:border-blue-500 focus:ring-blue-500">
                             </div>
                             <div>
-                                <label class="text-sm font-medium text-slate-700">No. Resi</label>
+                                <label class="text-sm font-medium text-slate-700">No. Resi <span class="text-xs text-slate-400">(opsional)</span></label>
                                 <input type="text" name="tracking_number" value="{{ $order->tracking_number }}" 
                                        class="mt-1 block w-full rounded-lg border-slate-200 text-sm focus:border-blue-500 focus:ring-blue-500">
+                                <p class="mt-1 text-xs text-slate-400">Kosongkan jika ingin menggunakan resi otomatis dari Biteship.</p>
                             </div>
                             <div>
                                 <label class="text-sm font-medium text-slate-700">Status Pengiriman</label>
                                 <select name="shipping_status" class="mt-1 block w-full rounded-lg border-slate-200 text-sm focus:border-blue-500 focus:ring-blue-500">
-                                    <option value="pending" {{ $order->shipping_status == 'pending' ? 'selected' : '' }}>Menunggu</option>
-                                    <option value="processing" {{ $order->shipping_status == 'processing' ? 'selected' : '' }}>Diproses</option>
-                                    <option value="shipped" {{ $order->shipping_status == 'shipped' ? 'selected' : '' }}>Dikirim</option>
-                                    <option value="delivered" {{ $order->shipping_status == 'delivered' ? 'selected' : '' }}>Terkirim</option>
+                                    @php
+                                        $defaultShippingStatus = $order->shipping_status;
+                                        if ($order->payment_status === 'paid' && $order->shipping_status === 'pending') {
+                                            $defaultShippingStatus = 'processing';
+                                        }
+                                    @endphp
+                                    <option value="pending" {{ $defaultShippingStatus == 'pending' ? 'selected' : '' }}>Belum Bayar</option>
+                                    <option value="processing" {{ $defaultShippingStatus == 'processing' ? 'selected' : '' }}>Sedang Dikemas</option>
+                                    <option value="shipped" {{ $defaultShippingStatus == 'shipped' ? 'selected' : '' }}>Dikirim</option>
+                                    <option value="delivered" {{ $defaultShippingStatus == 'delivered' ? 'selected' : '' }}>Terkirim</option>
                                 </select>
+                                <p class="mt-1 text-xs text-slate-400">
+                                    @if($order->shipping_status == 'pending') Menunggu pembayaran.
+                                    @elseif($order->shipping_status == 'processing') Sedang disiapkan untuk dikirim.
+                                    @elseif($order->shipping_status == 'shipped') Paket dalam perjalanan.
+                                    @elseif($order->shipping_status == 'delivered') Paket telah diterima.
+                                    @endif
+                                </p>
                             </div>
                             <button type="submit" class="w-full rounded-lg bg-indigo-600 py-2 text-sm font-medium text-white hover:bg-indigo-700">
-                                Update Pengiriman
+                                Simpan Pengiriman
                             </button>
                         </form>
                         @if ($order->shipped_at)

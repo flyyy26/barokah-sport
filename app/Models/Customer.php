@@ -6,9 +6,11 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Customer extends Authenticatable
+class Customer extends User
 {
     use Notifiable;
+
+    protected $table = 'users';
 
     protected $fillable = [
         'name',
@@ -17,6 +19,8 @@ class Customer extends Authenticatable
         'password',
         'avatar',
         'is_active',
+        'role',
+        'address',
     ];
 
     protected $hidden = [
@@ -35,10 +39,10 @@ class Customer extends Authenticatable
 
     public function addresses(): HasMany
     {
-        return $this->hasMany(CustomerAddress::class);
+        return $this->hasMany(UserAddress::class);
     }
 
-    public function defaultAddress(): ?CustomerAddress
+    public function defaultAddress(): ?UserAddress
     {
         return $this->addresses()->where('is_default', true)->first();
     }

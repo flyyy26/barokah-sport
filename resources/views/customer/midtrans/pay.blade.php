@@ -78,13 +78,6 @@
     #midtrans-button .btn-icon {
         margin-right: 0.5rem;
     }
-    /* 🔥 STYLE UNTUK TOMBOL GANTI METODE */
-    #midtrans-button.change-method {
-        background: #f59e0b;
-    }
-    #midtrans-button.change-method:hover {
-        background: #d97706;
-    }
     .btn-back {
         display: block;
         text-align: center;
@@ -198,6 +191,10 @@
         opacity: 0.6;
         cursor: not-allowed;
     }
+    #change-method-button .btn-icon {
+        margin-right: 0.5rem;
+    }
+
     /* 🔥 PAYMENT METHODS LIST */
     .payment-methods-info {
         display: grid;
@@ -251,6 +248,33 @@
         background: #dbeafe;
         color: #1e40af;
     }
+    .status-badge.failed {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    /* 🔥 ANIMASI FADE IN */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .alert-info, .alert-error, .alert-success, .alert-warning {
+        animation: fadeIn 0.3s ease;
+    }
+
+    /* 🔥 RESPONSIVE */
+    @media (max-width: 640px) {
+        .payment-container {
+            padding: 0.5rem;
+            margin: 0.5rem auto;
+        }
+        .payment-card {
+            padding: 1rem;
+        }
+        .payment-methods-info {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
 </style>
 
 <div class="payment-container">
@@ -261,11 +285,21 @@
             <span class="order-id">Order: {{ $order->order_number }}</span>
             <br>
             <span class="status-badge {{ $order->payment_status }}">
-                {{ $order->payment_status === 'unpaid' ? 'Belum Dibayar' : ucfirst($order->payment_status) }}
+                @if($order->payment_status === 'unpaid')
+                    Belum Dibayar
+                @elseif($order->payment_status === 'paid')
+                    ✅ Lunas
+                @elseif($order->payment_status === 'pending')
+                    ⏳ Menunggu
+                @elseif($order->payment_status === 'failed')
+                    ❌ Gagal
+                @else
+                    {{ ucfirst($order->payment_status) }}
+                @endif
             </span>
         </div>
 
-        {{-- 🔥 ALERT --}}
+        {{-- 🔥 ALERT CONTAINER --}}
         <div id="alert-container">
             @if(session('info'))
             <div class="alert-info" data-session="true">
@@ -284,11 +318,12 @@
             @if($order->payment_status === 'paid')
             <div class="alert-success" data-session="true">
                 <iconify-icon icon="mdi:check-circle-outline"></iconify-icon>
-                <span>Pembayaran sudah berhasil! <a href="{{ route('customer.checkout.success', $order) }}" style="color:#16a34a;font-weight:600;">Lihat detail pesanan</a></span>
+                <span>Pembayaran sudah berhasil! <a href="{{ route('customer.checkout.success', $order) }}" style="color:#16a34a;font-weight:600;text-decoration:underline;">Lihat detail pesanan</a></span>
             </div>
             @endif
         </div>
 
+        {{-- 🔥 ORDER SUMMARY --}}
         <div class="order-summary">
             <div class="row">
                 <span>Subtotal</span>
@@ -312,15 +347,17 @@
             </div>
         </div>
 
-        {{-- 🔥 BUTTON --}}
+        {{-- 🔥 BUTTONS --}}
         <div class="action-buttons-pay">
             <button id="midtrans-button" type="button">
                 <span id="btn-text">
+                    <iconify-icon icon="mdi:credit-card-outline" class="btn-icon"></iconify-icon>
                     Bayar Sekarang
                 </span>
             </button>
             
             <button id="change-method-button" type="button" style="display: none;">
+                <iconify-icon icon="mdi:refresh" class="btn-icon"></iconify-icon>
                 Ganti Metode Pembayaran
             </button>
         </div>
@@ -331,6 +368,7 @@
     </div>
 </div>
 
+{{-- 🔥 MIDTRANS SNAP SCRIPT --}}
 <script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="{{ config('services.midtrans.client_key') }}"></script>
 
 <script>
@@ -346,35 +384,21 @@ document.addEventListener('DOMContentLoaded', function() {
     const btnChange = document.getElementById('change-method-button');
     const alertContainer = document.getElementById('alert-container');
 
+    // 🔥 JIKA SUDAH LUNAS
     if (paymentStatus === 'paid') {
         btn.disabled = true;
-        btnText.innerHTML = 'Pembayaran Selesai';
+        btnText.innerHTML = '✅ Pembayaran Selesai';
+        btnChange.style.display = 'none';
         return;
     }
 
     let isProcessing = false;
+    let checkInterval = null;
+    let checkCount = 0;
+    const maxChecks = 30;
 
-    // 🔥 FUNGSI UPDATE TAMPILAN TOMBOL
-    function updateButton(state) {
-        if (state === 'loading') {
-            btn.disabled = true;
-            btnChange.disabled = true;
-            btnText.innerHTML = '<span class="loading-spinner"></span> Menghubungkan...';
-        } else if (state === 'pending' || state === 'change') {
-            btn.disabled = false;
-            btnChange.disabled = false;
-            btnText.innerHTML = 'Lanjutkan Pembayaran';
-            btnChange.style.display = 'block'; // Tampilkan tombol ganti metode
-        } else {
-            btn.disabled = false;
-            btnChange.disabled = false;
-            btnText.innerHTML = 'Bayar Sekarang';
-            btnChange.style.display = 'none'; // Sembunyikan tombol ganti metode
-        }
-    }
-
+    // 🔥 FUNGSI SHOW ALERT
     function showAlert(message, type = 'info') {
-        // ... (Fungsi showAlert biarkan sama seperti kodemu sebelumnya) ...
         const types = {
             info: { className: 'alert-info', icon: 'mdi:information-outline' },
             error: { className: 'alert-error', icon: 'mdi:alert-circle-outline' },
@@ -382,11 +406,13 @@ document.addEventListener('DOMContentLoaded', function() {
             success: { className: 'alert-success', icon: 'mdi:check-circle-outline' }
         };
         const style = types[type] || types.info;
-        const oldAlerts = alertContainer.querySelectorAll('.alert-info, .alert-error, .alert-warning');
-        oldAlerts.forEach(el => { if (!el.dataset.session) el.remove(); });
+        
+        // Hapus alert non-session
+        const oldAlerts = alertContainer.querySelectorAll('.alert-info:not([data-session]), .alert-error:not([data-session]), .alert-success:not([data-session]), .alert-warning:not([data-session])');
+        oldAlerts.forEach(el => el.remove());
+
         const alert = document.createElement('div');
         alert.className = style.className;
-        alert.style.animation = 'fadeIn 0.3s ease';
         alert.innerHTML = `
             <iconify-icon icon="${style.icon}" style="font-size:1.2rem;flex-shrink:0;"></iconify-icon>
             <span>${message}</span>
@@ -394,64 +420,76 @@ document.addEventListener('DOMContentLoaded', function() {
         alertContainer.prepend(alert);
     }
 
+    // 🔥 FUNGSI UPDATE TAMPILAN TOMBOL
+    function updateButton(state) {
+        if (state === 'loading') {
+            btn.disabled = true;
+            btnChange.disabled = true;
+            btnText.innerHTML = '<span class="loading-spinner"></span> Menghubungkan...';
+        } else if (state === 'pending') {
+            btn.disabled = false;
+            btnChange.disabled = false;
+            btnText.innerHTML = '<iconify-icon icon="mdi:arrow-right" class="btn-icon"></iconify-icon> Lanjutkan Pembayaran';
+            btnChange.style.display = 'block';
+        } else {
+            btn.disabled = false;
+            btnChange.disabled = false;
+            btnText.innerHTML = '<iconify-icon icon="mdi:credit-card-outline" class="btn-icon"></iconify-icon> Bayar Sekarang';
+            btnChange.style.display = 'none';
+        }
+    }
+
+    // 🔥 CEK APAKAH PERNAH BUKA POPUP
     const hasOpenedPopup = localStorage.getItem('midtrans_popup_opened_' + orderId) === 'true';
 
     if (hasOpenedPopup) {
         updateButton('pending');
-        showAlert('Anda memiliki sesi pembayaran yang tertunda. Lanjutkan atau ganti metode.', 'warning');
+        showAlert('Anda memiliki sesi pembayaran yang tertunda. Klik "Lanjutkan Pembayaran" atau "Ganti Metode".', 'warning');
     } else {
         showAlert('Pilih metode pembayaran di popup Midtrans.', 'info');
     }
 
     // 🔥 FUNGSI MEMBUKA POPUP SNAP
     function openSnapPopup() {
+        if (typeof window.snap === 'undefined') {
+            showAlert('Midtrans Snap tidak terload. Coba refresh halaman.', 'error');
+            isProcessing = false;
+            updateButton('pending');
+            return;
+        }
+
         window.snap.pay(currentSnapToken, {
             onSuccess: function(result) {
                 localStorage.removeItem('midtrans_popup_opened_' + orderId);
-                window.location.href = '{{ route("customer.midtrans.finish") }}?order_id=' + orderId;
+                showAlert('Pembayaran berhasil! Mengalihkan...', 'success');
+                window.location.href = '{{ route("customer.midtrans.finish") }}?order_id=' + orderId + '&status=success';
             },
             onPending: function(result) {
                 isProcessing = false;
                 localStorage.setItem('midtrans_popup_opened_' + orderId, 'true');
                 updateButton('pending');
-                showAlert('Pembayaran pending. Lanjutkan atau ganti metode pembayaran lain.', 'warning');
+                showAlert('Pembayaran pending. Silakan selesaikan atau ganti metode pembayaran.', 'warning');
             },
             onError: function(result) {
                 isProcessing = false;
                 localStorage.setItem('midtrans_popup_opened_' + orderId, 'true');
                 updateButton('pending');
-                showAlert('Pembayaran gagal. Silakan coba lagi atau ganti metode.', 'error');
+                showAlert('Pembayaran gagal: ' + (result.status_message || 'Silakan coba lagi.'), 'error');
             },
             onClose: function() {
                 isProcessing = false;
                 localStorage.setItem('midtrans_popup_opened_' + orderId, 'true');
                 updateButton('pending');
-                showAlert('Popup ditutup. Klik "Lanjutkan Pembayaran" atau "Ganti Metode" untuk memproses ulang.', 'warning');
+                showAlert('Popup ditutup. Klik "Lanjutkan Pembayaran" untuk melanjutkan.', 'warning');
             }
         });
     }
 
-    // 🔥 TOMBOL 1: LANJUTKAN / BAYAR SEKARANG (Pakai token saat ini)
-    btn.addEventListener('click', function() {
-        if (isProcessing) return;
-        isProcessing = true;
-        updateButton('loading');
-        openSnapPopup();
-    });
-
-    // 🔥 TOMBOL 2: GANTI METODE (Minta token baru ke server)
-    btnChange.addEventListener('click', async function() {
-        if (isProcessing) return;
-        isProcessing = true;
-        updateButton('loading');
-
+    // 🔥 REFRESH TOKEN
+    async function refreshSnapToken() {
         try {
-            // Panggil API Refresh Token
-            // PASTIKAN ROUTE INI SESUAI DENGAN YANG ADA DI web.php KAMU
-            const url = `/customer/midtrans/${orderId}/refresh-token`; 
-            
-            const response = await fetch(url, {
-                method: 'POST',
+            const response = await fetch('{{ route("customer.midtrans.refresh-token", $order) }}', {
+                method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
@@ -464,24 +502,54 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data.success) {
                 currentSnapToken = data.snap_token;
                 localStorage.removeItem('midtrans_popup_opened_' + orderId);
-                showAlert('Silakan pilih metode pembayaran yang baru di popup.', 'info');
-                openSnapPopup();
+                showAlert('Token berhasil diperbarui. Silakan pilih metode pembayaran.', 'success');
+                return true;
             } else {
-                showAlert('Gagal memuat token baru: ' + (data.message || 'Error server'), 'error');
-                updateButton('pending');
-                isProcessing = false;
+                showAlert('Gagal memperbarui token: ' + (data.message || 'Error server'), 'error');
+                return false;
             }
         } catch (error) {
             showAlert('Terjadi kesalahan jaringan. Coba lagi.', 'error');
-            updateButton('pending');
+            return false;
+        }
+    }
+
+    // 🔥 TOMBOL 1: BAYAR / LANJUTKAN
+    btn.addEventListener('click', async function() {
+        if (isProcessing) return;
+        isProcessing = true;
+        updateButton('loading');
+
+        // 🔥 CEK APAKAH TOKEN MASIH VALID
+        try {
+            const checkResponse = await fetch('{{ route("customer.midtrans.check-status", $order) }}');
+            const checkData = await checkResponse.json();
+            
+            if (checkData.paid) {
+                window.location.href = '{{ route("customer.checkout.success", $order) }}';
+                return;
+            }
+        } catch(e) {}
+
+        openSnapPopup();
+    });
+
+    // 🔥 TOMBOL 2: GANTI METODE
+    btnChange.addEventListener('click', async function() {
+        if (isProcessing) return;
+        isProcessing = true;
+        updateButton('loading');
+
+        const success = await refreshSnapToken();
+        if (success) {
+            openSnapPopup();
+        } else {
             isProcessing = false;
+            updateButton('pending');
         }
     });
 
     // 🔥 CEK STATUS ORDER PERIODIK
-    let checkCount = 0;
-    const maxChecks = 30;
-
     function checkOrderStatus() {
         if (checkCount >= maxChecks) {
             clearInterval(checkInterval);
@@ -495,14 +563,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (data.paid) {
                     clearInterval(checkInterval);
                     localStorage.removeItem('midtrans_popup_opened_' + orderId);
-                    localStorage.removeItem('midtrans_last_method_' + orderId);
-                    window.location.href = '{{ route("customer.checkout.success", $order) }}';
+                    showAlert('Pembayaran berhasil! Mengalihkan...', 'success');
+                    setTimeout(() => {
+                        window.location.href = '{{ route("customer.checkout.success", $order) }}';
+                    }, 1500);
                 }
             })
             .catch(() => {});
     }
 
-    let checkInterval = setInterval(checkOrderStatus, 10000);
+    checkInterval = setInterval(checkOrderStatus, 5000);
 
     // 🔥 CLEANUP
     window.addEventListener('beforeunload', function() {
@@ -511,8 +581,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // 🔥 LOG
     console.log('🔍 Midtrans payment page loaded');
     console.log('📦 Order ID:', orderId);
+    console.log('🔑 Snap Token:', currentSnapToken ? currentSnapToken.substring(0, 20) + '...' : 'null');
+    console.log('📊 Payment Status:', paymentStatus);
 });
 </script>
 @endsection

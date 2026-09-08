@@ -21,7 +21,7 @@
             </div>
             <div class="flex flex-wrap py-2">
                 <span class="w-24 text-sm text-gray-500">Role</span>
-                <span class="text-sm text-gray-900 font-medium">{{ ucfirst(Auth::guard('customer')->user()->role ?? 'Customer') }}</span>
+                <span class="text-sm text-gray-900 font-medium">{{ ucfirst(Auth::guard('customer')->user()->role ?? 'User') }}</span>
             </div>
         </div>
     </div>

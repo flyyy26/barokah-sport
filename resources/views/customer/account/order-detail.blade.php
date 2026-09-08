@@ -10,12 +10,12 @@
     {{-- Status --}}
     <div class="flex flex-wrap items-center gap-4">
         <span class="rounded-full px-3 py-1 text-sm font-medium
-            @if($order->status == 'delivered' || $order->status == 'completed') bg-emerald-100 text-emerald-700
-            @elseif($order->status == 'cancelled') bg-red-100 text-red-700
-            @elseif($order->status == 'shipped') bg-blue-100 text-blue-700
-            @elseif($order->status == 'processing') bg-indigo-100 text-indigo-700
+            @if($order->shipping_status == 'delivered') bg-emerald-100 text-emerald-700
+            @elseif($order->shipping_status == 'cancelled') bg-red-100 text-red-700
+            @elseif($order->shipping_status == 'shipped') bg-blue-100 text-blue-700
+            @elseif($order->shipping_status == 'processing') bg-indigo-100 text-indigo-700
             @else bg-yellow-100 text-yellow-700 @endif">
-            {{ ucfirst($order->status ?? 'Pending') }}
+            {{ $order->shipping_status_label }}
         </span>
         <span class="rounded-full px-3 py-1 text-sm font-medium
             @if($order->payment_status == 'paid') bg-emerald-100 text-emerald-700
@@ -24,6 +24,71 @@
             {{ $order->payment_status == 'paid' ? '✅ Lunas' : '⏳ Belum Bayar' }}
         </span>
     </div>
+
+    @if($order->biteship_order_id)
+        <a href="{{ route('customer.orders.tracking', $order) }}" 
+        class="rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-700">
+            <iconify-icon icon="mdi:truck-fast-outline"></iconify-icon>
+            Lacak Pengiriman
+        </a>
+    @endif
+
+    @if(in_array($order->shipping_status, ['pending', 'processing']) && $order->cancellation_status !== 'pending')
+        <button onclick="showCancelModal()" 
+                class="rounded-lg border border-red-600 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 transition">
+            <iconify-icon icon="mdi:close-circle-outline" class="mr-1"></iconify-icon>
+            Batalkan Pesanan
+        </button>
+    @endif
+
+    @if($order->cancellation_status === 'pending')
+        <span class="inline-flex items-center rounded-full bg-yellow-100 px-3 py-1 text-sm font-medium text-yellow-800">
+            ⏳ Menunggu Persetujuan Admin
+        </span>
+    @endif
+
+    @if($order->shipping_status === 'cancelled')
+        <span class="inline-flex items-center rounded-full bg-red-100 px-3 py-1 text-sm font-medium text-red-800">
+            ❌ Dibatalkan
+        </span>
+        @if($order->cancellation_reason)
+            <p class="mt-2 text-sm text-gray-500">
+                <strong>Alasan:</strong> {{ $order->cancellation_reason }}
+            </p>
+        @endif
+    @endif
+
+    @if($order->return_status === 'pending')
+        <span class="inline-flex items-center rounded-full bg-yellow-100 px-3 py-1 text-sm font-medium text-yellow-800">
+            ⏳ Retur Menunggu Persetujuan
+        </span>
+    @elseif($order->return_status === 'approved')
+        <span class="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800">
+            🔵 Retur Disetujui
+        </span>
+        @if($order->return_reason)
+            <p class="mt-2 text-sm text-gray-500">
+                <strong>Alasan Retur:</strong> {{ $order->return_reason }}
+            </p>
+        @endif
+    @elseif($order->return_status === 'rejected')
+        <span class="inline-flex items-center rounded-full bg-red-100 px-3 py-1 text-sm font-medium text-red-800">
+            ❌ Retur Ditolak
+        </span>
+    @elseif($order->return_status === 'completed')
+        <span class="inline-flex items-center rounded-full bg-emerald-100 px-3 py-1 text-sm font-medium text-emerald-800">
+            ✅ Retur Selesai
+        </span>
+    @endif
+
+    {{-- Retur Button --}}
+    @if($order->can_request_return)
+        <button onclick="showReturnModal()"
+                class="rounded-lg border border-blue-600 px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 transition">
+            <iconify-icon icon="mdi:package-variant-closed" class="mr-1"></iconify-icon>
+            Retur / Pengembalian
+        </button>
+    @endif
 
     {{-- Items --}}
     <div>
@@ -172,5 +237,107 @@
         </a>
     </div>
 </div>
+
+<div id="cancelModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50">
+    <div class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+        <h3 class="text-lg font-semibold text-gray-900">Batalkan Pesanan</h3>
+        <p class="mt-1 text-sm text-gray-500">
+            Anda yakin ingin membatalkan pesanan #{{ $order->order_number }}?
+        </p>
+        
+        <form action="{{ route('customer.orders.request-cancel', $order) }}" method="POST" class="mt-4">
+            @csrf
+            <div>
+                <label class="text-sm font-medium text-gray-700">Alasan Pembatalan</label>
+                <textarea name="reason" rows="3" required
+                          class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 text-sm"
+                          placeholder="Tuliskan alasan pembatalan..."></textarea>
+                <p class="mt-1 text-xs text-gray-400">Minimal 10 karakter</p>
+            </div>
+            
+            <div class="mt-4 flex gap-3">
+                <button type="button" onclick="closeCancelModal()"
+                        class="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    Batal
+                </button>
+                <button type="submit"
+                        class="flex-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700">
+                    Ya, Batalkan
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{-- Retur Modal --}}
+<div id="returnModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50">
+    <div class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+        <h3 class="text-lg font-semibold text-gray-900">Retur / Pengembalian</h3>
+        <p class="mt-1 text-sm text-gray-500">
+            Anda yakin ingin mengembalikan pesanan #{{ $order->order_number }}?
+        </p>
+        <p class="mt-2 text-xs text-gray-400">
+            Barang yang dikirimkan akan dicek oleh admin. Stok akan dikembalikan setelah retur disetujui.
+        </p>
+
+        <form action="{{ route('customer.orders.request-return', $order) }}" method="POST" class="mt-4">
+            @csrf
+            <div>
+                <label class="text-sm font-medium text-gray-700">Alasan Retur</label>
+                <textarea name="reason" rows="3" required
+                        class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+                        placeholder="Tuliskan alasan retur..."></textarea>
+                <p class="mt-1 text-xs text-gray-400">Minimal 10 karakter</p>
+            </div>
+
+            <div class="mt-4 flex gap-3">
+                <button type="button" onclick="closeReturnModal()"
+                        class="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    Batal
+                </button>
+                <button type="submit"
+                        class="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
+                    Kirim Retur
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function showCancelModal() {
+        document.getElementById('cancelModal').classList.remove('hidden');
+        document.getElementById('cancelModal').classList.add('flex');
+    }
+
+    function closeCancelModal() {
+        document.getElementById('cancelModal').classList.add('hidden');
+        document.getElementById('cancelModal').classList.remove('flex');
+    }
+
+    // Click outside to close
+    document.getElementById('cancelModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeCancelModal();
+        }
+    });
+
+    // Retur Modal
+    function showReturnModal() {
+        document.getElementById('returnModal').classList.remove('hidden');
+        document.getElementById('returnModal').classList.add('flex');
+    }
+
+    function closeReturnModal() {
+        document.getElementById('returnModal').classList.add('hidden');
+        document.getElementById('returnModal').classList.remove('flex');
+    }
+
+    document.getElementById('returnModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeReturnModal();
+        }
+    });
+</script>
 
 @endsection

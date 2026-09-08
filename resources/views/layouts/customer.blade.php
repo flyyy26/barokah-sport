@@ -11,7 +11,7 @@
         $userRole = Auth::guard('customer')->user()->role ?? Auth::user()->role ?? 'customer';
     @endphp
 
-    <!-- Customer Login Status -->
+    <!-- User Login Status -->
     @if($isLoggedIn)
         <meta name="customer-logged-in" content="true">
         <meta name="user-id" content="{{ $userId }}">
@@ -24,7 +24,7 @@
     <title>@yield('title', config('app.name'))</title>
     <link rel="icon" src="{{ $setting?->favicon ? Storage::url($setting->favicon) : asset('images/favicon.png') }}" type="image/png">
     <link rel="shortcut icon" href="{{ $setting?->favicon ? Storage::url($setting->favicon) : asset('images/favicon.png') }}" type="image/x-icon">
-    
+
     {{-- CSS --}}
     <link rel="stylesheet" href="{{ asset('css/style.css') }}">
     <link rel="stylesheet" href="{{ asset('css/navbar.css') }}">
@@ -196,6 +196,18 @@
 
         .popup-voucher-item.not-applicable {
             background: #f8fafc;
+        }
+
+        /* 🔥 VOUCHER TERKUNCI (gratis ongkir yang nominal belum cukup) */
+        .popup-voucher-item.locked {
+            border-color: #fde68a;
+            border-left-color: #f59e0b;
+            background: #fffbeb;
+        }
+
+        .popup-voucher-item.locked .item-name,
+        .popup-voucher-item.locked .item-discount {
+            color: #92400e;
         }
 
         .popup-voucher-item .item-content {
@@ -396,7 +408,7 @@
             }
         }
     </style>
-    
+
     {{-- Meta Description --}}
     @yield('meta_description')
 </head>
@@ -508,7 +520,7 @@
     {{-- ============================================
     VOUCHER POPUP (Right Side)
     ============================================ --}}
-    <div  class="popup-slide" id="voucher-popup">
+    <div class="popup-slide" id="voucher-popup">
         <div class="popup_slide_overlay"></div>
         <div class="popup-slide-box">
             <div class="popup-header">
@@ -523,9 +535,9 @@
             <div class="popup-body">
                 {{-- Input Kode Voucher --}}
                 <div class="popup-voucher-input-group">
-                    <input type="text" 
-                        id="popup-voucher-input" 
-                        placeholder="Masukkan kode promo..." 
+                    <input type="text"
+                        id="popup-voucher-input"
+                        placeholder="Masukkan kode promo..."
                         class="popup-voucher-input"
                         maxlength="50">
                     <button type="button" class="popup-btn-apply" id="btn-apply-manual-voucher">
@@ -536,7 +548,7 @@
                 {{-- Daftar Voucher Tersedia --}}
                 <div class="popup-voucher-list" id="popup-voucher-list">
                     <p class="list-title">Voucher tersedia untuk kamu:</p>
-                    {{-- Will be populated by JavaScript --}}
+                    {{-- 🔥 KONTEN VOUCHER DI-LOAD VIA AJAX 🔥 --}}
                     <div id="popup-voucher-items">
                         {{-- Voucher items loaded via AJAX --}}
                     </div>
@@ -559,21 +571,21 @@
         function goToCheckout() {
             // 🔥 CEK APAKAH ADA ITEM DI CART
             const cartCount = parseInt(document.getElementById('cart-count')?.textContent || 0);
-            
+
             console.log('🛒 goToCheckout called, cart count:', cartCount);
-            
+
             if (cartCount === 0) {
                 showToast('Keranjang kosong. Tambahkan produk terlebih dahulu.', 'warning');
                 return;
             }
-            
+
             // 🔥 TUTUP POPUP
             const popup = document.getElementById('cart-popup');
             if (popup) {
                 popup.classList.remove('active');
                 document.body.classList.remove('popup-open');
             }
-            
+
             // 🔥 REDIRECT KE CHECKOUT
             const checkoutUrl = window.customerRoutes.checkout || '{{ route("customer.checkout.index") }}';
             console.log('🛒 Redirecting to checkout:', checkoutUrl);
@@ -607,14 +619,14 @@
             document.getElementById('login-popup-email').value = '';
             document.getElementById('login-popup-password').value = '';
             document.getElementById('login-popup-remember').checked = false;
-            
+
             // Reset form register
             document.getElementById('register-popup-name').value = '';
             document.getElementById('register-popup-email').value = '';
             document.getElementById('register-popup-password').value = '';
             document.getElementById('register-popup-password-confirm').value = '';
             document.getElementById('register-popup-terms').checked = false;
-            
+
             const loginBtn = document.getElementById('login-popup-btn');
             loginBtn.disabled = false;
             loginBtn.querySelector('.spinner').style.display = 'none';
@@ -657,15 +669,15 @@
             document.getElementById('login-popup-register-form').style.display = 'none';
             document.getElementById('login-popup-error').style.display = 'none';
             document.getElementById('register-popup-error').style.display = 'none';
-            
+
             // Tampilkan state sukses
             const successDiv = document.getElementById('login-popup-success');
             successDiv.style.display = 'block';
-            
+
             // Set title dan message
             const titleEl = document.getElementById('login-popup-success-title');
             const msgEl = document.getElementById('login-popup-success-message');
-            
+
             if (message === 'login') {
                 titleEl.textContent = 'Login Berhasil!';
                 msgEl.textContent = 'Selamat datang, ' + (username || '') + '!';
@@ -673,13 +685,13 @@
                 titleEl.textContent = 'Registrasi Berhasil!';
                 msgEl.textContent = 'Selamat datang, ' + (username || '') + '!';
             }
-            
+
             // 🔥 LOAD ULANG WISHLIST STATUS UNTUK SEMUA PRODUK
             loadWishlistStatus();
-            
+
             // 🔥 LOAD ULANG CART COUNT
             loadCartCount();
-            
+
             // Auto close setelah 1.5 detik
             setTimeout(function() {
                 closeLoginPopup();
@@ -735,7 +747,7 @@
                     if (metaToken) {
                         metaToken.content = data.csrf_token || metaToken.content;
                     }
-                    
+
                     if (typeof $.ajaxSetup === 'function') {
                         $.ajaxSetup({
                             headers: {
@@ -808,14 +820,14 @@
             document.getElementById('login-popup-login-form').style.display = 'none';
             document.getElementById('login-popup-register-form').style.display = 'block';
             document.getElementById('register-popup-error').style.display = 'none';
-            
+
             // Reset form register
             document.getElementById('register-popup-name').value = '';
             document.getElementById('register-popup-email').value = '';
             document.getElementById('register-popup-password').value = '';
             document.getElementById('register-popup-password-confirm').value = '';
             document.getElementById('register-popup-terms').checked = false;
-            
+
             const btn = document.getElementById('register-popup-btn');
             btn.disabled = false;
             btn.querySelector('.spinner').style.display = 'none';
@@ -831,12 +843,12 @@
             document.getElementById('login-popup-register-form').style.display = 'none';
             document.getElementById('login-popup-login-form').style.display = 'block';
             document.getElementById('login-popup-error').style.display = 'none';
-            
+
             // Reset form login
             document.getElementById('login-popup-email').value = '';
             document.getElementById('login-popup-password').value = '';
             document.getElementById('login-popup-remember').checked = false;
-            
+
             const btn = document.getElementById('login-popup-btn');
             btn.disabled = false;
             btn.querySelector('.spinner').style.display = 'none';
@@ -855,7 +867,7 @@
         function togglePasswordVisibility(inputId, button) {
             const input = document.getElementById(inputId);
             if (!input) return;
-            
+
             const icon = button.querySelector('iconify-icon');
             if (input.type === 'password') {
                 input.type = 'text';
@@ -874,23 +886,23 @@
             let strength = 0;
             let label = '';
             let className = '';
-            
+
             // Length check
             if (password.length >= 8) strength += 1;
             if (password.length >= 12) strength += 1;
-            
+
             // Contains lowercase
             if (/[a-z]/.test(password)) strength += 1;
-            
+
             // Contains uppercase
             if (/[A-Z]/.test(password)) strength += 1;
-            
+
             // Contains number
             if (/\d/.test(password)) strength += 1;
-            
+
             // Contains special character
             if (/[^a-zA-Z0-9]/.test(password)) strength += 1;
-            
+
             // Determine strength
             if (strength <= 2) {
                 label = 'Lemah';
@@ -902,35 +914,35 @@
                 label = 'Kuat';
                 className = 'strong';
             }
-            
+
             return { strength, label, className };
         }
 
         function updatePasswordStrength() {
             const password = document.getElementById('register-popup-password');
             const strengthDiv = document.getElementById('register-password-strength');
-            
+
             if (!password || !strengthDiv) return;
-            
+
             const value = password.value;
-            
+
             if (value.length === 0) {
                 strengthDiv.innerHTML = '';
                 return;
             }
-            
+
             const result = checkPasswordStrength(value);
-            
+
             // Create strength bars
             const maxBars = 5;
             const activeBars = Math.min(result.strength, maxBars);
-            
+
             let barsHtml = '';
             for (let i = 0; i < maxBars; i++) {
                 const isActive = i < activeBars;
                 barsHtml += `<span class="${isActive ? 'active ' + result.className : ''}"></span>`;
             }
-            
+
             strengthDiv.innerHTML = `
                 <div class="strength-bar">${barsHtml}</div>
                 <div class="strength-text">Kekuatan: <strong>${result.label}</strong></div>
@@ -941,17 +953,17 @@
             const password = document.getElementById('register-popup-password');
             const confirm = document.getElementById('register-popup-password-confirm');
             const matchDiv = document.getElementById('register-password-match');
-            
+
             if (!password || !confirm || !matchDiv) return;
-            
+
             const passVal = password.value;
             const confirmVal = confirm.value;
-            
+
             if (confirmVal.length === 0) {
                 matchDiv.innerHTML = '';
                 return;
             }
-            
+
             if (passVal === confirmVal) {
                 matchDiv.innerHTML = '✓ Password cocok';
                 matchDiv.className = 'password-match match-success';
@@ -974,7 +986,7 @@
                     validatePasswordMatch();
                 });
             }
-            
+
             // Password match
             const confirmInput = document.getElementById('register-popup-password-confirm');
             if (confirmInput) {
@@ -990,7 +1002,7 @@
             // Untuk halaman register (customer.auth.register)
             const regPassword = document.getElementById('password');
             const regConfirm = document.getElementById('password_confirmation');
-            
+
             if (regPassword && regConfirm) {
                 // Toggle password untuk halaman register
                 const toggleBtn = document.querySelector('.toggle-password-btn');
@@ -1258,7 +1270,7 @@
                 void overlay.offsetWidth;
                 overlay.classList.add('active');
                 document.body.style.overflow = 'hidden';
-                
+
                 // 🔥 FOCUS INPUT
                 setTimeout(function() {
                     const input = document.getElementById('search-popup-input');
@@ -1290,17 +1302,17 @@
                 searchForm.addEventListener('submit', function(e) {
                     const input = document.getElementById('search-popup-input');
                     const searchValue = input ? input.value.trim() : '';
-                    
+
                     if (!searchValue || searchValue === '') {
                         e.preventDefault();
                         // Tampilkan notifikasi jika search kosong
                         showToast('Silakan masukkan kata kunci pencarian', 'warning');
                         return;
                     }
-                    
+
                     // 🔥 TUTUP POPUP SEBELUM SUBMIT
                     closeSearchPopup();
-                    
+
                     // 🔥 TAMBAHKAN DELAY AGAR POPUP TUTUP DULU
                     setTimeout(function() {
                         searchForm.submit();
@@ -1368,7 +1380,7 @@
                     font-weight: 500;
                 `;
                 document.body.appendChild(toast);
-                
+
                 // Tambahkan style animasi jika belum ada
                 if (!document.getElementById('toast-animations')) {
                     const style = document.createElement('style');
@@ -1386,7 +1398,7 @@
                     document.head.appendChild(style);
                 }
             }
-            
+
             // Set warna berdasarkan type
             const colors = {
                 success: '#10b981',
@@ -1399,7 +1411,7 @@
             toast.textContent = message;
             toast.style.display = 'block';
             toast.style.animation = 'slideUp 0.3s ease forwards';
-            
+
             // Hapus setelah 3 detik
             clearTimeout(toast._timeout);
             toast._timeout = setTimeout(function() {
@@ -1452,14 +1464,14 @@
         // Open voucher popup
         function openVoucherPopup() {
             var popup = document.getElementById('voucher-popup');
-            
+
             if (popup) {
                 popup.classList.add('active');
                 document.body.classList.add('popup-open');
-                
+
                 // Refresh voucher list
                 refreshVoucherList();
-                
+
                 // Focus input after animation
                 setTimeout(function() {
                     var input = document.getElementById('popup-voucher-input');
@@ -1471,7 +1483,7 @@
         // Close voucher popup
         function closeVoucherPopup() {
             var popup = document.getElementById('voucher-popup');
-            
+
             if (popup) {
                 popup.classList.remove('active');
                 document.body.classList.remove('popup-open');
@@ -1482,21 +1494,23 @@
         function refreshVoucherList() {
             var container = document.getElementById('popup-voucher-items');
             if (!container) return;
-            
+
+            // Ambil nilai ongkir saat ini
+            var shippingCost = document.getElementById('shipping_cost')?.value || 0;
             container.innerHTML = '<p style="text-align:center;padding:1vw 0;color:#94a3b8;">Memuat voucher...</p>';
-            
-            fetch('{{ route("customer.checkout.vouchers-ajax") }}', {
+
+            fetch('{{ route("customer.checkout.vouchers-ajax") }}?shipping_cost=' + shippingCost, {
                 method: 'GET',
                 headers: {
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest'
                 }
             })
-            .then(function(response) { 
+            .then(function(response) {
                 if (!response.ok) {
                     throw new Error('Network response was not ok');
                 }
-                return response.json(); 
+                return response.json();
             })
             .then(function(data) {
                 if (data.success && data.vouchers && data.vouchers.length > 0) {
@@ -1504,49 +1518,44 @@
                     data.vouchers.forEach(function(voucher) {
                         var isApplicable = voucher.is_applicable;
                         var discountText = '';
-                        
-                        // 🔥 TAMPILKAN JENIS DISKON
+                        var isShippingVoucher = (voucher.discount_target === 'shipping' || voucher.is_free_shipping);
+
                         if (voucher.discount_target === 'shipping') {
                             if (voucher.is_free_shipping) {
                                 discountText = 'Gratis Ongkir';
                             } else {
-                                discountText = voucher.discount_type === 'fixed' 
+                                discountText = voucher.discount_type === 'fixed'
                                     ? 'Rp ' + formatNumber(voucher.discount_value) + ' (Ongkir)'
                                     : voucher.discount_value + '% (Ongkir)' + (voucher.max_discount_amount ? ' (Maks. Rp ' + formatNumber(voucher.max_discount_amount) + ')' : '');
                             }
                         } else {
-                             if (voucher.discount_type === 'fixed') {
-                                // Nominal Tetap
+                            if (voucher.discount_type === 'fixed') {
                                 discountText = 'Diskon s/d Rp ' + formatNumber(voucher.discount_value);
-                                maxDiscountText = '';
                             } else {
-                                // Persentase
-                                var percentText = voucher.discount_value + '%';
                                 if (voucher.max_discount_amount && voucher.max_discount_amount > 0) {
-                                    // 🔥 TAMPILKAN MAKSIMAL POTONGAN SAJA
-                                    maxDiscountText = formatNumber(voucher.max_discount_amount);
                                     discountText = 'Diskon s/d Rp ' + formatNumber(voucher.max_discount_amount);
                                 } else {
-                                    discountText = percentText;
-                                    maxDiscountText = '';
+                                    discountText = voucher.discount_value + '%';
                                 }
                             }
                         }
-                        
-                        var badge = '';
-                        
+
+                        // 🔥 TAMBAHKAN DATA ATTRIBUTE UNTUK SHIPPING VOUCHER
                         html += `
-                            <div class="popup-voucher-item ${isApplicable ? 'applicable' : 'not-applicable'}">
+                            <div class="popup-voucher-item ${isApplicable ? 'applicable' : 'not-applicable'}"
+                                data-voucher-code="${voucher.code}"
+                                data-is-shipping="${isShippingVoucher}"
+                                data-applicable="${isApplicable}">
                                 <div class="item-content">
                                     <div class="item-info">
-                                        <span class="item-name">${voucher.name} ${badge}</span>
+                                        <span class="item-name">${voucher.name}</span>
                                         <div class="voucher-card-meta">
                                             <span class="item-min">Min. belanja Rp ${formatNumber(voucher.min_transaction_amount)}, ${discountText}</span>
                                         </div>
                                     </div>
-                                    ${isApplicable ? 
+                                    ${isApplicable ?
                                         `<button type="button" data-code="${voucher.code}" class="btn-use btn-apply-item">Pakai</button>` :
-                                        ''
+                                        `<span class="status-unavailable">Tidak berlaku</span>`
                                     }
                                 </div>
                                 <div class="popup-voucher-footer">
@@ -1579,28 +1588,73 @@
 
         // 🔥 CEK APAKAH VOUCHER ADALAH VOUCHER ONGKIR
         function isShippingVoucherCode(voucherCode) {
-            var isShipping = false;
-            var voucherItems = document.querySelectorAll('.popup-voucher-item');
-            voucherItems.forEach(function(item) {
-                var codeEl = item.querySelector('.item-code');
-                if (codeEl && codeEl.textContent === voucherCode) {
-                    var nameEl = item.querySelector('.item-name');
-                    var discountEl = item.querySelector('.item-discount');
-                    if (nameEl && (nameEl.textContent.includes('ONGKIR') || nameEl.textContent.includes('GRATIS'))) {
-                        isShipping = true;
-                    }
-                    if (discountEl && discountEl.textContent.includes('Ongkir')) {
+    var isShipping = false;
+
+    // 🔥 CEK DARI DATA VOUCHER YANG ADA DI POPUP
+    var voucherItems = document.querySelectorAll('.popup-voucher-item');
+    voucherItems.forEach(function(item) {
+        var code = item.getAttribute('data-voucher-code');
+        if (code && code.trim() === voucherCode) {
+            var isShippingAttr = item.getAttribute('data-is-shipping');
+            if (isShippingAttr === 'true') {
+                isShipping = true;
+            }
+        }
+    });
+
+    // 🔥 CEK DARI TEXT
+    if (!isShipping) {
+        var items = document.querySelectorAll('.popup-voucher-item .item-code');
+        items.forEach(function(el) {
+            if (el.textContent.trim() === voucherCode) {
+                var parent = el.closest('.popup-voucher-item');
+                if (parent) {
+                    var isShippingAttr = parent.getAttribute('data-is-shipping');
+                    if (isShippingAttr === 'true') {
                         isShipping = true;
                     }
                 }
-            });
-            return isShipping;
+            }
+        });
+    }
+
+    // 🔥 CEK DARI NAMA
+    if (!isShipping) {
+        var nameItems = document.querySelectorAll('.popup-voucher-item .item-name');
+        nameItems.forEach(function(el) {
+            var parent = el.closest('.popup-voucher-item');
+            if (parent) {
+                var codeEl = parent.querySelector('.item-code');
+                if (codeEl && codeEl.textContent.trim() === voucherCode) {
+                    var nameText = el.textContent.toUpperCase();
+                    if (nameText.includes('ONGKIR') || nameText.includes('GRATIS') || nameText.includes('SHIPPING')) {
+                        isShipping = true;
+                    }
+                }
+            }
+        });
+    }
+
+    // 🔥 CEK DARI SESSION VOUCHER CODE (LAST RESORT)
+    if (!isShipping) {
+        // Coba cek dari session melalui hidden input
+        var appliedCode = document.getElementById('applied-voucher-code')?.value;
+        if (appliedCode === voucherCode) {
+            var voucherName = document.getElementById('applied-voucher-summary')?.querySelector('.name')?.textContent || '';
+            if (voucherName.includes('ONGKIR') || voucherName.includes('GRATIS') || voucherName.includes('Shipping')) {
+                isShipping = true;
+            }
         }
+    }
+
+    console.log('🔍 isShippingVoucherCode result:', { voucherCode, isShipping });
+    return isShipping;
+}
 
         // Apply voucher from popup
         function applyVoucherFromPopup(code) {
             var voucherCode = code || document.getElementById('popup-voucher-input').value;
-            
+
             if (!voucherCode) {
                 showToast('Masukkan kode voucher terlebih dahulu.', 'warning');
                 return;
@@ -1610,7 +1664,7 @@
 
             // 🔥 CEK SHIPPING COST SEBELUM REQUEST
             var shippingCost = parseInt(document.getElementById('shipping_cost')?.value || 0);
-            
+
             console.log('🔥 Current Shipping Cost:', {
                 value: shippingCost,
                 voucherCode: voucherCode
@@ -1638,12 +1692,12 @@
                     'Accept': 'application/json',
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ 
+                body: JSON.stringify({
                     voucher_code: voucherCode,
                     shipping_cost: shippingCost
                 })
             })
-            .then(function(response) { 
+            .then(function(response) {
                 return response.json().then(function(data) {
                     if (!response.ok) {
                         throw {
@@ -1659,10 +1713,10 @@
                 if (data.success) {
                     updateVoucherUI(data);
                     updateVoucherSession(data);
-                    
+
                     // 🔥 TUTUP POPUP SETELAH BERHASIL
                     closeVoucherPopup();
-                    
+
                     var message = data.message || 'Voucher berhasil diterapkan!';
                     if (data.is_free_shipping) {
                         message = 'Gratis Ongkir berhasil diterapkan!';
@@ -1705,22 +1759,22 @@
                     'Content-Type': 'application/json'
                 }
             })
-            .then(function(response) { 
+            .then(function(response) {
                 if (!response.ok) {
                     return response.json().then(function(err) {
                         throw new Error(err.message || 'Gagal membatalkan voucher');
                     });
                 }
-                return response.json(); 
+                return response.json();
             })
             .then(function(data) {
                 if (data.success) {
                     // 🔥 RESET ALL VOUCHER UI TANPA REFRESH
-                    resetVoucherUI();
-                    
+                    resetVoucherUI(data);
+
                     // 🔥 UPDATE SESSION
                     updateVoucherSession(null);
-                    
+
                     showToast(data.message || 'Voucher dibatalkan.', 'info');
                 } else {
                     showToast(data.message || 'Gagal membatalkan voucher.', 'error');
@@ -1747,22 +1801,26 @@
                 var nameEl = summary.querySelector('.name');
                 var discountEl = summary.querySelector('.discount');
                 if (codeEl) codeEl.textContent = data.voucher.code;
-                if (nameEl) nameEl.textContent = data.voucher.name + (data.is_free_shipping ? ' 🎁' : '');
+                if (nameEl) nameEl.textContent = data.voucher.name + (data.is_free_shipping ? ' ' : '');
                 if (discountEl) discountEl.textContent = 'Dapat potongan Rp ' + formatNumber(data.discount);
             }
-            
+
             // 🔥 UPDATE VOUCHER DISCOUNT ROW
+            // 🔥 PENTING: potongan ongkir (shipping_discount) TIDAK boleh masuk ke baris
+            // "Diskon Voucher" karena ongkirnya sendiri sudah dikurangi (jadi 0).
+            // Kalau tidak, potongannya dihitung dobel dan total bisa minus.
             var voucherRow = document.getElementById('voucher-discount-row');
             var discountText = document.getElementById('voucher-discount-text');
+            var productOnlyDiscount = (data.discount || 0) - (data.shipping_discount || 0);
             if (discountText) {
-                if (data.discount > 0) {
-                    discountText.textContent = '-Rp ' + formatNumber(data.discount);
+                if (productOnlyDiscount > 0) {
+                    discountText.textContent = '-Rp ' + formatNumber(productOnlyDiscount);
                     if (voucherRow) voucherRow.classList.remove('hidden');
                 } else {
                     if (voucherRow) voucherRow.classList.add('hidden');
                 }
             }
-            
+
             // 🔥 UPDATE PRODUCT DISCOUNT ROW
             var productRow = document.getElementById('product-discount-row');
             var productText = document.getElementById('product-discount-text');
@@ -1774,18 +1832,18 @@
                     productRow.classList.add('hidden');
                 }
             }
-            
+
             // 🔥 UPDATE SHIPPING DISCOUNT ROW
             var shippingRow = document.getElementById('shipping-discount-row');
             var shippingText = document.getElementById('shipping-discount-text');
             var shippingLabel = document.getElementById('shipping-discount-label');
-            
+
             if (shippingRow && shippingText) {
                 if (data.shipping_discount > 0 || data.is_free_shipping) {
                     shippingRow.classList.remove('hidden');
                     if (data.is_free_shipping) {
-                        shippingText.textContent = '🎁 Gratis Ongkir';
-                        if (shippingLabel) shippingLabel.textContent = '🎁 Gratis Ongkir';
+                        shippingText.textContent = 'Gratis Ongkir';
+                        if (shippingLabel) shippingLabel.textContent = 'Gratis Ongkir';
                     } else {
                         shippingText.textContent = '-Rp ' + formatNumber(data.shipping_discount);
                         if (shippingLabel) shippingLabel.textContent = 'Diskon Ongkir';
@@ -1794,7 +1852,7 @@
                     shippingRow.classList.add('hidden');
                 }
             }
-            
+
             // 🔥 UPDATE SHIPPING COST
             if (data.new_shipping_cost !== undefined) {
                 var shippingCostText = document.getElementById('shipping-cost-text');
@@ -1807,58 +1865,107 @@
                     shippingCostInput.value = data.new_shipping_cost;
                 }
             }
-            
+
             // 🔥 UPDATE ACTION BUTTON
             var actionText = document.getElementById('voucher-action-text');
             if (actionText) actionText.textContent = 'Ganti Voucher';
-            
-            // 🔥 UPDATE TOTAL
-            updateTotalWithVoucher(data.discount);
+
+            // 🔥 UPDATE TOTAL (hanya potongan produk, potongan ongkir sudah tercermin di ongkir = 0)
+            updateTotalWithVoucher(productOnlyDiscount);
         }
 
-        function resetVoucherUI() {
+        function updateSummaryUI(data) {
+        // Update subtotal
+        $('#subtotal-display').text(data.subtotal_formatted);
+
+        // 🔥 UPDATE SHIPPING COST - HANYA TAMPILKAN JIKA KURIR DIPILIH
+        if (data.has_courier_selected && data.shipping_cost > 0) {
+            $('#shipping-cost-text').text(data.shipping_cost_formatted);
+            $('#shipping-summary').removeClass('hidden');
+            // Tampilkan shipping warning
+            $('#shipping-warning').addClass('hidden');
+            $('#shipping-error').addClass('hidden');
+        } else {
+            $('#shipping-cost-text').text('Belum dipilih');
+            $('#shipping-summary').removeClass('hidden');
+            $('#shipping-warning').removeClass('hidden');
+        }
+
+        // 🔥 UPDATE VOUCHER DISCOUNT
+        if (data.voucher_discount > 0) {
+            $('#voucher-discount-text').text(data.voucher_discount_formatted);
+            $('#voucher-discount-row').removeClass('hidden');
+            $('#applied-voucher-summary').removeClass('hidden');
+            $('#voucher-action-text').text('Ganti Voucher');
+        } else {
+            $('#voucher-discount-row').addClass('hidden');
+            $('#applied-voucher-summary').addClass('hidden');
+            $('#voucher-action-text').text('Pilih Voucher');
+        }
+
+        // 🔥 UPDATE TOTAL
+        $('#total-display').text(data.total_formatted);
+    }
+
+        function resetVoucherUI(data) {
             // Hide applied voucher summary
             var summary = document.getElementById('applied-voucher-summary');
             if (summary) summary.classList.add('hidden');
-            
+
             // Hide discount rows
             var productRow = document.getElementById('product-discount-row');
             if (productRow) productRow.classList.add('hidden');
-            
+
             var shippingRow = document.getElementById('shipping-discount-row');
             if (shippingRow) shippingRow.classList.add('hidden');
-            
+
             var voucherRow = document.getElementById('voucher-discount-row');
             if (voucherRow) voucherRow.classList.add('hidden');
-            
+
             // Reset voucher discount text
             var discountText = document.getElementById('voucher-discount-text');
             if (discountText) discountText.textContent = 'Rp 0';
-            
+
             // Reset action button
             var actionText = document.getElementById('voucher-action-text');
             if (actionText) actionText.textContent = 'Pilih Voucher';
-            
-            // Reset shipping cost
+
+            // 🔥 RESTORE ONGKIR NORMAL
+            // Jangan mengambil nilai dari hidden input karena saat voucher gratis
+            // ongkir diterapkan, hidden input sudah berubah menjadi 0.
+            // Gunakan nominal normal yang dikembalikan backend.
             var shippingCostText = document.getElementById('shipping-cost-text');
             var shippingCostInput = document.getElementById('shipping_cost');
-            if (shippingCostText && shippingCostInput) {
-                var defaultShipping = parseInt(shippingCostInput.value) || 0;
-                shippingCostText.textContent = 'Rp ' + formatNumber(defaultShipping);
+            var normalShippingCost = data && data.new_shipping_cost !== undefined
+                ? parseInt(data.new_shipping_cost) || 0
+                : (parseInt(shippingCostInput?.value) || 0);
+
+            if (shippingCostInput) {
+                shippingCostInput.value = normalShippingCost;
             }
-            
+
+            if (shippingCostText) {
+                shippingCostText.textContent = normalShippingCost > 0
+                    ? 'Rp ' + formatNumber(normalShippingCost)
+                    : 'Belum dipilih';
+            }
+
             // Reset input
             var input = document.getElementById('popup-voucher-input');
             if (input) input.value = '';
-            
-            // 🔥 UPDATE TOTAL (subtotal + shipping)
-            var subtotalEl = document.getElementById('subtotal-display');
+
+            // 🔥 UPDATE TOTAL DARI RESPONSE BACKEND
             var totalEl = document.getElementById('total-display');
-            if (subtotalEl && totalEl) {
-                var subtotal = parseFloat(subtotalEl.textContent.replace(/[^0-9]/g, '')) || 0;
-                var shippingCost = parseInt(document.getElementById('shipping_cost').value) || 0;
-                var total = subtotal + shippingCost;
-                totalEl.textContent = 'Rp ' + formatNumber(total);
+            if (totalEl) {
+                if (data && data.new_total !== undefined) {
+                    totalEl.textContent = 'Rp ' + formatNumber(data.new_total);
+                } else {
+                    var subtotalEl = document.getElementById('subtotal-display');
+                    var subtotal = subtotalEl
+                        ? parseFloat(subtotalEl.textContent.replace(/[^0-9]/g, '')) || 0
+                        : 0;
+                    totalEl.textContent = 'Rp ' + formatNumber(subtotal + normalShippingCost);
+                }
             }
         }
 
@@ -1875,7 +1982,7 @@
                     if (form) form.appendChild(hiddenVoucher);
                 }
                 if (hiddenVoucher) hiddenVoucher.value = data.voucher.code;
-                
+
                 var hiddenDiscount = document.getElementById('applied-voucher-discount');
                 if (!hiddenDiscount) {
                     hiddenDiscount = document.createElement('input');
@@ -1886,12 +1993,12 @@
                     if (form) form.appendChild(hiddenDiscount);
                 }
                 if (hiddenDiscount) hiddenDiscount.value = data.discount;
-                
+
             } else {
                 // Hapus hidden inputs
                 var hiddenVoucher = document.getElementById('applied-voucher-code');
                 if (hiddenVoucher) hiddenVoucher.remove();
-                
+
                 var hiddenDiscount = document.getElementById('applied-voucher-discount');
                 if (hiddenDiscount) hiddenDiscount.remove();
             }
@@ -1902,12 +2009,13 @@
             var subtotalEl = document.getElementById('subtotal-display');
             var shippingEl = document.getElementById('shipping_cost');
             var totalEl = document.getElementById('total-display');
-            
+
             if (!subtotalEl || !totalEl) return;
-            
+
             var subtotal = parseFloat(subtotalEl.textContent.replace(/[^0-9]/g, '')) || 0;
             var shippingCost = parseInt(shippingEl ? shippingEl.value : 0) || 0;
             var total = subtotal + shippingCost - discount;
+            if (total < 0) total = 0;
             totalEl.textContent = 'Rp ' + formatNumber(total);
         }
 
@@ -1980,7 +2088,7 @@
                     openVoucherPopup();
                 });
             }
-            
+
             // Also handle if button uses class .btn-open-voucher
             var openBtns = document.querySelectorAll('.btn-open-voucher');
             openBtns.forEach(function(btn) {
@@ -2065,7 +2173,7 @@
                     var isInside = popup.contains(e.target);
                     // Cek apakah klik di tombol open (agar tidak langsung close)
                     var isOpenBtn = e.target.closest('#btn-open-voucher') || e.target.closest('.btn-open-voucher');
-                    
+
                     if (!isInside && !isOpenBtn) {
                         closeVoucherPopup();
                     }
@@ -2087,7 +2195,7 @@
     <script src="{{ asset('js/cart.js') }}"></script>
     <script src="{{ asset('js/popup.js') }}"></script>
     <script src="{{ asset('js/variant-modal.js') }}"></script>
-    
+
 
 </body>
 </html>

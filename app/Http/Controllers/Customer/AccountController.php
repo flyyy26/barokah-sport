@@ -3,21 +3,33 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
-use App\Models\CustomerAddress;
+use App\Models\UserAddress;
 use App\Models\Order;
 use App\Models\Wishlist;
 use App\Models\Voucher;
+use App\Services\BiteshipService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class AccountController extends Controller
 {
-    protected function getAccountData()
+    protected function getAccountData(string $activeTab = 'all')
     {
         $customer = Auth::guard('customer')->user();
         
-        $orderCount = Order::where('customer_id', $customer->id)->count();
+        $baseQuery = Order::where('user_id', $customer->id);
+        
+        $orderCount = (clone $baseQuery)->count();
+        $unpaidCount = (clone $baseQuery)->where('payment_status', 'unpaid')->count();
+        $processingCount = (clone $baseQuery)->where('shipping_status', 'processing')->count();
+        $shippedCount = (clone $baseQuery)->where('shipping_status', 'shipped')->count();
+        $completedCount = (clone $baseQuery)->where(function ($q) {
+            $q->where('shipping_status', 'delivered')
+              ->orWhereNotNull('delivered_at');
+        })->count();
+        
         $wishlistCount = Wishlist::where('user_id', $customer->id)->count();
         
         // 🔥 HITUNG VOUCHER TERSEDIA
@@ -25,12 +37,7 @@ class AccountController extends Controller
             ->where('is_public', true)
             ->where('start_date', '<=', now())
             ->where('end_date', '>=', now())
-            ->where(function($q) {
-                $q->whereNull('usage_limit')
-                  ->orWhereRaw('used_count < usage_limit');
-            })
             ->where(function($q) use ($customer) {
-                // 🔥 CEK APAKAH USER SUDAH PERNAH PAKAI
                 $q->whereNotExists(function($sub) use ($customer) {
                     $sub->select('id')
                         ->from('voucher_usages')
@@ -42,6 +49,10 @@ class AccountController extends Controller
 
         return [
             'orderCount' => $orderCount,
+            'unpaidCount' => $unpaidCount,
+            'processingCount' => $processingCount,
+            'shippedCount' => $shippedCount,
+            'completedCount' => $completedCount,
             'wishlistCount' => $wishlistCount,
             'availableVouchers' => $availableVouchers,
         ];
@@ -55,18 +66,105 @@ class AccountController extends Controller
         return view('customer.account.index', array_merge(['user' => $user], $data));
     }
 
-    public function orders()
+    private function autoCompleteOrders($customer): void
+    {
+        $delayMinutes = config('app.orders_auto_complete_minutes', 60);
+
+        $orders = Order::where('user_id', $customer->id)
+            ->where('shipping_status', 'shipped')
+            ->whereNull('delivered_at')
+            ->where('shipped_at', '<=', now()->subMinutes($delayMinutes))
+            ->get()
+            ->filter(function ($order) {
+                return $order->isDeliveredOnBiteship();
+            });
+
+        foreach ($orders as $order) {
+            $order->update([
+                'shipping_status' => 'delivered',
+                'delivered_at' => now(),
+            ]);
+        }
+    }
+
+    private function autoCancelUnpaidOrders($customer): void
+    {
+        $delayMinutes = config('app.orders_auto_cancel_minutes', 1440);
+
+        $orders = Order::where('user_id', $customer->id)
+            ->where('payment_status', 'unpaid')
+            ->whereIn('shipping_status', ['pending', 'cancelled'])
+            ->where('created_at', '<=', now()->subMinutes($delayMinutes))
+            ->get();
+
+        foreach ($orders as $order) {
+            $order->loadMissing(['items.variant', 'items.product.variants']);
+
+            DB::beginTransaction();
+            try {
+                foreach ($order->items as $item) {
+                    if ($item->variant) {
+                        $item->variant->addStock(
+                            $item->quantity,
+                            'order_cancelled',
+                            "Pesanan {$order->order_number} dihapus otomatis (belum bayar {$delayMinutes} menit)"
+                        );
+                    } elseif ($item->product) {
+                        $firstVariant = $item->product->variants->first();
+                        if ($firstVariant) {
+                            $firstVariant->addStock(
+                                $item->quantity,
+                                'order_cancelled',
+                                "Pesanan {$order->order_number} dihapus otomatis (belum bayar {$delayMinutes} menit)"
+                            );
+                        }
+                    }
+                }
+
+                $order->delete();
+                DB::commit();
+            } catch (\Exception $e) {
+                DB::rollBack();
+            }
+        }
+    }
+
+    public function orders(Request $request)
     {
         $customer = Auth::guard('customer')->user();
-        
-        $orders = Order::with(['items.product', 'items.variant'])
-            ->where('customer_id', $customer->id)
-            ->orderBy('created_at', 'desc')
-            ->paginate(10);
+        $tab = $request->query('tab', 'unpaid');
 
-        $data = $this->getAccountData();
+        $this->autoCompleteOrders($customer);
+        $this->autoCancelUnpaidOrders($customer);
 
-        return view('customer.account.orders', array_merge(['orders' => $orders], $data));
+        $query = Order::with(['items.product', 'items.variant'])
+            ->where('user_id', $customer->id);
+
+        switch ($tab) {
+            case 'unpaid':
+                $query->where('payment_status', 'unpaid');
+                break;
+            case 'processing':
+                $query->where('shipping_status', 'processing');
+                break;
+            case 'shipped':
+                $query->where('shipping_status', 'shipped');
+                break;
+            case 'completed':
+                $query->where(function ($q) {
+                    $q->where('shipping_status', 'delivered')
+                      ->orWhereNotNull('delivered_at');
+                });
+                break;
+            default:
+                break;
+        }
+
+        $orders = $query->orderBy('created_at', 'desc')->paginate(10);
+
+        $data = $this->getAccountData($tab);
+
+        return view('customer.account.orders', array_merge(['orders' => $orders, 'activeTab' => $tab], $data));
     }
 
     // ============================================
@@ -124,10 +222,10 @@ class AccountController extends Controller
             $customer->addresses()->update(['is_default' => false]);
         }
 
-        $validated['customer_id'] = $customer->id;
+        $validated['user_id'] = $customer->id;
         $validated['user_id'] = $customer->id;
 
-        CustomerAddress::create($validated);
+        UserAddress::create($validated);
 
         return redirect()
             ->route('customer.addresses.index')
@@ -179,7 +277,7 @@ class AccountController extends Controller
                 ->update(['is_default' => false]);
         }
 
-        $validated['customer_id'] = $customer->id;
+        $validated['user_id'] = $customer->id;
         $validated['user_id'] = $customer->id;
 
         $address->update($validated);
@@ -220,12 +318,276 @@ class AccountController extends Controller
     public function showOrder(Order $order)
     {
         // Pastikan order milik customer yang login
-        if ($order->customer_id !== Auth::guard('customer')->id()) {
+        if ($order->user_id !== Auth::guard('customer')->id()) {
             abort(403);
         }
 
         $order->load(['items.product', 'items.variant']);
 
         return view('customer.account.order-detail', compact('order'));
+    }
+
+    public function tracking(Order $order)
+    {
+        // 🔥 CEK APAKAH ORDER MILIK CUSTOMER INI
+        if ($order->user_id !== Auth::guard('customer')->id()) {
+            abort(403);
+        }
+
+        $order->load(['customer', 'items.product', 'items.variant']);
+
+        $tracking = null;
+        $trackingError = null;
+
+        if ($order->biteship_order_id) {
+            $biteship = app(BiteshipService::class);
+            
+            $result = $biteship->getTrackingDetails(
+                $order->biteship_order_id,
+                $order->tracking_number,
+                $order->biteship_tracking_url
+            );
+            
+            if ($result['success']) {
+                $tracking = $result['data'];
+                
+                if (empty($tracking['history'] ?? [])) {
+                    $trackingError = 'Tracking belum memiliki riwayat pengiriman.';
+                    $tracking = $this->getSimulatedTracking($order);
+                }
+            } else {
+                $trackingError = $result['message'];
+                $tracking = $this->getSimulatedTracking($order);
+            }
+        } else {
+            $trackingError = 'Order belum memiliki tracking.';
+            $tracking = $this->getSimulatedTracking($order);
+        }
+
+        return view('customer.orders.tracking', compact('order', 'tracking', 'trackingError'));
+    }
+
+    public function requestCancellation(Request $request, Order $order)
+    {
+        // Pastikan order milik customer yang login
+        if ($order->user_id !== Auth::guard('customer')->id()) {
+            abort(403);
+        }
+
+        $request->validate([
+            'reason' => 'required|string|min:10|max:500',
+        ]);
+
+        try {
+            // Cek apakah bisa dibatalkan
+            if (!$order->canBeCancelled()) {
+                return redirect()
+                    ->route('customer.orders.show', $order)
+                    ->with('error', 'Pesanan tidak dapat dibatalkan karena sudah dalam proses pengiriman atau selesai.');
+            }
+
+            // 🔥 PERBAIKAN: Gunakan DB transaction dan dd untuk debug
+            DB::beginTransaction();
+            
+            try {
+                // Simpan status sebelumnya
+                $previousStatus = $order->shipping_status;
+
+                // Update order
+                $updated = $order->update([
+                    'cancellation_status' => 'pending',
+                    'cancellation_reason' => $request->reason,
+                    'cancellation_requested_at' => now(),
+                    'previous_shipping_status' => $previousStatus,
+                    // JANGAN ubah shipping_status
+                ]);
+
+                // 🔥 DEBUG: Cek apakah update berhasil
+                Log::info('Cancellation update result:', [
+                    'order_id' => $order->id,
+                    'updated' => $updated,
+                    'cancellation_status' => $order->cancellation_status,
+                ]);
+
+                // 🔥 Refresh model dari database
+                $order->refresh();
+
+                DB::commit();
+
+                Log::info('Customer requested cancellation', [
+                    'order_id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'user_id' => Auth::guard('customer')->id(),
+                    'reason' => $request->reason,
+                    'cancellation_status' => $order->cancellation_status,
+                ]);
+
+                return redirect()
+                    ->route('customer.orders.show', $order)
+                    ->with('success', 'Permintaan pembatalan pesanan berhasil dikirim. Menunggu persetujuan admin.');
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                throw $e;
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Error requesting cancellation:', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return redirect()
+                ->route('customer.orders.show', $order)
+                ->with('error', 'Terjadi kesalahan saat memproses pembatalan: ' . $e->getMessage());
+        }
+    }
+
+    public function cancelOrderDirect(Request $request, Order $order)
+    {
+        // Pastikan order milik customer yang login
+        if ($order->user_id !== Auth::guard('customer')->id()) {
+            abort(403);
+        }
+
+        // Hanya bisa dibatalkan jika status pending dan belum dibayar
+        if ($order->shipping_status !== 'pending' || $order->payment_status !== 'unpaid') {
+            return redirect()
+                ->route('customer.orders.show', $order)
+                ->with('error', 'Pesanan tidak dapat dibatalkan secara langsung. Silakan gunakan fitur request cancellation.');
+        }
+
+        try {
+            $result = $order->cancelByCustomer('Dibatalkan oleh customer (langsung)');
+
+            if ($result) {
+                return redirect()
+                    ->route('customer.orders.show', $order)
+                    ->with('success', 'Pesanan berhasil dibatalkan.');
+            }
+
+            return redirect()
+                ->route('customer.orders.show', $order)
+                ->with('error', 'Gagal membatalkan pesanan.');
+
+        } catch (\Exception $e) {
+            Log::error('Error cancelling order directly:', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect()
+                ->route('customer.orders.show', $order)
+                ->with('error', 'Terjadi kesalahan saat membatalkan pesanan.');
+        }
+    }
+
+    public function requestReturn(Request $request, Order $order)
+    {
+        if ($order->user_id !== Auth::guard('customer')->id()) {
+            abort(403);
+        }
+
+        $request->validate([
+            'reason' => 'required|string|min:10|max:500',
+        ]);
+
+        try {
+            if (!$order->can_request_return) {
+                return redirect()
+                    ->route('customer.orders.show', $order)
+                    ->with('error', 'Permintaan retur hanya tersedia untuk pesanan yang sudah selesai (dikirim/terkirim).');
+            }
+
+            $order->requestReturn($request->reason);
+
+            return redirect()
+                ->route('customer.orders.show', $order)
+                ->with('success', 'Permintaan retur berhasil dikirim. Silakan kirim barang ke gudang kami. Menunggu persetujuan admin.');
+
+        } catch (\Exception $e) {
+            Log::error('Error requesting return:', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect()
+                ->route('customer.orders.show', $order)
+                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
+    }
+
+    public function confirmReceived(Request $request, Order $order)
+    {
+        if ($order->user_id !== Auth::guard('customer')->id()) {
+            abort(403);
+        }
+
+        if ($order->shipping_status !== 'shipped') {
+            return redirect()
+                ->route('customer.orders')
+                ->with('error', 'Pesanan ini belum dikirim.');
+        }
+
+        try {
+            $order->update([
+                'shipping_status' => 'delivered',
+                'delivered_at' => now(),
+            ]);
+
+            return redirect()
+                ->route('customer.orders', ['tab' => 'completed'])
+                ->with('success', 'Pesanan telah diterima. Terima kasih!');
+        } catch (\Exception $e) {
+            Log::error('Error confirming order receipt:', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect()
+                ->route('customer.orders', ['tab' => 'shipped'])
+                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * 🔥 GET SIMULATED TRACKING UNTUK CUSTOMER
+     */
+    private function getSimulatedTracking($order)
+    {
+        $randomStatus = $order->shipping_status ?? 'pending';
+
+        return [
+            'courier_name' => $order->courier ?? 'JNE',
+            'waybill_id' => $order->tracking_number ?? 'TEST-' . strtoupper(uniqid()),
+            'status' => $randomStatus,
+            'service' => $order->service ?? 'Reguler',
+            'updated_at' => now()->toISOString(),
+            'delivery_date' => now()->addDays(3)->toISOString(),
+            'history' => [
+                [
+                    'status' => 'pending',
+                    'description' => 'Pesanan telah dibuat',
+                    'location' => 'Tasikmalaya',
+                    'time' => now()->subDays(2)->toISOString(),
+                    'note' => 'Menunggu konfirmasi admin'
+                ],
+                [
+                    'status' => 'processing',
+                    'description' => 'Pesanan sedang diproses',
+                    'location' => 'Tasikmalaya',
+                    'time' => now()->subDays(1)->toISOString(),
+                    'note' => 'Sedang disiapkan untuk pengiriman'
+                ],
+                [
+                    'status' => 'shipped',
+                    'description' => 'Pesanan telah dikirim',
+                    'location' => 'Tasikmalaya',
+                    'time' => now()->subHours(12)->toISOString(),
+                    'note' => 'Paket telah diambil oleh kurir'
+                ]
+            ]
+        ];
     }
 }

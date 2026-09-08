@@ -63,10 +63,8 @@
                                 class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                                 <option value="restock">🔄 Restock</option>
                                 <option value="adjustment">📝 Penyesuaian</option>
-                                <option value="return">↩️ Pengembalian</option>
                                 <option value="damaged">❌ Rusak/Expired</option>
                                 <option value="transfer_in">📦 Transfer Masuk</option>
-                                <option value="order_cancelled">🚫 Pesanan Dibatalkan</option>
                                 <option value="other">📌 Lainnya</option>
                             </select>
                         </div>

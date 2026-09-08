@@ -13,6 +13,7 @@ use App\Http\Controllers\Customer\CustomerHomeController;
 use App\Http\Controllers\Customer\CustomerProductController;
 use App\Http\Controllers\Customer\CustomerCategoryController;
 use App\Http\Controllers\Admin\OrderController;
+use App\Http\Controllers\Admin\ReturnController;
 use App\Http\Controllers\Customer\CartController;
 use App\Http\Controllers\Customer\CheckoutController;
 use App\Http\Controllers\Customer\AgenWebsiteController;
@@ -67,6 +68,31 @@ Route::post('/checkout/remove-voucher', [CheckoutController::class, 'removeVouch
     ->name('customer.checkout.remove-voucher');
 Route::get('/checkout/vouchers-ajax', [CheckoutController::class, 'getAvailableVouchers'])
     ->name('customer.checkout.vouchers-ajax');
+
+// 🔥 ROUTE TEST TRACKING (GET - untuk testing di browser)
+Route::get('/test-refresh/{id}', function ($id) {
+    $order = App\Models\Order::find($id);
+    
+    if (!$order) {
+        return response()->json([
+            'success' => false, 
+            'message' => 'Order not found'
+        ], 404);
+    }
+    
+    return response()->json([
+        'success' => true,
+        'message' => 'Test refresh berhasil',
+        'order_id' => $order->id,
+        'order_number' => $order->order_number,
+        'biteship_order_id' => $order->biteship_order_id,
+        'data' => [
+            'status' => 'shipped',
+            'courier_name' => $order->courier ?? 'JNE',
+            'waybill_id' => $order->tracking_number ?? 'TEST123',
+        ]
+    ]);
+});
 
 Route::get('/api/check-login', function() {
     return response()->json([
@@ -313,7 +339,9 @@ Route::prefix('midtrans')->name('customer.midtrans.')->group(function () {
     Route::get('/pay/{order}', [MidtransController::class, 'pay'])->name('pay');
     Route::get('/finish', [MidtransController::class, 'finish'])->name('finish');
     Route::get('/error', [MidtransController::class, 'error'])->name('error');
-    Route::post('/notification', [MidtransController::class, 'notificationHandler'])->name('notification');
+    Route::post('/notification', [MidtransController::class, 'notificationHandler'])
+        ->name('notification')
+        ->withoutMiddleware(['App\Http\Middleware\VerifyCsrfToken']);
     Route::get('/check-status/{order}', [MidtransController::class, 'checkStatus'])->name('check-status');
 });
 Route::get('/midtrans/refresh-token/{order}', [MidtransController::class, 'refreshToken'])
@@ -326,6 +354,15 @@ Route::post('/api/biteship/rates', [CheckoutController::class, 'getShippingCost'
     ->name('api.biteship.rates');
 Route::post('/checkout/update-shipping', [CheckoutController::class, 'updateShipping'])
     ->name('customer.checkout.update-shipping');
+Route::post('/checkout/update-cart-item', [CheckoutController::class, 'updateCartItem'])
+    ->name('customer.checkout.update-cart-item');
+
+Route::post('/checkout/remove-cart-item', [CheckoutController::class, 'removeCartItem'])
+    ->name('customer.checkout.remove-cart-item');
+Route::get('/checkout/get-total', [CheckoutController::class, 'getTotal'])
+    ->name('customer.checkout.get-total');
+Route::get('/checkout/vouchers-ajax', [App\Http\Controllers\Customer\CheckoutController::class, 'getAvailableVouchers'])->name('customer.checkout.vouchers-ajax');
+    
 // Route::prefix('api/biteship')->group(function () {
 //     Route::post('/get-shipping-cost', [CheckoutController::class, 'getShippingCost'])
 //         ->name('api.biteship.shipping-cost');
@@ -342,7 +379,16 @@ Route::middleware(['customer'])->group(function () {
     Route::get('/akun', [AccountController::class, 'index'])->name('customer.account');
 
     Route::get('/akun/pesanan', [AccountController::class, 'orders'])->name('customer.orders');
+    Route::get('/akun/pesanan/{order}/tracking', [AccountController::class, 'tracking'])->name('customer.orders.tracking');
     Route::get('/akun/pesanan/{order}', [AccountController::class, 'showOrder'])->name('customer.orders.show');
+    Route::post('/akun/pesanan/{order}/request-cancel', [AccountController::class, 'requestCancellation'])
+        ->name('customer.orders.request-cancel');
+    Route::post('/akun/pesanan/{order}/cancel-direct', [AccountController::class, 'cancelOrderDirect'])
+        ->name('customer.orders.cancel-direct');
+    Route::post('/akun/pesanan/{order}/request-return', [AccountController::class, 'requestReturn'])
+        ->name('customer.orders.request-return');
+    Route::post('/akun/pesanan/{order}/confirm-received', [AccountController::class, 'confirmReceived'])
+        ->name('customer.orders.confirm-received');
 
     Route::get('/akun/alamat', [AccountController::class, 'indexAddresses'])->name('customer.addresses.index');
     Route::get('/akun/alamat/tambah', [AccountController::class, 'createAddress'])->name('customer.addresses.create');
@@ -365,6 +411,172 @@ Route::middleware(['customer'])->group(function () {
 Route::get('/admin/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/admin/login', [AuthController::class, 'login'])->name('login.process');
 Route::post('/admin/logout', [AuthController::class, 'logout'])->name('logout');
+
+// 🔥 TEST 1 ORDER - COBA BERBAGAI KODE POS
+Route::get('/test-one-order', function () {
+    $apiKey = config('services.biteship.api_key');
+    
+    // 🔥 COBA DENGAN KODE POS YANG BERBEDA
+    $postalCodes = [12190, 40111, 60271, 55111, 10110];
+    $results = [];
+    
+    foreach ($postalCodes as $code) {
+        $orderData = [
+            'shipper_name' => 'Barokah Sport',
+            'shipper_phone' => '08123456789',
+            'shipper_address' => 'Jl. Raya Cibeber No. 123',
+            'shipper_postal_code' => 46195,
+            'recipient_name' => 'Budi Santoso',
+            'recipient_phone' => '08123456789',
+            'recipient_address' => 'Jl. Test No. 1',
+            'recipient_postal_code' => $code,
+            'courier_company' => 'jne',
+            'courier_type' => 'parcel',
+            'delivery_type' => 'now',
+            'service_code' => 'REG',
+            'items' => [
+                ['name' => 'Test Product', 'value' => 100000, 'weight' => 500, 'quantity' => 1]
+            ],
+            'order_number' => 'TEST-ORDER-' . $code
+        ];
+        
+        $response = Http::timeout(30)
+            ->acceptJson()
+            ->withToken($apiKey)
+            ->post('https://api.biteship.com/v1/orders', $orderData);
+        
+        $results[] = [
+            'postal_code' => $code,
+            'success' => $response->successful(),
+            'status' => $response->status(),
+            'response' => $response->json(),
+        ];
+    }
+    
+    return response()->json($results);
+});
+
+
+// 🔥 ROUTE TEST CREATE ORDER BITESHIP (SIMPEL)
+// 🔥 ROUTE TEST CREATE 2 ORDERS (Delivered & Cancelled) - PERBAIKAN
+// 🔥 ROUTE TEST CREATE 2 ORDERS - GUNAKAN KODE POS VALID
+Route::get('/test-biteship-orders', function () {
+    $apiKey = config('services.biteship.api_key');
+    
+    if (empty($apiKey)) {
+        return response()->json([
+            'success' => false, 
+            'message' => '⚠️ API Key tidak ditemukan'
+        ]);
+    }
+    
+    // 🔥 ORDER 1: UNTUK DELIVERED
+    $order1 = [
+        'origin_contact_name' => 'Barokah Sport',
+        'origin_contact_phone' => '08123456789',
+        'origin_address' => 'Jl. Raya Cibeber No. 123',
+        'origin_postal_code' => 46195,
+        'destination_contact_name' => 'Budi Santoso',
+        'destination_contact_phone' => '08123456789',
+        'destination_address' => 'Jl. Jenderal Sudirman No. 45',
+        'destination_postal_code' => 12190, // 🔥 KODE POS JAKARTA
+        'courier_company' => 'jne',
+        'courier_type' => 'reg',
+        'delivery_type' => 'now',
+        'items' => [
+            ['name' => 'Sepatu Futsal', 'value' => 250000, 'weight' => 800, 'quantity' => 1]
+        ],
+        'order_number' => 'TEST-ORDER-001'
+    ];
+    
+    // 🔥 ORDER 2: UNTUK CANCELLED
+    $order2 = [
+        'origin_contact_name' => 'Barokah Sport',
+        'origin_contact_phone' => '08123456789',
+        'origin_address' => 'Jl. Raya Cibeber No. 123',
+        'origin_postal_code' => 46195,
+        'destination_contact_name' => 'Siti Rahayu',
+        'destination_contact_phone' => '08123456789',
+        'destination_address' => 'Jl. Asia Afrika No. 78',
+        'destination_postal_code' => 40111, // 🔥 KODE POS BANDUNG
+        'courier_company' => 'jnt',
+        'courier_type' => 'yes',
+        'delivery_type' => 'now',
+        'items' => [
+            ['name' => 'Jersey Bola', 'value' => 150000, 'weight' => 300, 'quantity' => 2]
+        ],
+        'order_number' => 'TEST-ORDER-002'
+    ];
+    
+    $results = [];
+    
+    $biteship = app(App\Services\BiteshipService::class);
+    
+    foreach ([$order1, $order2] as $order) {
+        $result = $biteship->createOrder($order);
+        $results[] = [
+            'order_number' => $order['order_number'],
+            'success' => $result['success'],
+            'biteship_order_id' => $result['data']['id'] ?? null,
+            'waybill_id' => $result['data']['waybill_id'] ?? null,
+            'status' => $result['success'] ? 201 : 400,
+            'response' => $result['data'] ?? $result,
+            'note' => $order['order_number'] === 'TEST-ORDER-001' ? 'Untuk status DELIVERED' : 'Untuk status CANCELLED'
+        ];
+    }
+    
+    return response()->json([
+        'success' => true,
+        'message' => 'Test orders berhasil dibuat!',
+        'results' => $results,
+    ]);
+});
+
+Route::get('/admin/test-biteship-key', function () {
+    $apiKey = config('services.biteship.api_key');
+    $biteship = app(App\Services\BiteshipService::class);
+    
+    // 🔥 TEST DENGAN ENDPOINT YANG BENAR
+    try {
+        $response = Http::timeout(10)
+            ->acceptJson()
+            ->withToken($apiKey)
+            ->post('https://api.biteship.com/v1/rates/couriers', [
+                'origin_postal_code' => 46191,
+                'destination_postal_code' => 46191,
+                'couriers' => 'jne',
+                'items' => [
+                    [
+                        'name' => 'Test Product',
+                        'value' => 10000,
+                        'weight' => 1000,
+                        'quantity' => 1,
+                    ]
+                ]
+            ]);
+        
+        $data = $response->json();
+        
+        return response()->json([
+            'api_key' => $apiKey ? 'Set' : 'Not Set',
+            'key_preview' => $apiKey ? substr($apiKey, 0, 30) . '...' : null,
+            'is_sandbox' => str_contains($apiKey, 'sandbox') || str_contains($apiKey, 'test'),
+            'status' => $response->status(),
+            'success' => $response->successful(),
+            'response' => $data,
+            'message' => $response->successful() ? '✅ API Key valid dan aktif' : '❌ ' . ($data['error'] ?? $data['message'] ?? 'Unknown error')
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'api_key' => $apiKey ? 'Set' : 'Not Set',
+            'error' => $e->getMessage(),
+            'success' => false,
+            'message' => '❌ Terjadi kesalahan: ' . $e->getMessage()
+        ], 500);
+    }
+})->name('admin.test-biteship');
+
+
 
 Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
 
@@ -428,10 +640,27 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     // ORDERS
     Route::get('/orders', [OrderController::class, 'index'])->name('admin.orders.index');
     Route::get('/orders/{order}', [OrderController::class, 'show'])->name('admin.orders.show');
-    Route::put('/orders/{order}/status', [OrderController::class, 'updateStatus'])->name('admin.orders.status');
-    Route::put('/orders/{order}/payment', [OrderController::class, 'updatePayment'])->name('admin.orders.payment');
     Route::put('/orders/{order}/shipping', [OrderController::class, 'updateShipping'])->name('admin.orders.shipping');
-    Route::get('/orders/{order}/invoice', [OrderController::class, 'invoice'])->name('admin.orders.invoice');
+    Route::get('/orders/{order}/label', [OrderController::class, 'printLabel'])->name('admin.orders.label');
+    Route::get('/orders/{order}/tracking', [OrderController::class, 'tracking'])->name('admin.orders.tracking');
+    Route::post('/orders/{order}/tracking/refresh', [OrderController::class, 'refreshTracking'])->name('admin.orders.tracking.refresh');
+    Route::post('/orders/{order}/biteship/create', [OrderController::class, 'createBiteshipOrder'])->name('admin.orders.biteship.create');
+    Route::post('/orders/{order}/approve-cancellation', [OrderController::class, 'approveCancellation'])
+        ->name('admin.orders.approve-cancellation');
+    Route::post('/orders/{order}/reject-cancellation', [OrderController::class, 'rejectCancellation'])
+        ->name('admin.orders.reject-cancellation');
+    Route::post('/orders/{order}/approve-return', [OrderController::class, 'approveReturn'])
+        ->name('admin.orders.approve-return');
+    Route::post('/orders/{order}/reject-return', [OrderController::class, 'rejectReturn'])
+        ->name('admin.orders.reject-return');
+    Route::post('/orders/bulk-ship', [OrderController::class, 'bulkShip'])->name('admin.orders.bulk-ship');
+    Route::post('/orders/bulk-print-label', [OrderController::class, 'bulkPrintLabel'])->name('admin.orders.bulk-print-label');
+
+    // 🔥 RETURNS MANAGEMENT
+    Route::get('/returns', [ReturnController::class, 'index'])->name('admin.returns.index');
+    Route::get('/returns/{order}', [ReturnController::class, 'show'])->name('admin.returns.show');
+    Route::post('/returns/{order}/restore', [ReturnController::class, 'restoreStock'])
+        ->name('admin.returns.restore');
 
     Route::post('/features', [FeatureController::class, 'store'])->name('admin.features.store');
 
